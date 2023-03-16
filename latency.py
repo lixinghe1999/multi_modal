@@ -48,34 +48,28 @@ def throughput(images, model):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-t', '--task', default='gate')
-    parser.add_argument('-d', '--device', default='cpu')
-    parser.add_argument('-b', '--batch', default=1, type=int)
-    parser.add_argument('-n', '--num', default=10, type=int)
+    parser.add_argument('-d', '--device', default='cuda')
+    parser.add_argument('-b', '--batch', default=2, type=int)
     parser.add_argument('-e', '--exits', nargs='+', default='11 11')
     parser.add_argument('-l', '--locations', nargs='+', default='3 6 9')
     parser.add_argument('-r', '--rate', default=0.7, type=float)
     args = parser.parse_args()
     task = args.task
     device = torch.device(args.device)
-
-    audio = torch.zeros(args.batch, 384, 128).to(device, non_blocking=True)
-    image = torch.zeros(args.batch, 3, 224, 224).to(device, non_blocking=True)
-    if args.device == 'cuda' and args.task == 'dynamic':
-        assert (args.batch == 1), "Right now for GPU inference -> batch should equal to 1"
+    # if args.device == 'cuda' and args.task == 'dynamic':
+    #     assert (args.batch == 1), "Right now for GPU inference -> batch should equal to 1"
+    exits = [int(i) for i in args.exits.split()]
     pruning_loc = [int(i) for i in args.locations.split()]
     base_rate = args.rate
     token_ratio = [base_rate, base_rate ** 2, base_rate ** 3]
-    num_iteration = args.num
+
+    audio = torch.zeros(args.batch, 384, 128).to(device, non_blocking=True)
+    image = torch.zeros(args.batch, 3, 224, 224).to(device, non_blocking=True)
+
     if task == 'gate':
-        exits = [int(i) for i in args.exits.split()]
+
         model = AVnet_Gate().to(device)
-        model.eval()
-        with torch.no_grad():
-            for i in range(num_iteration):
-                if i == 1:
-                    t_start = time.time()
-                model(audio, image, mode=torch.tensor(exits))
-            print('latency:', (time.time() - t_start) / (num_iteration - 1))
+        throughput([audio, image], model)
     elif task == 'dynamic':
 
         model = AVnet_Dynamic(pruning_loc=pruning_loc, token_ratio=token_ratio, pretrained=False).to(device)

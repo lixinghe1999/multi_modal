@@ -7,7 +7,7 @@ import torch.nn.functional as F
 import time
 
 class AVnet_Dynamic(nn.Module):
-    def __init__(self, scale='base', distill=False, num_classes=309, \
+    def __init__(self, scale='base', distill=False, \
                  pruning_loc=[3, 6, 9], token_ratio=[0.7, 0.7**2, 0.7**3], pretrained=True):
         super(AVnet_Dynamic, self).__init__()
         if scale == 'base':
@@ -80,6 +80,7 @@ class AVnet_Dynamic(nn.Module):
                     num_keep_node = int(self.num_patches * self.token_ratio[p_count])
                     keep_policy = torch.argsort(score, dim=1, descending=True)[:, :num_keep_node]
                     prev_decision = batch_index_select(prev_decision, keep_policy)
+                    print(keep_policy)
                     keep_audio = keep_policy[keep_policy < token_len_audio].unsqueeze(0)
                     keep_image = keep_policy[keep_policy >= token_len_audio].unsqueeze(0) - token_len_audio
 
