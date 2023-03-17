@@ -86,7 +86,6 @@ class AVnet_Dynamic(nn.Module):
                     keep_audio = keep_policy < token_len_audio
                     audio_max = torch.sum(keep_audio, dim=1)
                     mask_audio = torch.ones((B, torch.max(audio_max), 1), dtype=keep_policy.dtype, device=keep_policy.device)
-                    print(audio_max)
                     for b in range(B):
                         mask_audio[b, audio_max[b]:] = 0
 
