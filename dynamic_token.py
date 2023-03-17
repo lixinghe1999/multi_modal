@@ -2,7 +2,7 @@
 from utils.datasets.vggsound import VGGSound
 import numpy as np
 import torch
-from model.dynamicvit_model import AVnet_Dynamic
+from model.dynamicvit_legacy import AVnet_Dynamic
 from utils.losses import DistillDiffPruningLoss_dynamic
 import warnings
 from tqdm import tqdm
@@ -31,7 +31,8 @@ def test_step(model, input_data, label):
         acc = (torch.argmax(output, dim=-1).cpu() == label).sum()/len(label)
         return acc.item()
 def profile(model, test_dataset):
-    test_loader = torch.utils.data.DataLoader(dataset=test_dataset, num_workers=workers, batch_size=4, shuffle=False)
+    test_loader = torch.utils.data.DataLoader(dataset=test_dataset, num_workers=workers, batch_size=batch_size,
+                                              shuffle=False)
     model.eval()
     token_ratio = [0.8, 0.7, 0.6, 0.5, 0.4, 0.3]
     acc = []

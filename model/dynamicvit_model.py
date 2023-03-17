@@ -94,6 +94,9 @@ class AVnet_Dynamic(nn.Module):
                     mask_image = torch.ones((B, torch.max(image_max), 1), dtype=keep_policy.dtype, device=keep_policy.device)
                     for b in range(B):
                         mask_image[b, image_max[b]:] = 0
+                    cls_mask = torch.ones(B, 1, 1, dtype=keep_policy.dtype, device=keep_policy.device)
+                    mask_audio = torch.cat([cls_mask, mask_audio], dim=1)
+                    mask_image = torch.cat([cls_mask, mask_image], dim=1)
 
                     keep_audio = pad_sequence([keep_policy[b, keep_audio[b]] for b in range(B)], padding_value=0).T
                     keep_image = pad_sequence([keep_policy[b, keep_image[b]] for b in range(B)], padding_value=0).T
@@ -102,15 +105,11 @@ class AVnet_Dynamic(nn.Module):
                     cls_policy = torch.zeros(B, 1, dtype=keep_policy.dtype, device=keep_policy.device)
                     now_policy = torch.cat([cls_policy, keep_audio + 1], dim=1)
                     audio = batch_index_select(audio, now_policy)
-                    cls_mask = torch.ones(B, 1, 1, dtype=keep_policy.dtype, device=keep_policy.device)
-                    mask_audio = torch.cat([cls_mask, mask_audio], dim=1)
                     audio = blk_a(audio, policy=mask_audio)
 
                     cls_policy = torch.zeros(B, 1, dtype=keep_policy.dtype, device=keep_policy.device)
                     now_policy = torch.cat([cls_policy, keep_image + 1], dim=1)
                     image = batch_index_select(image, now_policy)
-                    cls_mask = torch.ones(B, 1, 1, dtype=keep_policy.dtype, device=keep_policy.device)
-                    mask_image = torch.cat([cls_mask, mask_image], dim=1)
                     image = blk_i(image, policy=mask_image)
 
                     prev_decision = torch.cat([mask_audio[:, 1:], mask_image[:, 1:]], dim=1)
