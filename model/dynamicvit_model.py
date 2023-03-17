@@ -100,7 +100,7 @@ class AVnet_Dynamic(nn.Module):
                     mask_image = torch.cat([cls_mask, mask_image], dim=1).unsqueeze(2)
 
                     keep_audio = pad_sequence([keep_policy[b, keep_audio[b]] for b in range(B)], padding_value=0).T
-                    keep_image = pad_sequence([keep_policy[b, keep_image[b]] for b in range(B)], padding_value=0).T
+                    keep_image = pad_sequence([keep_policy[b, keep_image[b]] for b in range(B)], padding_value=token_len_audio).T
                     keep_image = keep_image - token_len_audio
 
                     cls_policy = torch.zeros(B, 1, dtype=keep_policy.dtype, device=keep_policy.device)
@@ -110,8 +110,8 @@ class AVnet_Dynamic(nn.Module):
 
                     cls_policy = torch.zeros(B, 1, dtype=keep_policy.dtype, device=keep_policy.device)
                     now_policy = torch.cat([cls_policy, keep_image + 1], dim=1)
-                    print(now_policy[:, :10])
-                    print(image.shape, now_policy.shape)
+                    # print(now_policy[:, :10])
+                    # print(image.shape, now_policy.shape)
                     image = batch_index_select(image, now_policy)
                     image = blk_i(image, policy=mask_image)
 
