@@ -34,7 +34,7 @@ def profile(model, test_dataset):
     test_loader = torch.utils.data.DataLoader(dataset=test_dataset, num_workers=workers, batch_size=batch_size,
                                               shuffle=False)
     model.eval()
-    token_ratio = [0.8, 0.7, 0.6, 0.5, 0.4, 0.3]
+    token_ratio = [0.7, 0.6, 0.5, 0.4, 0.3]
     acc = []
     modality_ratio = []
     with torch.no_grad():
