@@ -55,8 +55,8 @@ class AVnet_Dynamic(nn.Module):
         early_output = []
         prev_decision = torch.ones(B, self.num_patches, 1, dtype=audio.dtype, device=audio.device)
         policy = torch.ones(B, self.num_patches + 2, 1, dtype=audio.dtype, device=audio.device)
-        mask_audio = torch.ones(B, audio.shape[1], 1, dtype=audio.dtype, device=audio.device)
-        mask_image = torch.ones(B, image.shape[1], 1, dtype=audio.dtype, device=audio.device)
+        policy_a = torch.ones(B, audio.shape[1], 1, dtype=audio.dtype, device=audio.device)
+        policy_i = torch.ones(B, image.shape[1], 1, dtype=audio.dtype, device=audio.device)
         t_stamp = []
         t_start = time.time()
         for i, (blk_a, blk_i) in enumerate(zip(self.audio.blocks, self.image.blocks)):
@@ -88,16 +88,16 @@ class AVnet_Dynamic(nn.Module):
                     keep_audio = keep_policy < token_len_audio
                     audio_max = torch.sum(keep_audio, dim=1)
                     mask = torch.arange(audio_max.max(), device=keep_policy.device).unsqueeze(0).expand(B, -1)
-                    mask_audio = mask < audio_max.unsqueeze(1).expand(-1, audio_max.max())
+                    policy_a = mask < audio_max.unsqueeze(1).expand(-1, audio_max.max())
 
                     keep_image = keep_policy >= token_len_audio
                     image_max = torch.sum(keep_image, dim=1)
                     mask = torch.arange(image_max.max(), device=keep_policy.device).unsqueeze(0).expand(B, -1)
-                    mask_image = mask < image_max.unsqueeze(1).expand(-1, image_max.max())
+                    policy_i = mask < image_max.unsqueeze(1).expand(-1, image_max.max())
 
                     cls_mask = torch.ones(B, 1, dtype=keep_policy.dtype, device=keep_policy.device)
-                    mask_audio = torch.cat([cls_mask, mask_audio], dim=1).unsqueeze(2)
-                    mask_image = torch.cat([cls_mask, mask_image], dim=1).unsqueeze(2)
+                    policy_a = torch.cat([cls_mask, policy_a], dim=1).unsqueeze(2)
+                    policy_i = torch.cat([cls_mask, policy_i], dim=1).unsqueeze(2)
 
                     keep_audio = pad_sequence([keep_policy[b, keep_audio[b]] for b in range(B)], padding_value=0).T
                     keep_image = pad_sequence([keep_policy[b, keep_image[b]] for b in range(B)], padding_value=token_len_audio).T
@@ -106,16 +106,14 @@ class AVnet_Dynamic(nn.Module):
                     cls_policy = torch.zeros(B, 1, dtype=keep_policy.dtype, device=keep_policy.device)
                     now_policy = torch.cat([cls_policy, keep_audio + 1], dim=1)
                     audio = batch_index_select(audio, now_policy)
-                    audio = blk_a(audio, policy=mask_audio)
+                    audio = blk_a(audio, policy=policy_a)
 
                     cls_policy = torch.zeros(B, 1, dtype=keep_policy.dtype, device=keep_policy.device)
                     now_policy = torch.cat([cls_policy, keep_image + 1], dim=1)
-                    # print(now_policy[:, :10])
-                    # print(image.shape, now_policy.shape)
                     image = batch_index_select(image, now_policy)
-                    image = blk_i(image, policy=mask_image)
+                    image = blk_i(image, policy=policy_i)
 
-                    prev_decision = torch.cat([mask_audio[:, 1:], mask_image[:, 1:]], dim=1)
+                    prev_decision = torch.cat([policy_a[:, 1:], policy_i[:, 1:]], dim=1)
                 p_count += 1
             else:
                 if self.training:
@@ -124,8 +122,8 @@ class AVnet_Dynamic(nn.Module):
                     audio = blk_a(audio, policy=policy_a)
                     image = blk_i(image, policy=policy_i)
                 else:
-                    audio = blk_a(audio, policy=mask_audio)
-                    image = blk_i(image, policy=mask_image)
+                    audio = blk_a(audio, policy=policy_a)
+                    image = blk_i(image, policy=policy_i)
             t_stamp.append(time.time() - t_start)
         x, features = self.output(audio, image)
         if self.training:
