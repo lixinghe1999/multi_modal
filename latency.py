@@ -58,21 +58,23 @@ if __name__ == "__main__":
     device = torch.device(args.device)
     # if args.device == 'cuda' and args.task == 'dynamic':
     #     assert (args.batch == 1), "Right now for GPU inference -> batch should equal to 1"
-    exits = [int(i) for i in args.exits.split()]
+    exits = torch.tensor([int(i) for i in args.exits.split()])
     pruning_loc = [int(i) for i in args.locations.split()]
     base_rate = args.rate
     token_ratio = [base_rate, base_rate ** 2, base_rate ** 3]
 
-    audio = torch.zeros(args.batch, 384, 128).to(device, non_blocking=True)
-    image = torch.zeros(args.batch, 3, 224, 224).to(device, non_blocking=True)
+    audio = torch.randn(args.batch, 384, 128).to(device, non_blocking=True)
+    image = torch.randn(args.batch, 3, 224, 224).to(device, non_blocking=True)
 
     if task == 'gate':
 
         model = AVnet_Gate().to(device)
-        throughput([audio, image], model)
+        throughput([audio, image, exits], model)
+
     elif task == 'dynamic':
 
         model = AVnet_Dynamic(pruning_loc=pruning_loc, token_ratio=token_ratio, pretrained=False).to(device)
+        # model.load_state_dict(torch.load('dynamic_distill_9_0.6833300531391459.pth'), strict=False)
         throughput([audio, image], model)
         # calc_flops(model, (audio, image))
 

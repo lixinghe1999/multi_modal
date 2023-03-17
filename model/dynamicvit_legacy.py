@@ -1,4 +1,4 @@
-from model.vit_model import AudioTransformerDiffPruning, VisionTransformerDiffPruning, PredictorLG,\
+from model.vit_model import AudioTransformerDiffPruning, VisionTransformerDiffPruning, PredictorLG, \
     batch_index_select, VisionTransformerTeacher
 from torch.cuda.amp import autocast
 import torch
@@ -7,9 +7,10 @@ import torch.nn.functional as F
 import time
 from torch.nn.utils.rnn import pad_sequence
 
+
 class AVnet_Dynamic(nn.Module):
     def __init__(self, scale='base', distill=False, \
-                 pruning_loc=[3, 6, 9], token_ratio=[0.7, 0.7**2, 0.7**3], pretrained=True):
+                 pruning_loc=[3, 6, 9], token_ratio=[0.7, 0.7 ** 2, 0.7 ** 3], pretrained=True):
         super(AVnet_Dynamic, self).__init__()
         if scale == 'base':
             config = dict(patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True,
@@ -17,7 +18,7 @@ class AVnet_Dynamic(nn.Module):
             embed_dim = 768
         else:
             config = dict(patch_size=16, embed_dim=384, depth=12, num_heads=6, mlp_ratio=4, qkv_bias=True,
-                                pruning_loc=pruning_loc, token_ratio=token_ratio)
+                          pruning_loc=pruning_loc, token_ratio=token_ratio)
             embed_dim = 384
         self.audio = AudioTransformerDiffPruning(config, imagenet_pretrain=pretrained)
         self.image = VisionTransformerDiffPruning(**config)
@@ -35,6 +36,7 @@ class AVnet_Dynamic(nn.Module):
 
         self.pruning_loc = pruning_loc
         self.token_ratio = token_ratio
+
     def output(self, audio, image):
         audio = self.audio.norm(audio)
         image = self.image.norm(image)
@@ -43,6 +45,7 @@ class AVnet_Dynamic(nn.Module):
         x = torch.flatten(x, start_dim=1)
         x = self.head(x)
         return x, features
+
     @autocast()
     def forward(self, audio, image):
         B, audio = self.audio.preprocess(audio.unsqueeze(1))
@@ -53,8 +56,6 @@ class AVnet_Dynamic(nn.Module):
         early_output = []
         prev_decision = torch.ones(B, self.num_patches, 1, dtype=audio.dtype, device=audio.device)
         policy = torch.ones(B, self.num_patches + 2, 1, dtype=audio.dtype, device=audio.device)
-        mask_audio = torch.ones(B, audio.shape[1], 1, dtype=audio.dtype, device=audio.device)
-        mask_image = torch.ones(B, image.shape[1], 1, dtype=audio.dtype, device=audio.device)
         t_stamp = []
         t_start = time.time()
         for i, (blk_a, blk_i) in enumerate(zip(self.audio.blocks, self.image.blocks)):
@@ -82,49 +83,33 @@ class AVnet_Dynamic(nn.Module):
                     score = pred_score[:, :, 0]
                     num_keep_node = int(self.num_patches * self.token_ratio[p_count])
                     keep_policy = torch.argsort(score, dim=1, descending=True)[:, :num_keep_node]
-
+                    prev_decision = batch_index_select(prev_decision, keep_policy)
                     keep_audio = keep_policy < token_len_audio
-                    audio_max = torch.sum(keep_audio, dim=1)
-                    mask_audio = torch.ones((B, torch.max(audio_max), 1), dtype=keep_policy.dtype, device=keep_policy.device)
-                    print(audio_max)
-                    for b in range(B):
-                        mask_audio[b, audio_max[b]:] = 0
-
                     keep_image = keep_policy >= token_len_audio
-                    image_max = torch.sum(keep_image, dim=1)
-                    mask_image = torch.ones((B, torch.max(image_max), 1), dtype=keep_policy.dtype, device=keep_policy.device)
-                    for b in range(B):
-                        mask_image[b, image_max[b]:] = 0
 
-                    keep_audio = pad_sequence([keep_policy[b, keep_audio[b]] for b in range(B)], padding_value=0).T
-                    keep_image = pad_sequence([keep_policy[b, keep_image[b]] for b in range(B)], padding_value=0).T
-                    keep_image = keep_image - token_len_audio
+                    keep_audio = keep_policy[keep_audio].unsqueeze(0)
+                    keep_image = keep_policy[keep_image].unsqueeze(0) - token_len_audio
 
                     cls_policy = torch.zeros(B, 1, dtype=keep_policy.dtype, device=keep_policy.device)
                     now_policy = torch.cat([cls_policy, keep_audio + 1], dim=1)
                     audio = batch_index_select(audio, now_policy)
-                    cls_mask = torch.ones(B, 1, 1, dtype=keep_policy.dtype, device=keep_policy.device)
-                    mask_audio = torch.cat([cls_mask, mask_audio], dim=1)
-                    audio = blk_a(audio, policy=mask_audio)
+                    audio = blk_a(audio)
 
                     cls_policy = torch.zeros(B, 1, dtype=keep_policy.dtype, device=keep_policy.device)
                     now_policy = torch.cat([cls_policy, keep_image + 1], dim=1)
                     image = batch_index_select(image, now_policy)
-                    cls_mask = torch.ones(B, 1, 1, dtype=keep_policy.dtype, device=keep_policy.device)
-                    mask_image = torch.cat([cls_mask, mask_image], dim=1)
-                    image = blk_i(image, policy=mask_image)
+                    image = blk_i(image)
 
-                    prev_decision = torch.cat([mask_audio[:, 1:], mask_image[:, 1:]], dim=1)
                 p_count += 1
             else:
                 if self.training:
-                    policy_a = policy[:, :self.audio.num_patches+1]
+                    policy_a = policy[:, :self.audio.num_patches + 1]
                     policy_i = policy[:, self.audio.num_patches + 1:]
                     audio = blk_a(audio, policy=policy_a)
                     image = blk_i(image, policy=policy_i)
                 else:
-                    audio = blk_a(audio, policy=mask_audio)
-                    image = blk_i(image, policy=mask_image)
+                    audio = blk_a(audio)
+                    image = blk_i(image)
             t_stamp.append(time.time() - t_start)
         x, features = self.output(audio, image)
         if self.training:
@@ -138,6 +123,8 @@ class AVnet_Dynamic(nn.Module):
             else:
                 ratio = audio.shape[1] / (audio.shape[1] + image.shape[1])
                 return x, t_stamp, ratio
+
+
 if __name__ == "__main__":
     device = 'cpu'
     base_rate = 0.5
@@ -189,4 +176,4 @@ if __name__ == "__main__":
             if i == 1:
                 t_start = time.time()
             model_teacher(audio, image)
-        print((time.time() - t_start) / (num_iterations-1))
+        print((time.time() - t_start) / (num_iterations - 1))
