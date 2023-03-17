@@ -110,6 +110,8 @@ class AVnet_Dynamic(nn.Module):
 
                     cls_policy = torch.zeros(B, 1, dtype=keep_policy.dtype, device=keep_policy.device)
                     now_policy = torch.cat([cls_policy, keep_image + 1], dim=1)
+                    print(now_policy[:, :10])
+                    print(image.shape, now_policy.shape)
                     image = batch_index_select(image, now_policy)
                     image = blk_i(image, policy=mask_image)
 
