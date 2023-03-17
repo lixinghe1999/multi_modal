@@ -191,7 +191,7 @@ class Attention(nn.Module):
         attn_policy = attn_policy1 * attn_policy2
 
         eye = torch.eye(N, dtype=attn_policy.dtype, device=attn_policy.device).view(1, 1, N, N)
-        attn_policy = attn_policy + (1.0 - attn_policy) * eye
+        attn_policy = attn_policy + (1.0 - attn_policy1) * eye
         max_att = torch.max(attn, dim=-1, keepdim=True)[0]
         attn = attn - max_att
         # attn = attn.exp_() * attn_policy
