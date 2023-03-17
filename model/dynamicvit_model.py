@@ -85,12 +85,12 @@ class AVnet_Dynamic(nn.Module):
 
                     keep_audio = keep_policy < token_len_audio
                     audio_max = torch.sum(keep_audio, dim=1)
-                    mask = torch.arange(audio_max.max(), device=keep_policy.device).unsqueeze(0).expand(B, -1)
+                    mask = torch.arange(audio_max.max(), device=keep_policy.device).unsqueeze(0).expand(B, 1)
                     mask_audio = mask < audio_max.unsqueeze(1).expand(-1, audio_max.max())
 
                     keep_image = keep_policy >= token_len_audio
                     image_max = torch.sum(keep_image, dim=1)
-                    mask = torch.arange(image_max.max(), device=keep_policy.device).unsqueeze(0).expand(B, -1)
+                    mask = torch.arange(image_max.max(), device=keep_policy.device).unsqueeze(0).expand(B, 1)
                     mask_image = mask < image_max.unsqueeze(1).expand(-1, image_max.max())
 
                     cls_mask = torch.ones(B, 1, dtype=keep_policy.dtype, device=keep_policy.device)
