@@ -1,5 +1,5 @@
 import torch
-from model.dynamicvit_model import AVnet_Dynamic
+from model.dynamicvit_legacy import AVnet_Dynamic
 from model.gate_model import AVnet_Gate
 from model.vit_model import VisionTransformerDiffPruning
 import time
@@ -49,15 +49,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-t', '--task', default='gate')
     parser.add_argument('-d', '--device', default='cuda')
-    parser.add_argument('-b', '--batch', default=2, type=int)
+    parser.add_argument('-b', '--batch', default=32, type=int)
     parser.add_argument('-e', '--exits', nargs='+', default='11 11')
     parser.add_argument('-l', '--locations', nargs='+', default='3 6 9')
-    parser.add_argument('-r', '--rate', default=0.7, type=float)
+    parser.add_argument('-r', '--rate', default=0.3, type=float)
     args = parser.parse_args()
     task = args.task
     device = torch.device(args.device)
-    # if args.device == 'cuda' and args.task == 'dynamic':
-    #     assert (args.batch == 1), "Right now for GPU inference -> batch should equal to 1"
     exits = torch.tensor([int(i) for i in args.exits.split()])
     pruning_loc = [int(i) for i in args.locations.split()]
     base_rate = args.rate
