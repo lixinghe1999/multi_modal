@@ -85,18 +85,17 @@ class AVnet_Dynamic(nn.Module):
 
                     keep_audio = keep_policy < token_len_audio
                     audio_max = torch.sum(keep_audio, dim=1)
-                    mask_audio = torch.ones((B, torch.max(audio_max), 1), dtype=keep_policy.dtype, device=keep_policy.device)
-                    for b in range(B):
-                        mask_audio[b, audio_max[b]:] = 0
+                    mask = torch.arange(audio_max.max(), device=keep_policy.device).unsqueeze(0).expand(B, -1)
+                    mask_audio = mask < audio_max.unsqueeze(1).expand(-1, audio_max.max())
 
                     keep_image = keep_policy >= token_len_audio
                     image_max = torch.sum(keep_image, dim=1)
-                    mask_image = torch.ones((B, torch.max(image_max), 1), dtype=keep_policy.dtype, device=keep_policy.device)
-                    for b in range(B):
-                        mask_image[b, image_max[b]:] = 0
-                    cls_mask = torch.ones(B, 1, 1, dtype=keep_policy.dtype, device=keep_policy.device)
-                    mask_audio = torch.cat([cls_mask, mask_audio], dim=1)
-                    mask_image = torch.cat([cls_mask, mask_image], dim=1)
+                    mask = torch.arange(image_max.max(), device=keep_policy.device).unsqueeze(0).expand(B, -1)
+                    mask_image = mask < image_max.unsqueeze(1).expand(-1, image_max.max())
+
+                    cls_mask = torch.ones(B, 1, dtype=keep_policy.dtype, device=keep_policy.device)
+                    mask_audio = torch.cat([cls_mask, mask_audio], dim=1).unsqueeze(2)
+                    mask_image = torch.cat([cls_mask, mask_image], dim=1).unsqueeze(2)
 
                     keep_audio = pad_sequence([keep_policy[b, keep_audio[b]] for b in range(B)], padding_value=0).T
                     keep_image = pad_sequence([keep_policy[b, keep_image[b]] for b in range(B)], padding_value=0).T

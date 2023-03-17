@@ -2,7 +2,7 @@
 from utils.datasets.vggsound import VGGSound
 import numpy as np
 import torch
-from model.dynamicvit_legacy import AVnet_Dynamic
+from model.dynamicvit_model import AVnet_Dynamic
 from utils.losses import DistillDiffPruningLoss_dynamic
 import warnings
 from tqdm import tqdm

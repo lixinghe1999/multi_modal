@@ -74,7 +74,6 @@ if __name__ == "__main__":
     elif task == 'dynamic':
 
         model = AVnet_Dynamic(pruning_loc=pruning_loc, token_ratio=token_ratio, pretrained=False).to(device)
-        # model.load_state_dict(torch.load('dynamic_distill_9_0.6833300531391459.pth'), strict=False)
         throughput([audio, image], model)
         # calc_flops(model, (audio, image))
 
