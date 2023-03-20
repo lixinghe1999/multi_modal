@@ -57,8 +57,7 @@ class AVnet_Dynamic(nn.Module):
         policy = torch.ones(B, self.num_patches + 2, 1, dtype=audio.dtype, device=audio.device)
         policy_a = torch.ones(B, audio.shape[1], 1, dtype=audio.dtype, device=audio.device)
         policy_i = torch.ones(B, image.shape[1], 1, dtype=audio.dtype, device=audio.device)
-        t_stamp = []
-        t_start = time.time()
+        ratio = 0
         for i, (blk_a, blk_i) in enumerate(zip(self.audio.blocks, self.image.blocks)):
             if i in self.pruning_loc:
                 spatial_x = torch.cat([audio[:, 1:], image[:, 1:]], dim=1)
@@ -114,6 +113,9 @@ class AVnet_Dynamic(nn.Module):
                     image = blk_i(image, policy=policy_i)
 
                     prev_decision = torch.cat([policy_a[:, 1:], policy_i[:, 1:]], dim=1)
+                    # register
+                    ratio.append([torch.mean(audio_max / audio_max.max()), torch.mean(image_max / image_max.max()),
+                                  audio_max.max() / (audio_max.max() + image_max.max())])
                 p_count += 1
             else:
                 if self.training:
@@ -124,7 +126,6 @@ class AVnet_Dynamic(nn.Module):
                 else:
                     audio = blk_a(audio, policy=policy_a)
                     image = blk_i(image, policy=policy_i)
-            t_stamp.append(time.time() - t_start)
         x, features = self.output(audio, image)
         if self.training:
             if self.distill:
@@ -135,8 +136,7 @@ class AVnet_Dynamic(nn.Module):
             if self.distill:
                 return x, features
             else:
-                ratio = audio.shape[1] / (audio.shape[1] + image.shape[1])
-                return x, t_stamp, ratio
+                return x, ratio
 if __name__ == "__main__":
     device = 'cpu'
     base_rate = 0.5

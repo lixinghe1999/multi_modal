@@ -1,5 +1,5 @@
 import torch
-from model.dynamicvit_legacy import AVnet_Dynamic
+from model.dynamicvit_model import AVnet_Dynamic
 from model.gate_model import AVnet_Gate
 from model.vit_model import VisionTransformerDiffPruning
 import time

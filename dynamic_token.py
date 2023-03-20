@@ -23,7 +23,7 @@ def train_step(model, input_data, optimizer, criteria, label):
 def test_step(model, input_data, label):
     outputs = model(*input_data)
     if args.task == 'profile':
-        output, t, r = outputs
+        output, r = outputs
         acc = (torch.argmax(output, dim=-1).cpu() == label).sum() / len(label)
         return acc.item(), r
     else:
@@ -43,6 +43,7 @@ def profile(model, test_dataset):
             for batch in tqdm(test_loader):
                 audio, image, text, _ = batch
                 a, r = test_step(model, input_data=[audio.to(device), image.to(device)], label=text)
+                print(r)
                 acc.append(a)
                 modality_ratio.append([r, 1-r, abs(2 * r - 1)])
             mean_acc = np.mean(acc)
