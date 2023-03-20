@@ -52,9 +52,9 @@ class AVnet_Runtime(nn.Module):
         sorted_batch = torch.argsort(audio_token)
         output = torch.empty(sorted_batch.shape[0], 309, dtype=audio.dtype, device=audio.device)
         for b in range(0, B, self.real_batch):
-            print(b, sorted_batch[b * self.real_batch: (b + 1) * self.real_batch])
-            batch_audio = audio[sorted_batch[b * self.real_batch: (b + 1) * self.real_batch]]
-            batch_image = image[sorted_batch[b * self.real_batch: (b + 1) * self.real_batch]]
+            print(b, sorted_batch[b : b + self.real_batch])
+            batch_audio = audio[sorted_batch[b : b + self.real_batch]]
+            batch_image = image[sorted_batch[b : b + self.real_batch]]
 
             prev_decision = torch.ones(self.real_batch, self.num_patches, 1,
                                        dtype=audio.dtype, device=audio.device)
