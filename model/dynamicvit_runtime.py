@@ -110,6 +110,7 @@ class AVnet_Runtime(nn.Module):
 
                 audio = blk_a(audio, policy=policy_a)
                 image = blk_i(image, policy=policy_i)
+                print(audio.shape, image.shape)
         x, features = self.output(audio, image)
         return x, features
 
