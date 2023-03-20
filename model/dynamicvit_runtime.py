@@ -77,6 +77,7 @@ class AVnet_Runtime(nn.Module):
             keep_audio = keep_policy < token_len_audio
             audio_token = torch.sum(keep_audio, dim=1)
             mask = torch.arange(audio_token.max(), device=keep_policy.device).unsqueeze(0).expand(B, -1)
+            print(mask.shape, audio_token.shape)
             policy_a = mask < audio_token.unsqueeze(1).expand(-1, audio_token.max())
 
             keep_image = keep_policy >= token_len_audio
