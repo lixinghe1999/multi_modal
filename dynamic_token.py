@@ -32,7 +32,7 @@ def test_step(model, input_data, label):
         return acc.item()
 def profile(model, test_dataset):
     test_loader = torch.utils.data.DataLoader(dataset=test_dataset, num_workers=workers, batch_size=batch_size,
-                                              shuffle=False)
+                                              shuffle=False, drop_last=True)
     model.eval()
     token_ratio = [0.8, 0.7, 0.6, 0.5, 0.4, 0.3]
     acc = []

@@ -126,8 +126,8 @@ class AVnet_Runtime(nn.Module):
             blk_i = self.image.blocks[i]
             audio = blk_a(audio, policy=policy_a)
             image = blk_i(image, policy=policy_i)
-        x = self.cluster_inference(audio, image, prev_decision, B)
-        # x, feature = self.shared_inference(audio, image, prev_decision, B)
+        # x = self.cluster_inference(audio, image, prev_decision, B)
+        x, feature = self.shared_inference(audio, image, prev_decision, B)
         return x, ratio
 if __name__ == "__main__":
     device = 'cpu'
