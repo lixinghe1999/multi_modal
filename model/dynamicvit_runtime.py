@@ -66,6 +66,7 @@ class AVnet_Runtime(nn.Module):
         for i in range(len(self.pruning_loc)):
             spatial_x = torch.cat([audio[:, 1:], image[:, 1:]], dim=1)
             token_len_audio = audio.shape[1] - 1
+            print(spatial_x.shape, prev_decision.shape)
             pred_score = self.score_predictor[i](spatial_x, prev_decision).reshape(B, -1, 2)
 
             score = pred_score[:, :, 0]
