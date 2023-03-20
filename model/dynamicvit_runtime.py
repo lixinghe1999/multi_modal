@@ -111,7 +111,7 @@ class AVnet_Runtime(nn.Module):
                 image = blk_i(image, policy=policy_i)
         x, features = self.output(audio, image)
         return x, features
-    @autocast()
+    # @autocast()
     def forward(self, audio, image):
         B, audio = self.audio.preprocess(audio.unsqueeze(1))
         B, image = self.image.preprocess(image)
