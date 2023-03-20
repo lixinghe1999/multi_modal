@@ -114,9 +114,10 @@ class AVnet_Dynamic(nn.Module):
 
                     prev_decision = torch.cat([policy_a[:, 1:], policy_i[:, 1:]], dim=1)
                     # register
+                    r = (audio_max.max() / (audio_max.max() + image_max.max())).item()
                     ratio.append([torch.mean(audio_max / audio_max.max()).item(),
                                   torch.mean(image_max / image_max.max()).item(),
-                                  (audio_max.max() / (audio_max.max() + image_max.max())).item()])
+                                  r, 1-r, abs(2 * r - 1)])
                 p_count += 1
             else:
                 if self.training:

@@ -43,13 +43,14 @@ def profile(model, test_dataset):
             for batch in tqdm(test_loader):
                 audio, image, text, _ = batch
                 a, r = test_step(model, input_data=[audio.to(device), image.to(device)], label=text)
-                print(r)
                 acc.append(a)
-                modality_ratio.append([r, 1-r, abs(2 * r - 1)])
+                modality_ratio.append(r)
             mean_acc = np.mean(acc)
             mean_ratio = np.mean(modality_ratio, axis=0)
             print('preserved ratio:', ratio)
-            print('modality-wise ratio:', mean_ratio)
+            print('modality-1 computation balance:', mean_ratio[:, 0])
+            print('modality-1 computation balance:', mean_ratio[:, 1])
+            print('modality-wise ratio:', mean_ratio[:, 2:])
             print('accuracy:', mean_acc)
 def train(model, train_dataset, test_dataset):
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset, num_workers=workers, batch_size=batch_size, shuffle=True,
