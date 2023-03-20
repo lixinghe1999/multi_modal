@@ -37,14 +37,25 @@ class AVnet_Runtime(nn.Module):
         x = torch.flatten(x, start_dim=1)
         x = self.head(x)
         return x, features
-    def cluster_inference(self, num_token, data, model):
-        sorted_batch = torch.argsort(num_token)
+    def cluster_inference(self, audio, image, prev_decision, B):
+        spatial_x = torch.cat([audio[:, 1:], image[:, 1:]], dim=1)
+        token_len_audio = audio.shape[1] - 1
+        pred_score = self.score_predictor[i](spatial_x, prev_decision).reshape(B, -1, 2)
+        score = pred_score[:, :, 0]
+        num_keep_node = int(self.num_patches * self.token_ratio[i])
+        keep_policy = torch.argsort(score, dim=1, descending=True)[:, :num_keep_node]
+
+        keep_audio = keep_policy < token_len_audio
+        audio_token = torch.sum(keep_audio, dim=1)
+
+        sorted_batch = torch.argsort(audio_token)
         output = torch.empty(sorted_batch.shape[0])
         for b in range(0, sorted_batch.shape[0], self.real_batch):
-            batch_data = data[sorted_batch[b * self.real_batch: (b + 1) * self.real_batch]]
-            batch_output = self.shared_inference(batch_data)
-            output[b * self.real_batch: (b + 1) * self.real_batch] = batch_output
-        return data
+            batch_audio = audio[sorted_batch[b * self.real_batch: (b + 1) * self.real_batch]]
+            batch_image = image[sorted_batch[b * self.real_batch: (b + 1) * self.real_batch]]
+            batch_output, feature = self.shared_inference(batch_audio, batch_image, prev_decision, B)
+            output[sorted_batch[b * self.real_batch: (b + 1) * self.real_batch]] = batch_output
+        return output
     def shared_inference(self, audio, image, prev_decision, B):
         for i in range(len(self.pruning_loc)):
             spatial_x = torch.cat([audio[:, 1:], image[:, 1:]], dim=1)
@@ -110,6 +121,7 @@ class AVnet_Runtime(nn.Module):
             blk_i = self.image.blocks[i]
             audio = blk_a(audio, policy=policy_a)
             image = blk_i(image, policy=policy_i)
+        x = self.cluster_inference(audio, image, prev_decision, B)
         x, feature = self.shared_inference(audio, image, prev_decision, B)
         return x, ratio
 if __name__ == "__main__":
