@@ -5,8 +5,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import time
-from torch.nn.utils.rnn import pad_sequence
-
 
 class AVnet_Dynamic(nn.Module):
     def __init__(self, scale='base', distill=False, \
@@ -121,8 +119,7 @@ class AVnet_Dynamic(nn.Module):
             if self.distill:
                 return x, features
             else:
-                ratio = audio.shape[1] / (audio.shape[1] + image.shape[1])
-                return x, t_stamp, ratio
+                return x
 
 
 if __name__ == "__main__":

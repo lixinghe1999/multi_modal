@@ -1,8 +1,8 @@
-
 from utils.datasets.vggsound import VGGSound
 import numpy as np
 import torch
-from model.dynamicvit_model import AVnet_Dynamic
+from model.dynamicvit_runtime import AVnet_Runtime
+from model.dynamicvit_legacy import AVnet_Dynamic
 from utils.losses import DistillDiffPruningLoss_dynamic
 import warnings
 from tqdm import tqdm
@@ -49,7 +49,7 @@ def profile(model, test_dataset):
             mean_ratio = np.mean(modality_ratio, axis=0)
             print('preserved ratio:', ratio)
             print('modality-1 computation balance:', mean_ratio[:, 0])
-            print('modality-1 computation balance:', mean_ratio[:, 1])
+            print('modality-2 computation balance:', mean_ratio[:, 1])
             print('modality-wise ratio:', mean_ratio[:, 2:])
             print('accuracy:', mean_acc)
 def train(model, train_dataset, test_dataset):
@@ -120,7 +120,7 @@ if __name__ == "__main__":
                 keep_ratio=token_ratio, mse_token=True, ratio_weight=2, distill_weight=0.5)
         train(model, train_dataset, test_dataset)
     elif args.task == 'profile':
-        model = AVnet_Dynamic(pruning_loc=pruning_loc, token_ratio=token_ratio, pretrained=False).to(device)
+        model = AVnet_Runtime(pruning_loc=pruning_loc, token_ratio=token_ratio, pretrained=False).to(device)
         model.load_state_dict(torch.load('dynamic_distill_9_0.6833300531391459.pth'), strict=False)
         profile(model, test_dataset)
 
