@@ -38,7 +38,6 @@ class AVnet_Runtime(nn.Module):
         x = self.head(x)
         return x, features
 
-    @autocast()
     def cluster_inference(self, audio, image, prev_decision, B):
         spatial_x = torch.cat([audio[:, 1:], image[:, 1:]], dim=1)
         token_len_audio = audio.shape[1] - 1
@@ -63,7 +62,6 @@ class AVnet_Runtime(nn.Module):
             output[sorted_batch[b * self.real_batch: (b + 1) * self.real_batch]] = batch_output
         return output
 
-    @autocast()
     def shared_inference(self, audio, image, prev_decision, B):
         for i in range(len(self.pruning_loc)):
             spatial_x = torch.cat([audio[:, 1:], image[:, 1:]], dim=1)
@@ -116,7 +114,6 @@ class AVnet_Runtime(nn.Module):
         x, features = self.output(audio, image)
         return x, features
 
-    @autocast()
     def forward(self, audio, image):
         B, audio = self.audio.preprocess(audio.unsqueeze(1))
         B, image = self.image.preprocess(image)
