@@ -46,7 +46,7 @@ class AVnet_Runtime(nn.Module):
             output[b * self.real_batch: (b + 1) * self.real_batch] = batch_output
         return data
     def shared_inference(self, audio, image, prev_decision, B):
-        for i in self.pruning_loc:
+        for i in range(len(self.pruning_loc)):
             spatial_x = torch.cat([audio[:, 1:], image[:, 1:]], dim=1)
             token_len_audio = audio.shape[1] - 1
             pred_score = self.score_predictor[i](spatial_x, prev_decision).reshape(B, -1, 2)
@@ -88,7 +88,7 @@ class AVnet_Runtime(nn.Module):
             # ratio.append([torch.mean(audio_token / audio_token.max()).item(),
             #               torch.mean(image_token / image_token.max()).item(),
             #               r, 1 - r, abs(2 * r - 1)])
-            for j in range(i, i + 3):
+            for j in range(self.pruning_loc[i], self.pruning_loc[i] + 3):
                 blk_a = self.audio.blocks[i]
                 blk_i = self.image.blocks[i]
 
