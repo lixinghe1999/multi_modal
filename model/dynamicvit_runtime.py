@@ -52,16 +52,16 @@ class AVnet_Runtime(nn.Module):
         sorted_batch = torch.argsort(audio_token)
         output = torch.empty(sorted_batch.shape[0], 309, dtype=audio.dtype, device=audio.device)
         for b in range(0, B, self.real_batch):
-            print(b, sorted_batch[b : b + self.real_batch])
-            batch_audio = audio[sorted_batch[b : b + self.real_batch]]
-            batch_image = image[sorted_batch[b : b + self.real_batch]]
+            print(b, sorted_batch[b: b + self.real_batch])
+            batch_audio = audio[sorted_batch[b: b + self.real_batch]]
+            batch_image = image[sorted_batch[b: b + self.real_batch]]
 
             prev_decision = torch.ones(self.real_batch, self.num_patches, 1,
                                        dtype=audio.dtype, device=audio.device)
             print(batch_image.shape, batch_audio.shape)
             batch_output, feature = self.shared_inference(batch_audio, batch_image, prev_decision, self.real_batch)
             print(batch_output.shape, output.shape)
-            output[sorted_batch[b * self.real_batch: (b + 1) * self.real_batch]] = batch_output
+            output[sorted_batch[b: b + self.real_batch]] = batch_output
         return output
 
     def shared_inference(self, audio, image, prev_decision, B):
