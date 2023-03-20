@@ -3,7 +3,7 @@ Inference-only model
 '''
 from model.vit_model import AudioTransformerDiffPruning, VisionTransformerDiffPruning, PredictorLG,\
     batch_index_select
-from torch.cuda.amp import autocast
+import numpy as np
 import torch
 import torch.nn as nn
 import time
@@ -51,17 +51,20 @@ class AVnet_Runtime(nn.Module):
 
         sorted_batch = torch.argsort(audio_token)
         output = torch.empty(sorted_batch.shape[0], 309, dtype=audio.dtype, device=audio.device)
+        ratio = []
         for b in range(0, B, self.real_batch):
             batch_audio = audio[sorted_batch[b: b + self.real_batch]]
             batch_image = image[sorted_batch[b: b + self.real_batch]]
 
             prev_decision = torch.ones(self.real_batch, self.num_patches, 1,
                                        dtype=audio.dtype, device=audio.device)
-            batch_output, feature = self.shared_inference(batch_audio, batch_image, prev_decision, self.real_batch)
+            batch_output, r = self.shared_inference(batch_audio, batch_image, prev_decision, self.real_batch)
             output[sorted_batch[b: b + self.real_batch]] = batch_output
-        return output
+            ratio.append(r)
+        return output, np.mean(ratio, 0)
 
     def shared_inference(self, audio, image, prev_decision, B):
+        ratio = []
         for i in range(len(self.pruning_loc)):
             spatial_x = torch.cat([audio[:, 1:], image[:, 1:]], dim=1)
             token_len_audio = audio.shape[1] - 1
@@ -100,19 +103,18 @@ class AVnet_Runtime(nn.Module):
 
             prev_decision = torch.cat([policy_a[:, 1:], policy_i[:, 1:]], dim=1)
             # register
-            # r = (audio_token.max() / (audio_token.max() + image_token.max())).item()
-            # ratio.append([torch.mean(audio_token / audio_token.max()).item(),
-            #               torch.mean(image_token / image_token.max()).item(),
-            #               r, 1 - r, abs(2 * r - 1)])
+            r = (audio_token.max() / (audio_token.max() + image_token.max())).item()
+            ratio.append([torch.mean(audio_token / audio_token.max()).item(),
+                          torch.mean(image_token / image_token.max()).item(),
+                          r, 1 - r, abs(2 * r - 1)])
             for j in range(self.pruning_loc[i], self.pruning_loc[i] + 3):
                 blk_a = self.audio.blocks[j]
                 blk_i = self.image.blocks[j]
 
                 audio = blk_a(audio, policy=policy_a)
                 image = blk_i(image, policy=policy_i)
-                # print(audio.shape, image.shape)
         x, features = self.output(audio, image)
-        return x, features
+        return x, ratio
 
     def forward(self, audio, image):
         B, audio = self.audio.preprocess(audio.unsqueeze(1))
@@ -121,14 +123,13 @@ class AVnet_Runtime(nn.Module):
         prev_decision = torch.ones(B, self.num_patches, 1, dtype=audio.dtype, device=audio.device)
         policy_a = torch.ones(B, audio.shape[1], 1, dtype=audio.dtype, device=audio.device)
         policy_i = torch.ones(B, image.shape[1], 1, dtype=audio.dtype, device=audio.device)
-        ratio = []
         for i in range(0, self.pruning_loc[0]):
             blk_a = self.audio.blocks[i]
             blk_i = self.image.blocks[i]
             audio = blk_a(audio, policy=policy_a)
             image = blk_i(image, policy=policy_i)
-        # x = self.cluster_inference(audio, image, prev_decision, B)
-        x, feature = self.shared_inference(audio, image, prev_decision, B)
+        x, ratio = self.cluster_inference(audio, image, prev_decision, B)
+        # x, ratio = self.shared_inference(audio, image, prev_decision, B)
         return x, ratio
 if __name__ == "__main__":
     device = 'cpu'
