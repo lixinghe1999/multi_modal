@@ -57,6 +57,7 @@ class AVnet_Runtime(nn.Module):
 
             prev_decision = torch.ones(self.real_batch, self.num_patches, 1,
                                        dtype=audio.dtype, device=audio.device)
+            print(batch_image.shape, batch_audio.shape)
             batch_output, feature = self.shared_inference(batch_audio, batch_image, prev_decision, self.real_batch)
             print(batch_output.shape, output.shape)
             output[sorted_batch[b * self.real_batch: (b + 1) * self.real_batch]] = batch_output
