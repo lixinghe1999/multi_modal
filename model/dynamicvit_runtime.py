@@ -56,8 +56,8 @@ class AVnet_Runtime(nn.Module):
 
             prev_decision = torch.ones(self.real_batch, self.num_patches, 1,
                                        dtype=audio.dtype, device=audio.device)
-            batch_output, r = self.shared_inference(batch_audio, batch_image, pred_score,
-                                                    prev_decision, self.real_batch)
+            batch_output, r = self.shared_inference(batch_audio, batch_image,
+                         pred_score[sorted_batch[b: b + self.real_batch]], prev_decision, self.real_batch)
             output[sorted_batch[b: b + self.real_batch]] = batch_output
             ratio.append(r)
         return output, np.mean(ratio, 0)
@@ -77,7 +77,7 @@ class AVnet_Runtime(nn.Module):
             keep_audio = keep_policy < token_len_audio
             audio_token = torch.sum(keep_audio, dim=1)
             mask = torch.arange(audio_token.max(), device=keep_policy.device).unsqueeze(0).expand(B, -1)
-            print(mask.shape, audio_token.shape)
+
             policy_a = mask < audio_token.unsqueeze(1).expand(-1, audio_token.max())
 
             keep_image = keep_policy >= token_len_audio
