@@ -105,12 +105,12 @@ class AVnet_Runtime(nn.Module):
             #               torch.mean(image_token / image_token.max()).item(),
             #               r, 1 - r, abs(2 * r - 1)])
             for j in range(self.pruning_loc[i], self.pruning_loc[i] + 3):
-                blk_a = self.audio.blocks[i]
-                blk_i = self.image.blocks[i]
+                blk_a = self.audio.blocks[j]
+                blk_i = self.image.blocks[j]
 
                 audio = blk_a(audio, policy=policy_a)
                 image = blk_i(image, policy=policy_i)
-                print(audio.shape, image.shape)
+                # print(audio.shape, image.shape)
         x, features = self.output(audio, image)
         return x, features
 
