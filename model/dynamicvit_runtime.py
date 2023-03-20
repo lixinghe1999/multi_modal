@@ -37,6 +37,8 @@ class AVnet_Runtime(nn.Module):
         x = torch.flatten(x, start_dim=1)
         x = self.head(x)
         return x, features
+
+    @autocast()
     def cluster_inference(self, audio, image, prev_decision, B):
         spatial_x = torch.cat([audio[:, 1:], image[:, 1:]], dim=1)
         token_len_audio = audio.shape[1] - 1
@@ -49,7 +51,7 @@ class AVnet_Runtime(nn.Module):
         audio_token = torch.sum(keep_audio, dim=1)
 
         sorted_batch = torch.argsort(audio_token)
-        output = torch.empty(sorted_batch.shape[0], 309, dtype=audio.dtype)
+        output = torch.empty(sorted_batch.shape[0], 309, dtype=audio.dtype, device=audio.device)
         for b in range(0, sorted_batch.shape[0], self.real_batch):
             batch_audio = audio[sorted_batch[b * self.real_batch: (b + 1) * self.real_batch]]
             batch_image = image[sorted_batch[b * self.real_batch: (b + 1) * self.real_batch]]
@@ -60,6 +62,8 @@ class AVnet_Runtime(nn.Module):
             print(batch_output.shape, output.shape)
             output[sorted_batch[b * self.real_batch: (b + 1) * self.real_batch]] = batch_output
         return output
+
+    @autocast()
     def shared_inference(self, audio, image, prev_decision, B):
         for i in range(len(self.pruning_loc)):
             spatial_x = torch.cat([audio[:, 1:], image[:, 1:]], dim=1)
@@ -111,7 +115,8 @@ class AVnet_Runtime(nn.Module):
                 image = blk_i(image, policy=policy_i)
         x, features = self.output(audio, image)
         return x, features
-    # @autocast()
+
+    @autocast()
     def forward(self, audio, image):
         B, audio = self.audio.preprocess(audio.unsqueeze(1))
         B, image = self.image.preprocess(image)
