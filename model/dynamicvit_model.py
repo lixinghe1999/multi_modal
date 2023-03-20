@@ -57,7 +57,7 @@ class AVnet_Dynamic(nn.Module):
         policy = torch.ones(B, self.num_patches + 2, 1, dtype=audio.dtype, device=audio.device)
         policy_a = torch.ones(B, audio.shape[1], 1, dtype=audio.dtype, device=audio.device)
         policy_i = torch.ones(B, image.shape[1], 1, dtype=audio.dtype, device=audio.device)
-        ratio = 0
+        ratio = []
         for i, (blk_a, blk_i) in enumerate(zip(self.audio.blocks, self.image.blocks)):
             if i in self.pruning_loc:
                 spatial_x = torch.cat([audio[:, 1:], image[:, 1:]], dim=1)
