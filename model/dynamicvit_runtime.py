@@ -9,7 +9,7 @@ import torch.nn as nn
 import time
 from torch.nn.utils.rnn import pad_sequence
 class AVnet_Runtime(nn.Module):
-    def __init__(self, real_batch=2, \
+    def __init__(self, real_batch=4, \
                  pruning_loc=[3, 6, 9], token_ratio=[0.7, 0.7**2, 0.7**3], pretrained=True):
         super(AVnet_Runtime, self).__init__()
         config = dict(patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True,
@@ -52,15 +52,12 @@ class AVnet_Runtime(nn.Module):
         sorted_batch = torch.argsort(audio_token)
         output = torch.empty(sorted_batch.shape[0], 309, dtype=audio.dtype, device=audio.device)
         for b in range(0, B, self.real_batch):
-            print(b, sorted_batch[b: b + self.real_batch])
             batch_audio = audio[sorted_batch[b: b + self.real_batch]]
             batch_image = image[sorted_batch[b: b + self.real_batch]]
 
             prev_decision = torch.ones(self.real_batch, self.num_patches, 1,
                                        dtype=audio.dtype, device=audio.device)
-            print(batch_image.shape, batch_audio.shape)
             batch_output, feature = self.shared_inference(batch_audio, batch_image, prev_decision, self.real_batch)
-            print(batch_output.shape, output.shape)
             output[sorted_batch[b: b + self.real_batch]] = batch_output
         return output
 
@@ -68,7 +65,6 @@ class AVnet_Runtime(nn.Module):
         for i in range(len(self.pruning_loc)):
             spatial_x = torch.cat([audio[:, 1:], image[:, 1:]], dim=1)
             token_len_audio = audio.shape[1] - 1
-            print(spatial_x.shape, prev_decision.shape)
             pred_score = self.score_predictor[i](spatial_x, prev_decision).reshape(B, -1, 2)
 
             score = pred_score[:, :, 0]
