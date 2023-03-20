@@ -42,7 +42,7 @@ class AVnet_Runtime(nn.Module):
         token_len_audio = audio.shape[1] - 1
         pred_score = self.score_predictor[0](spatial_x, prev_decision).reshape(B, -1, 2)
         score = pred_score[:, :, 0]
-        num_keep_node = int(self.num_patches * self.token_ratio[i])
+        num_keep_node = int(self.num_patches * self.token_ratio[0])
         keep_policy = torch.argsort(score, dim=1, descending=True)[:, :num_keep_node]
 
         keep_audio = keep_policy < token_len_audio
