@@ -41,9 +41,9 @@ def profile(model, test_dataset):
     modality_ratio = []
     with torch.no_grad():
         for ratio in token_ratio:
-            text = torch.zeros(batch_size)
-            audio = torch.randn(args.batch, 384, 128).to(device, non_blocking=True)
-            image = torch.randn(args.batch, 3, 224, 224).to(device, non_blocking=True)
+            # text = torch.zeros(batch_size)
+            # audio = torch.randn(args.batch, 384, 128).to(device, non_blocking=True)
+            # image = torch.randn(args.batch, 3, 224, 224).to(device, non_blocking=True)
             model.token_ratio = [ratio, ratio**2, ratio**3]
             for _ in range(50):
                 test_step(model, input_data=[audio.to(device), image.to(device)], label=text)
@@ -51,18 +51,19 @@ def profile(model, test_dataset):
 
             torch.cuda.synchronize()
             tic1 = time.time()
-            for _ in tqdm(range(30)):
+            # for _ in tqdm(range(30)):
+            #     a, r = test_step(model, input_data=[audio.to(device), image.to(device)], label=text)
+            #     acc.append(a)
+            #     modality_ratio.append(r)
+            for batch in tqdm(test_loader):
+                audio, image, text, _ = batch
                 a, r = test_step(model, input_data=[audio.to(device), image.to(device)], label=text)
                 acc.append(a)
                 modality_ratio.append(r)
             torch.cuda.synchronize()
             tic2 = time.time()
 
-            # for batch in tqdm(test_loader):
-            #     audio, image, text, _ = batch
-            #     a, r = test_step(model, input_data=[audio.to(device), image.to(device)], label=text)
-            #     acc.append(a)
-            #     modality_ratio.append(r)
+
 
             mean_acc = np.mean(acc)
             mean_ratio = np.mean(modality_ratio, axis=0)
