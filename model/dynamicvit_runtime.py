@@ -6,7 +6,7 @@ from model.vit_model import AudioTransformerDiffPruning, VisionTransformerDiffPr
 from torch.cuda.amp import autocast
 import torch
 import torch.nn as nn
-import time
+import numpy as np
 from torch.nn.utils.rnn import pad_sequence
 class AVnet_Runtime(nn.Module):
     def __init__(self, real_batch=8, \
@@ -44,7 +44,7 @@ class AVnet_Runtime(nn.Module):
         audio_token = torch.sum(keep_audio, dim=1)
 
         sorted_batch = torch.argsort(audio_token)
-        output = torch.empty(sorted_batch.shape[0], 309, dtype=torch.half, device=audio.device)
+        output = []
         ratio = []
         for b in range(0, B, self.real_batch):
             batch_audio = audio[sorted_batch[b: b + self.real_batch]]
@@ -55,9 +55,10 @@ class AVnet_Runtime(nn.Module):
             batch_output, r = self.shared_inference(batch_audio, batch_image,
                                                     keep_policy[sorted_batch[b: b + self.real_batch]], prev_decision,
                                                     self.real_batch)
-            output[sorted_batch[b: b + self.real_batch]] = batch_output
+            output.append(batch_output)
             ratio.append(r)
-        return output, ratio
+        output = torch.cat(output)[torch.argsort(sorted_batch)]
+        return output, np.mean(ratio, axis=0)
 
     def shared_inference(self, audio, image, keep_policy, prev_decision, B):
         ratio = []
@@ -130,8 +131,8 @@ class AVnet_Runtime(nn.Module):
         num_keep_node = int(self.num_patches * self.token_ratio[0])
         keep_policy = torch.argsort(score, dim=1, descending=True)[:, :num_keep_node]
 
-        # x, ratio = self.cluster_inference(audio, image, keep_policy, B)
-        x, ratio = self.shared_inference(audio, image, keep_policy, prev_decision, B)
+        x, ratio = self.cluster_inference(audio, image, keep_policy, B)
+        #x, ratio = self.shared_inference(audio, image, keep_policy, prev_decision, B)
         return x, ratio
     # @autocast()
     # def forward(self, audio, image):
