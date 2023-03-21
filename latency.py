@@ -1,5 +1,6 @@
 import torch
-from model.dynamicvit_runtime import AVnet_Dynamic
+from model.dynamicvit_runtime import AVnet_Runtime
+from model.dynamicvit_legacy import AVnet_Dynamic
 from model.gate_model import AVnet_Gate
 from model.vit_model import VisionTransformerDiffPruning
 import time
@@ -52,7 +53,7 @@ if __name__ == "__main__":
     parser.add_argument('-b', '--batch', default=32, type=int)
     parser.add_argument('-e', '--exits', nargs='+', default='11 11')
     parser.add_argument('-l', '--locations', nargs='+', default='3 6 9')
-    parser.add_argument('-r', '--rate', default=0.3, type=float)
+    parser.add_argument('-r', '--rate', default=0.7, type=float)
     args = parser.parse_args()
     task = args.task
     device = torch.device(args.device)
@@ -71,9 +72,12 @@ if __name__ == "__main__":
 
     elif task == 'dynamic':
 
-        model = AVnet_Dynamic(pruning_loc=pruning_loc, token_ratio=token_ratio, pretrained=False).to(device)
+        model = AVnet_Runtime(pruning_loc=pruning_loc, token_ratio=token_ratio, pretrained=False).to(device)
         throughput([audio, image], model)
         # calc_flops(model, (audio, image))
+
+        # model = AVnet_Runtime(pruning_loc=(), pretrained=False).to(device)
+        # throughput([audio, image], model)
 
         model = AVnet_Dynamic(pruning_loc=(), pretrained=False).to(device)
         throughput([audio, image], model)

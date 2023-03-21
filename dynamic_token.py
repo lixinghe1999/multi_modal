@@ -4,6 +4,7 @@ import torch
 from model.dynamicvit_runtime import AVnet_Runtime
 from model.dynamicvit_legacy import AVnet_Dynamic
 from utils.losses import DistillDiffPruningLoss_dynamic
+import time
 import warnings
 from tqdm import tqdm
 import argparse
@@ -34,20 +35,39 @@ def profile(model, test_dataset):
     test_loader = torch.utils.data.DataLoader(dataset=test_dataset, num_workers=workers, batch_size=batch_size,
                                               shuffle=False, drop_last=True)
     model.eval()
-    token_ratio = [0.8, 0.7, 0.6, 0.5, 0.4, 0.3]
+    # token_ratio = [0.8, 0.7, 0.6, 0.5, 0.4, 0.3]
+    token_ratio = [0.7]
     acc = []
     modality_ratio = []
     with torch.no_grad():
         for ratio in token_ratio:
+            text = torch.zeros(batch_size)
+            audio = torch.randn(args.batch, 384, 128).to(device, non_blocking=True)
+            image = torch.randn(args.batch, 3, 224, 224).to(device, non_blocking=True)
             model.token_ratio = [ratio, ratio**2, ratio**3]
-            for batch in tqdm(test_loader):
-                audio, image, text, _ = batch
+            for _ in range(50):
+                test_step(model, input_data=[audio.to(device), image.to(device)], label=text)
+            print('warm-up')
+
+            torch.cuda.synchronize()
+            tic1 = time.time()
+            for _ in tqdm(range(30)):
                 a, r = test_step(model, input_data=[audio.to(device), image.to(device)], label=text)
                 acc.append(a)
                 modality_ratio.append(r)
+            torch.cuda.synchronize()
+            tic2 = time.time()
+
+            # for batch in tqdm(test_loader):
+            #     audio, image, text, _ = batch
+            #     a, r = test_step(model, input_data=[audio.to(device), image.to(device)], label=text)
+            #     acc.append(a)
+            #     modality_ratio.append(r)
+
             mean_acc = np.mean(acc)
             mean_ratio = np.mean(modality_ratio, axis=0)
             print('preserved ratio:', ratio)
+            print('throughput:', 30 * batch_size / (tic2 - tic1))
             print('modality-1 computation balance:', mean_ratio[:, 0])
             print('modality-2 computation balance:', mean_ratio[:, 1])
             print('modality-wise ratio:', mean_ratio[:, 2:])
@@ -121,6 +141,8 @@ if __name__ == "__main__":
         train(model, train_dataset, test_dataset)
     elif args.task == 'profile':
         model = AVnet_Runtime(pruning_loc=pruning_loc, token_ratio=token_ratio, pretrained=False).to(device)
+        # model = AVnet_Dynamic(pruning_loc=(), pretrained=False).to(device)
+        # model = AVnet_Runtime(pruning_loc=(), pretrained=False).to(device)
         model.load_state_dict(torch.load('dynamic_distill_9_0.6833300531391459.pth'), strict=False)
         profile(model, test_dataset)
 

@@ -7,17 +7,12 @@ import torch.nn.functional as F
 import time
 
 class AVnet_Dynamic(nn.Module):
-    def __init__(self, scale='base', distill=False, \
+    def __init__(self, distill=False, \
                  pruning_loc=[3, 6, 9], token_ratio=[0.7, 0.7 ** 2, 0.7 ** 3], pretrained=True):
         super(AVnet_Dynamic, self).__init__()
-        if scale == 'base':
-            config = dict(patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True,
-                          pruning_loc=pruning_loc, token_ratio=token_ratio)
-            embed_dim = 768
-        else:
-            config = dict(patch_size=16, embed_dim=384, depth=12, num_heads=6, mlp_ratio=4, qkv_bias=True,
-                          pruning_loc=pruning_loc, token_ratio=token_ratio)
-            embed_dim = 384
+        config = dict(patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True,
+                      pruning_loc=pruning_loc, token_ratio=token_ratio)
+        embed_dim = 768
         self.audio = AudioTransformerDiffPruning(config, imagenet_pretrain=pretrained)
         self.image = VisionTransformerDiffPruning(**config)
         if pretrained:
@@ -54,8 +49,6 @@ class AVnet_Dynamic(nn.Module):
         early_output = []
         prev_decision = torch.ones(B, self.num_patches, 1, dtype=audio.dtype, device=audio.device)
         policy = torch.ones(B, self.num_patches + 2, 1, dtype=audio.dtype, device=audio.device)
-        t_stamp = []
-        t_start = time.time()
         for i, (blk_a, blk_i) in enumerate(zip(self.audio.blocks, self.image.blocks)):
             if i in self.pruning_loc:
                 spatial_x = torch.cat([audio[:, 1:], image[:, 1:]], dim=1)
@@ -108,7 +101,6 @@ class AVnet_Dynamic(nn.Module):
                 else:
                     audio = blk_a(audio)
                     image = blk_i(image)
-            t_stamp.append(time.time() - t_start)
         x, features = self.output(audio, image)
         if self.training:
             if self.distill:
@@ -119,7 +111,7 @@ class AVnet_Dynamic(nn.Module):
             if self.distill:
                 return x, features
             else:
-                return x
+                return x, 1
 
 
 if __name__ == "__main__":
