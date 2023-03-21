@@ -131,8 +131,8 @@ class AVnet_Runtime(nn.Module):
         num_keep_node = int(self.num_patches * self.token_ratio[0])
         keep_policy = torch.argsort(score, dim=1, descending=True)[:, :num_keep_node]
 
-        x, ratio = self.cluster_inference(audio, image, keep_policy, B)
-        # x, ratio = self.shared_inference(audio, image, keep_policy, prev_decision, B)
+        # x, ratio = self.cluster_inference(audio, image, keep_policy, B)
+        x, ratio = self.shared_inference(audio, image, keep_policy, prev_decision, B)
         return x, ratio
     # @autocast()
     # def forward(self, audio, image):
