@@ -35,8 +35,8 @@ def profile(model, test_dataset):
     test_loader = torch.utils.data.DataLoader(dataset=test_dataset, num_workers=workers, batch_size=batch_size,
                                               shuffle=False, drop_last=True)
     model.eval()
-    # token_ratio = [0.8, 0.7, 0.6, 0.5, 0.4, 0.3]
-    token_ratio = [0.7]
+    token_ratio = [0.8, 0.7, 0.6, 0.5, 0.4, 0.3]
+    # token_ratio = [0.7]
     acc = []
     modality_ratio = []
     with torch.no_grad():
@@ -141,8 +141,8 @@ if __name__ == "__main__":
                 keep_ratio=token_ratio, mse_token=True, ratio_weight=2, distill_weight=0.5)
         train(model, train_dataset, test_dataset)
     elif args.task == 'profile':
-        # model = AVnet_Runtime(pruning_loc=pruning_loc, token_ratio=token_ratio, pretrained=False).to(device)
-        model = AVnet_Dynamic(pruning_loc=(), pretrained=False).to(device)
+        model = AVnet_Runtime(pruning_loc=pruning_loc, token_ratio=token_ratio, pretrained=False).to(device)
+        # model = AVnet_Dynamic(pruning_loc=(), pretrained=False).to(device)
         # model = AVnet_Runtime(pruning_loc=(), pretrained=False).to(device)
         model.load_state_dict(torch.load('dynamic_distill_9_0.6833300531391459.pth'), strict=False)
         profile(model, test_dataset)

@@ -53,7 +53,7 @@ if __name__ == "__main__":
     parser.add_argument('-b', '--batch', default=32, type=int)
     parser.add_argument('-e', '--exits', nargs='+', default='11 11')
     parser.add_argument('-l', '--locations', nargs='+', default='3 6 9')
-    parser.add_argument('-r', '--rate', default=0.7, type=float)
+    parser.add_argument('-r', '--rate', default=0.3, type=float)
     args = parser.parse_args()
     task = args.task
     device = torch.device(args.device)
