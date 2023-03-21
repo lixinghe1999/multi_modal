@@ -41,9 +41,9 @@ def profile(model, test_dataset):
     modality_ratio = []
     with torch.no_grad():
         for ratio in token_ratio:
-            # text = torch.zeros(batch_size)
-            # audio = torch.randn(args.batch, 384, 128).to(device, non_blocking=True)
-            # image = torch.randn(args.batch, 3, 224, 224).to(device, non_blocking=True)
+            text = torch.zeros(batch_size)
+            audio = torch.randn(args.batch, 384, 128).to(device, non_blocking=True)
+            image = torch.randn(args.batch, 3, 224, 224).to(device, non_blocking=True)
             model.token_ratio = [ratio, ratio**2, ratio**3]
             for _ in range(50):
                 test_step(model, input_data=[audio.to(device), image.to(device)], label=text)
