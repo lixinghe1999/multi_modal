@@ -17,7 +17,7 @@ def step(model, input_data, optimizer, criteria, label):
     if args.task == 'AV':
         output = model(audio, image)
     elif args.task == 'A':
-        output = model(audio.expand(batch_size, 3, -1, -1))
+        output = model(audio.unsqueeze(1).expand(batch_size, 3, -1, -1))
     else:
         output = model(image)
     # Backward
