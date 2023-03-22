@@ -79,7 +79,7 @@ if __name__ == "__main__":
         if args.task == 'AV':
             pass
         else:
-            model = resnet50(pretrain=True).to(device)
+            model = resnet50(pretrain=False).to(device)
     else:
         config = dict(patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True,
                       pruning_loc=())
