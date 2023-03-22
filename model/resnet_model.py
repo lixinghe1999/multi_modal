@@ -252,7 +252,11 @@ class ResNet(nn.Module):
 
     def forward(self, x: Tensor) -> Tensor:
         return self._forward_impl(x)
-
+def resnet50(pretrained=False):
+    model = ResNet(Bottleneck, [3, 4, 6, 3])
+    if pretrained:
+        model.load_state_dict(torch.load('assets/resnet50.pth'))
+    return model
 if __name__ == "__main__":
     import time
     import matplotlib.pyplot as plt
