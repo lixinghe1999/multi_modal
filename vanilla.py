@@ -45,7 +45,6 @@ def train(model, train_dataset, test_dataset):
         model.train()
         for idx, batch in enumerate(tqdm(train_loader)):
             audio, image, text, _ = batch
-            print(audio.shape, image.shape)
             loss = step(model, input_data=(audio.to(device), image.to(device)), optimizer=optimizer,
                         criteria=criteria, label=text.to(device))
         scheduler.step()
@@ -64,7 +63,8 @@ def train(model, train_dataset, test_dataset):
         print('epoch', epoch, np.mean(acc))
         if np.mean(acc) > best_acc:
             best_acc = np.mean(acc)
-            torch.save(model.state_dict(), 'vanilla_' + args.task + '_' + str(epoch) + '_' + str(np.mean(acc)) + '.pth')
+            torch.save(model.state_dict(), 'vanilla_' + args.model + '_' + args.task + '_' +
+                       str(epoch) + '_' + str(np.mean(acc)) + '.pth')
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-m', '--model', default='resnet')
