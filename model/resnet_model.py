@@ -147,43 +147,43 @@ def resnet152():
     """ return a ResNet 152 object
     """
     return ResNet(BottleNeck, [3, 8, 36, 3])
+if __name__ == "__main__":
+    import time
+    import matplotlib.pyplot as plt
 
-import time
-import matplotlib.pyplot as plt
+    def throughput(images, model):
+        model.eval()
+        batch_size, token_length = images[0].shape[0:2]
+        for i in range(50):
+            model(*images)
+        torch.cuda.synchronize()
+        tic1 = time.time()
+        for i in range(30):
+            model(*images)
+        torch.cuda.synchronize()
+        tic2 = time.time()
+        print(f"batch_size {batch_size} token_length {token_length} throughput {30 * batch_size / (tic2 - tic1)}")
+        MB = 1024.0 * 1024.0
+        print('memory:', torch.cuda.max_memory_allocated() / MB)
+        return (tic2 - tic1) / (30 * batch_size)
 
-def throughput(images, model):
-    model.eval()
-    batch_size, token_length = images[0].shape[0:2]
-    for i in range(50):
-        model(*images)
-    torch.cuda.synchronize()
-    tic1 = time.time()
-    for i in range(30):
-        model(*images)
-    torch.cuda.synchronize()
-    tic2 = time.time()
-    print(f"batch_size {batch_size} token_length {token_length} throughput {30 * batch_size / (tic2 - tic1)}")
-    MB = 1024.0 * 1024.0
-    print('memory:', torch.cuda.max_memory_allocated() / MB)
-    return (tic2 - tic1) / (30 * batch_size)
-
-def get_latency(b, s, dim):
-    model = ResNet(BasicBlock, [3, 4, 6, 3], dims=(dim, dim, dim, dim)).to(device)
-    data = torch.rand((b, 3, s, s)).to(device)
-    latency = throughput([data], model)
-    del model
-    del data
-    return latency
-device = 'cuda'
-input_size = []
-for s in range(60, 720, 60):
-    input_size.append(get_latency(1, s, 64))
-dim_size = []
-for d in range(64, 512, 64):
-    dim_size.append(get_latency(1, 224, d))
-fig, axs = plt.subplots(2, 1)
-axs[0].plot(range(60, 720, 60), input_size)
-axs[0].set_ylim([0, max(input_size)])
-axs[1].plot(range(64, 512, 64), dim_size)
-axs[1].set_ylim([0, max(dim_size)])
-plt.show()
+    def get_latency(b, s, dim):
+        model = ResNet(BasicBlock, [3, 4, 6, 3], dims=(dim, dim, dim, dim)).to(device)
+        data = torch.rand((b, 3, s, s)).to(device)
+        latency = throughput([data], model)
+        del model
+        del data
+        return latency
+    device = 'cuda'
+    input_size = []
+    for s in range(60, 720, 60):
+        input_size.append(get_latency(1, s, 64))
+    dim_size = []
+    for d in range(64, 512, 64):
+        dim_size.append(get_latency(1, 224, d))
+    fig, axs = plt.subplots(2, 1)
+    axs[0].plot(range(60, 720, 60), input_size)
+    axs[0].set_ylim([0, max(input_size)])
+    axs[1].plot(range(64, 512, 64), dim_size)
+    axs[1].set_ylim([0, max(dim_size)])
+    plt.show()
