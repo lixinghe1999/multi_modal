@@ -67,6 +67,7 @@ class VGGSound(td.Dataset):
         # mean -4.268 and std 4.569 AST
         # mean -5.1991 and std 4.4049
         fbank = (fbank - (-5.1991)) / 4.4049
+        fbank = fbank.unsqueeze(1).expand(-1, 3, -1, -1)
         return fbank
     def __getitem__(self, index: int):
         sample = self.data[index]
