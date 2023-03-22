@@ -2,7 +2,7 @@ import torch
 from model.dynamicvit_runtime import AVnet_Runtime
 from model.dynamicvit_legacy import AVnet_Dynamic
 from model.gate_model import AVnet_Gate
-from model.vit_model import VisionTransformerDiffPruning
+from model.dyn_slim import DSNet
 import time
 import argparse
 from fvcore.nn import FlopCountAnalysis
@@ -83,13 +83,12 @@ if __name__ == "__main__":
         throughput([audio, image], model)
         # calc_flops(model, (audio, image))
 
-    elif task == 'dynamicvit':
-        config = dict(patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True,
-                      pruning_loc=pruning_loc, token_ratio=token_ratio)
-        model = VisionTransformerDiffPruning(**config).to(device)
+    elif task == 'dsnet':
+        image = torch.randn(args.batch, 3, 224, 224).to(device)
+        model = DSNet().to(device)
+        model.set_mode('largest')
         throughput([image], model)
 
-        config = dict(patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True,
-                      pruning_loc=(), token_ratio=token_ratio)
-        model = VisionTransformerDiffPruning(**config).to(device)
+        model.set_mode('smallest')
         throughput([image], model)
+        # model(*[image])

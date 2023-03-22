@@ -10,7 +10,7 @@ import torch.nn as nn
 import torch
 from torch.cuda.amp import autocast
 from model.vit_model import AudioTransformerDiffPruning, VisionTransformerDiffPruning
-from model.resnet34 import ResNet
+from model.resnet_model import ResNet
 def gumbel_softmax(logits, tau=1, hard=False, dim=1, training=True):
     """ See `torch.nn.functional.gumbel_softmax()` """
     # if training:

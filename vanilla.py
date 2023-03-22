@@ -4,6 +4,7 @@ import numpy as np
 import torch
 from model.vanilla_model import AVnet
 from model.vit_model import AudioTransformerDiffPruning, VisionTransformerDiffPruning
+from model.resnet_model import resnet50
 import argparse
 torchvision.models.resnet50()
 import warnings
@@ -65,6 +66,7 @@ def train(model, train_dataset, test_dataset):
             torch.save(model.state_dict(), 'vanilla_' + args.task + '_' + str(epoch) + '_' + str(np.mean(acc)) + '.pth')
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument('-m', '--model', default='resnet')
     parser.add_argument('-t', '--task', default='train')
     parser.add_argument('-w', '--worker', default=4, type=int)
     parser.add_argument('-b', '--batch', default=32, type=int)
@@ -72,19 +74,25 @@ if __name__ == "__main__":
     workers = args.worker
     batch_size = args.batch
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    torch.cuda.set_device(1)
-    config = dict(patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True,
-                  pruning_loc=())
-    embed_dim = 768
-    if args.task == 'AV':
-        model = AVnet().to(device)
-        model.audio.load_state_dict(torch.load('vanilla_A_6_0.5303089942924621.pth'))
-        model.image.load_state_dict(torch.load('vanilla_V_7_0.5041330446762449.pth'))
-    elif args.task == 'A':
-        model = AudioTransformerDiffPruning(config, imagenet_pretrain=True).to(device)
+    torch.cuda.set_device(0)
+    if args.model == 'resnet':
+        if args.task == 'AV':
+            pass
+        else:
+            model = resnet50(pretrain=True).to(device)
     else:
-        model = VisionTransformerDiffPruning(**config).to(device)
-        model.load_state_dict(torch.load('assets/deit_base_patch16_224.pth')['model'], strict=False)
+        config = dict(patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True,
+                      pruning_loc=())
+        embed_dim = 768
+        if args.task == 'AV':
+            model = AVnet().to(device)
+            model.audio.load_state_dict(torch.load('vanilla_A_6_0.5303089942924621.pth'))
+            model.image.load_state_dict(torch.load('vanilla_V_7_0.5041330446762449.pth'))
+        elif args.task == 'A':
+            model = AudioTransformerDiffPruning(config, imagenet_pretrain=True).to(device)
+        else:
+            model = VisionTransformerDiffPruning(**config).to(device)
+            model.load_state_dict(torch.load('assets/deit_base_patch16_224.pth')['model'], strict=False)
 
     dataset = VGGSound()
     len_train = int(len(dataset) * 0.8)

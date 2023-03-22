@@ -38,23 +38,17 @@ class AVnet_Runtime(nn.Module):
         x = self.head(x)
         return x, features
 
-    def cluster_inference(self, audio, image, keep_policy, B):
+    def cluster_inference(self, audio, image, keep_policy, prev_decision, B):
         token_len_audio = audio.shape[1] - 1
         keep_audio = keep_policy < token_len_audio
         audio_token = torch.sum(keep_audio, dim=1)
-
         sorted_batch = torch.argsort(audio_token)
         output = []
         ratio = []
         for b in range(0, B, self.real_batch):
-            batch_audio = audio[sorted_batch[b: b + self.real_batch]]
-            batch_image = image[sorted_batch[b: b + self.real_batch]]
-
-            prev_decision = torch.ones(self.real_batch, self.num_patches, 1,
-                                       dtype=audio.dtype, device=audio.device)
-            batch_output, r = self.shared_inference(batch_audio, batch_image,
-                                                    keep_policy[sorted_batch[b: b + self.real_batch]], prev_decision,
-                                                    self.real_batch)
+            batch_output, r = self.shared_inference(audio[sorted_batch[b: b + self.real_batch]],
+                        image[sorted_batch[b: b + self.real_batch]], keep_policy[sorted_batch[b: b + self.real_batch]],
+                                prev_decision[b: b + self.real_batch], self.real_batch)
             output.append(batch_output)
             ratio.append(r)
         output = torch.cat(output)[torch.argsort(sorted_batch)]
@@ -131,8 +125,8 @@ class AVnet_Runtime(nn.Module):
         num_keep_node = int(self.num_patches * self.token_ratio[0])
         keep_policy = torch.argsort(score, dim=1, descending=True)[:, :num_keep_node]
 
-        # x, ratio = self.cluster_inference(audio, image, keep_policy, B)
-        x, ratio = self.shared_inference(audio, image, keep_policy, prev_decision, B)
+        x, ratio = self.cluster_inference(audio, image,keep_policy, prev_decision, B)
+        # x, ratio = self.shared_inference(audio, image, keep_policy, prev_decision, B)
         return x, ratio
     # @autocast()
     # def forward(self, audio, image):
