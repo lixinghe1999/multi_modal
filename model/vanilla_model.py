@@ -52,8 +52,8 @@ class AVnet(nn.Module):
             self.audio = resnet50(pretrained=pretrained)
             self.image = resnet50(pretrained=pretrained)
             embed_dim = 512 * 4
-            # self.fusion = nn.ModuleList([MMTM(dim, dim, 4) for dim in [256, 512, 1024, 2048]])
-            self.norm = nn.LayerNorm(embed_dim)
+            self.fusion = nn.ModuleList([MMTM(dim, dim, 4) for dim in [256, 512, 1024, 2048]])
+            # self.norm = nn.LayerNorm(embed_dim)
             self.head = nn.Sequential(nn.Linear(embed_dim * 2, 309))
         else:
             config = dict(patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True,
@@ -79,11 +79,11 @@ class AVnet(nn.Module):
             for i, (blk_a, blk_i) in enumerate(zip(self.audio.blocks, self.image.blocks)):
                 audio = blk_a(audio)
                 image = blk_i(image)
-                # audio, image = self.fusion[i](audio, image)
+                audio, image = self.fusion[i](audio, image)
             audio = torch.flatten(self.audio.avgpool(audio), 1)
             image = torch.flatten(self.image.avgpool(image), 1)
-            audio = self.norm(audio)
-            image = self.norm(image)
+            # audio = self.norm(audio)
+            # image = self.norm(image)
             x = self.head(torch.cat([audio, image], dim=1))
             return x
         else:
