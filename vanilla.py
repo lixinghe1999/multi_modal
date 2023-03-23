@@ -36,7 +36,7 @@ def train(model, train_dataset, test_dataset):
         #     param.requires_grad = False
         # for param in model.image.parameters():
         #     param.requires_grad = False
-        optimizer = torch.optim.Adam(model.fusion_parameter(), lr=.0001, weight_decay=1e-4)
+        optimizer = torch.optim.Adam(model.parameters(), lr=.0001, weight_decay=1e-4)
     else:
         optimizer = torch.optim.Adam(model.parameters(), lr=.0001, weight_decay=1e-4)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.2)
