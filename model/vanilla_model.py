@@ -80,6 +80,8 @@ class AVnet(nn.Module):
                 image = blk_i(image)
                 print(audio.shape, image.shape)
                 audio, image = self.fusion[i](audio, image)
+            audio = torch.flatten(self.avgpool(audio), 1)
+            image = torch.flatten(self.avgpool(image), 1)
             audio = self.norm(audio)
             image = self.norm(image)
             x = self.head(torch.cat([audio, image], dim=1))
