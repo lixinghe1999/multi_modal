@@ -52,7 +52,7 @@ class AVnet(nn.Module):
             self.audio = resnet50(pretrained=pretrained)
             self.image = resnet50(pretrained=pretrained)
             embed_dim = 512 * 4
-            self.fusion = nn.ModuleList([MMTM(dim, dim, 4) for dim in [64, 128, 256, 512]])
+            self.fusion = nn.ModuleList([MMTM(dim, dim, 4) for dim in [256, 512, 1024, 2048]])
             self.norm = nn.LayerNorm(embed_dim)
             self.head = nn.Sequential(nn.Linear(embed_dim * 2, 309))
         else:
