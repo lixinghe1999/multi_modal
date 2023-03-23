@@ -78,7 +78,6 @@ class AVnet(nn.Module):
             for i, (blk_a, blk_i) in enumerate(zip(self.audio.blocks, self.image.blocks)):
                 audio = blk_a(audio)
                 image = blk_i(image)
-                print(audio.shape, image.shape)
                 audio, image = self.fusion[i](audio, image)
             audio = torch.flatten(self.audio.avgpool(audio), 1)
             image = torch.flatten(self.image.avgpool(image), 1)
