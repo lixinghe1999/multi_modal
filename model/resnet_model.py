@@ -238,20 +238,19 @@ class ResNet(nn.Module):
         x = self.bn1(x)
         x = self.relu(x)
         x = self.maxpool(x)
-
         x = self.layer1(x)
         x = self.layer2(x)
         x = self.layer3(x)
         x = self.layer4(x)
-
         x = self.avgpool(x)
         x = torch.flatten(x, 1)
-        x = self.fc(x)
 
         return x
 
     def forward(self, x: Tensor) -> Tensor:
-        return self._forward_impl(x)
+        x = self._forward_impl(x)
+        x = self.fc(x)
+        return x
 def resnet50(pretrained=False):
     model = ResNet(Bottleneck, [3, 4, 6, 3])
     if pretrained:
@@ -277,26 +276,37 @@ if __name__ == "__main__":
         print('memory:', torch.cuda.max_memory_allocated() / MB)
         return (tic2 - tic1) / (30 * batch_size)
 
-    def get_latency(b, s, dim):
+    def get_latency(b, s, dim, layer=[3, 4, 6, 3]):
         if dim == None:
-            model = ResNet(Bottleneck, [3, 4, 6, 3]).to(device)
+            model = ResNet(Bottleneck, layer).to(device)
         else:
-            model = ResNet(Bottleneck, [3, 4, 6, 3], dims=(dim, dim, dim, dim)).to(device)
+            model = ResNet(Bottleneck, layer, dims=(int(dim/10 * 64), int(dim/10 * 128),
+                                                            int(dim/10 * 256), int(dim/10 * 512))).to(device)
         data = torch.rand((b, 3, s, s)).to(device)
         latency = throughput([data], model)
         del model
         del data
         return latency
     device = 'cuda'
+    # get_latency(1, 224, None)
     input_size = []
-    for s in range(60, 720, 60):
+    for s in range(32, 384, 32):
         input_size.append(get_latency(1, s, None))
-    dim_size = []
-    for d in range(64, 512, 64):
-        dim_size.append(get_latency(1, 224, d))
-    fig, axs = plt.subplots(2, 1)
-    axs[0].plot(range(60, 720, 60), input_size)
+    channel_size = []
+    for c in range(1, 10):
+        channel_size.append(get_latency(1, 224, c))
+    layers = [[1, 1, 1, 1], [2, 2, 2, 2], [2, 3, 4, 2], [3, 4, 6, 3]]
+    depth_size = []
+    for d in range(len(layers)):
+        depth_size.append(get_latency(1, 224, None, layers[d]))
+    fig, axs = plt.subplots(3, 1)
+    axs[0].plot(range(32, 384, 32), input_size)
     axs[0].set_ylim([0, max(input_size)])
-    axs[1].plot(range(64, 512, 64), dim_size)
-    axs[1].set_ylim([0, max(dim_size)])
+
+    axs[1].plot(range(1, 10), channel_size)
+    axs[1].set_ylim([0, max(channel_size)])
+
+    axs[2].plot(range(len(layers)), depth_size)
+    axs[2].set_ylim([0, max(depth_size)])
+    plt.savefig('torch_resnet.png')
     plt.show()

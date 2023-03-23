@@ -78,7 +78,9 @@ if __name__ == "__main__":
     torch.cuda.set_device(0)
     if args.model == 'resnet':
         if args.task == 'AV':
-            pass
+            model = AVnet(model='resnet').to(device)
+            model.audio.load_state_dict(torch.load('vanilla_resnet_V_6_0.45464385.pth'))
+            model.image.load_state_dict(torch.load('vanilla_resnet_A_6_0.5008855.pth'))
         else:
             model = resnet50(pretrained=True).to(device)
     else:
@@ -86,7 +88,7 @@ if __name__ == "__main__":
                       pruning_loc=())
         embed_dim = 768
         if args.task == 'AV':
-            model = AVnet().to(device)
+            model = AVnet(model='vit').to(device)
             model.audio.load_state_dict(torch.load('vanilla_A_6_0.5303089942924621.pth'))
             model.image.load_state_dict(torch.load('vanilla_V_7_0.5041330446762449.pth'))
         elif args.task == 'A':
