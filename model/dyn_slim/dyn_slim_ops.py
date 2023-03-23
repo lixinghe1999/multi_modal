@@ -92,12 +92,11 @@ class DSConv2d(nn.Conv2d):
                 self.running_inc = x.size(1)
             if not self.out_chn_static:
                 self.running_outc = self.out_channels_list[self.channel_choice]
-            # print(self.running_inc, self.running_outc)
             weight = self.weight[:self.running_outc, :self.running_inc]
             bias = self.bias[:self.running_outc] if self.bias is not None else None
             self.running_groups = 1 if self.groups == 1 else self.running_outc
             self.prev_channel_choice = None
-            # self.channel_choice = -1
+            self.channel_choice = -1
             return F.conv2d(x,
                             weight,
                             bias,

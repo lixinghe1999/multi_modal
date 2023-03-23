@@ -162,6 +162,7 @@ class ResNet(nn.Module):
         self.groups = groups
         self.base_width = width_per_group
         self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=7, stride=2, padding=3, bias=False)
+        # self.conv1 = nn.Conv2d(3, 64, kernel_size=3, padding=1, bias=False)
         self.bn1 = norm_layer(self.inplanes)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
@@ -238,7 +239,9 @@ class ResNet(nn.Module):
         return x
     def _forward_impl(self, x: Tensor) -> Tensor:
         # See note [TorchScript super()]
+
         x = self.preprocess(x)
+
         x = self.layer1(x)
         x = self.layer2(x)
         x = self.layer3(x)
@@ -290,17 +293,17 @@ if __name__ == "__main__":
     device = 'cuda'
     # get_latency(1, 224, None)
     input_size = []
-    for s in range(32, 384, 32):
+    for s in range(32, 1080, 96):
         input_size.append(get_latency(1, s, None))
     channel_size = []
     for c in range(1, 10):
-        channel_size.append(get_latency(1, 224, c))
+        channel_size.append(get_latency(1, 1080, c))
     layers = [[1, 1, 1, 1], [2, 2, 2, 2], [2, 3, 4, 2], [3, 4, 6, 3]]
     depth_size = []
     for d in range(len(layers)):
-        depth_size.append(get_latency(1, 224, None, layers[d]))
+        depth_size.append(get_latency(1, 1080, None, layers[d]))
     fig, axs = plt.subplots(3, 1)
-    axs[0].plot(range(32, 384, 32), input_size)
+    axs[0].plot(range(32, 1080, 96), input_size)
     axs[0].set_ylim([0, max(input_size)])
 
     axs[1].plot(range(1, 10), channel_size)
