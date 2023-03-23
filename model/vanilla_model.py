@@ -8,6 +8,41 @@ import torch
 from torch.cuda.amp import autocast
 from model.vit_model import AudioTransformerDiffPruning, VisionTransformerDiffPruning
 from model.resnet_model import resnet50
+class MMTM(nn.Module):
+      def __init__(self, dim_visual, dim_skeleton, ratio):
+        super(MMTM, self).__init__()
+        dim = dim_visual + dim_skeleton
+        dim_out = int(2*dim/ratio)
+        self.fc_squeeze = nn.Linear(dim, dim_out)
+
+        self.fc_visual = nn.Linear(dim_out, dim_visual)
+        self.fc_skeleton = nn.Linear(dim_out, dim_skeleton)
+        self.relu = nn.ReLU()
+        self.sigmoid = nn.Sigmoid()
+
+      def forward(self, visual, skeleton):
+        squeeze_array = []
+        for tensor in [visual, skeleton]:
+          tview = tensor.view(tensor.shape[:2] + (-1,))
+          squeeze_array.append(torch.mean(tview, dim=-1))
+        squeeze = torch.cat(squeeze_array, 1)
+
+        excitation = self.fc_squeeze(squeeze)
+        excitation = self.relu(excitation)
+
+        vis_out = self.fc_visual(excitation)
+        sk_out = self.fc_skeleton(excitation)
+
+        vis_out = self.sigmoid(vis_out)
+        sk_out = self.sigmoid(sk_out)
+
+        dim_diff = len(visual.shape) - len(vis_out.shape)
+        vis_out = vis_out.view(vis_out.shape + (1,) * dim_diff)
+
+        dim_diff = len(skeleton.shape) - len(sk_out.shape)
+        sk_out = sk_out.view(sk_out.shape + (1,) * dim_diff)
+
+        return visual * vis_out, skeleton * sk_out
 
 class AVnet(nn.Module):
     def __init__(self, model='resnet', pretrained=False):
@@ -17,6 +52,8 @@ class AVnet(nn.Module):
             self.audio = resnet50(pretrained=pretrained)
             self.image = resnet50(pretrained=pretrained)
             embed_dim = 512 * 4
+            self.fusion = nn.ModuleList([MMTM(dim, dim, 4) for dim in [64, 128, 256, 512]])
+            self.norm = nn.LayerNorm(embed_dim)
             self.head = nn.Sequential(nn.Linear(embed_dim * 2, 309))
         else:
             config = dict(patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True,
@@ -29,14 +66,21 @@ class AVnet(nn.Module):
             self.head = nn.Sequential(nn.LayerNorm(embed_dim * 2),
                                           nn.Linear(embed_dim * 2, 309))
     def fusion_parameter(self):
-        parameter = [{'params': self.head.parameters()}]
+        parameter = [{'params': self.head.parameters()},
+                     {'params': self.fusion.parameters()}]
         return parameter
 
     @autocast()
     def forward(self, audio, image):
         if self.model == 'resnet':
-            audio = self.audio._forward_impl(audio)
-            image = self.image._forward_impl(image)
+            audio = self.audio.preprocess(audio)
+            image = self.image.preprocess(image)
+            for i, (blk_a, blk_i) in enumerate(zip(self.audio.blocks, self.image.blocks)):
+                audio = blk_a(audio)
+                image = blk_i(image)
+                audio, image = self.fusion[i](audio, image)
+            audio = self.norm(audio)
+            image = self.norm(image)
             x = self.head(torch.cat([audio, image], dim=1))
             return x
         else:

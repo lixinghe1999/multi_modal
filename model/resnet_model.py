@@ -171,6 +171,7 @@ class ResNet(nn.Module):
         self.layer2 = self._make_layer(block, dims[1], layers[1], stride=2, dilate=replace_stride_with_dilation[0])
         self.layer3 = self._make_layer(block, dims[2], layers[2], stride=2, dilate=replace_stride_with_dilation[1])
         self.layer4 = self._make_layer(block, dims[3], layers[3], stride=2, dilate=replace_stride_with_dilation[2])
+        self.blocks = nn.ModuleList([self.layer1, self.layer2, self.layer3, self.layer4])
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.fc = nn.Linear(dims[3] * block.expansion, num_classes)
 
@@ -231,13 +232,15 @@ class ResNet(nn.Module):
             )
 
         return nn.Sequential(*layers)
-
-    def _forward_impl(self, x: Tensor) -> Tensor:
-        # See note [TorchScript super()]
+    def preprocess(self, x):
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
         x = self.maxpool(x)
+        return x
+    def _forward_impl(self, x: Tensor) -> Tensor:
+        # See note [TorchScript super()]
+        x = self.preprocess(x)
         x = self.layer1(x)
         x = self.layer2(x)
         x = self.layer3(x)
