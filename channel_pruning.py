@@ -37,7 +37,7 @@ def test_step(model, input_data, label):
         model.audio.set_mode(mode)
         model.image.set_mode(mode)
         output = model(audio, image)
-        acc.append((torch.argmax(output, dim=-1) == label).sum() / len(label))
+        acc.append((torch.argmax(output, dim=-1).cpu() == label).sum() / len(label))
     return acc
 def train(model, train_dataset, test_dataset):
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset, num_workers=workers, batch_size=batch_size, shuffle=True,
@@ -56,7 +56,7 @@ def train(model, train_dataset, test_dataset):
         for idx, batch in enumerate(tqdm(train_loader)):
             audio, image, text, _ = batch
             train_step(model, input_data=(audio.to(device), image.to(device)), optimizer=optimizer,
-                        criteria=criteria, soft_criteria=soft_criteria,label=text.to(device))
+                        criteria=criteria, soft_criteria=soft_criteria,label=text)
         scheduler.step()
         model.eval()
         acc = []
