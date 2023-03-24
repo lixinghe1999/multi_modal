@@ -56,14 +56,14 @@ def train(model, train_dataset, test_dataset):
         for idx, batch in enumerate(tqdm(train_loader)):
             audio, image, text, _ = batch
             train_step(model, input_data=(audio.to(device), image.to(device)), optimizer=optimizer,
-                        criteria=criteria, soft_criteria=soft_criteria,label=text)
+                        criteria=criteria, soft_criteria=soft_criteria,label=text.to(device))
         scheduler.step()
         model.eval()
         acc = []
         with torch.no_grad():
             for batch in tqdm(test_loader):
                 audio, image, text, _ = batch
-                acc.append(test_step(model, input_data=(audio.to(device), image.to(device)), label=text.to(device)))
+                acc.append(test_step(model, input_data=(audio.to(device), image.to(device)), label=text))
         mean_acc = np.mean(acc, axis=0)
         print('epoch', epoch, mean_acc)
         avg_acc = np.mean(mean_acc)
