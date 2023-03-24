@@ -54,7 +54,7 @@ def train(model, train_dataset, test_dataset):
         with torch.no_grad():
             for batch in tqdm(test_loader):
                 audio, image, text, _ = batch
-                if args.task == 'AV':
+                if args.task == 'AV' or args.task == 'early':
                     predict = model(audio.to(device), image.to(device))
                 elif args.task == 'A':
                     predict = model(audio.to(device))
