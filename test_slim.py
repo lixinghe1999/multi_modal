@@ -1,5 +1,4 @@
 import matplotlib.pyplot as plt
-
 from model.ds_net import SlimBlock, SlimResNet
 from model.resnet_model import Bottleneck, resnet50
 import torch

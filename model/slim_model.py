@@ -24,8 +24,13 @@ class AVnet_Slim(nn.Module):
             audio = self.audio.preprocess(audio)
             image = self.image.preprocess(image)
             for i, (blk_a, blk_i) in enumerate(zip(self.audio.blocks, self.image.blocks)):
+                self.audio.set_layer_choice(blk_a)
+                self.audio.set_layer_mode(blk_a)
+                self.image.set_layer_choice(blk_i)
+                self.image.set_layer_mode(blk_i)
                 audio = blk_a(audio)
                 image = blk_i(image)
+
             audio = torch.flatten(self.audio.avgpool(audio), 1)
             image = torch.flatten(self.image.avgpool(image), 1)
             print(audio.shape, image.shape)
