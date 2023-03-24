@@ -11,7 +11,10 @@ warnings.filterwarnings("ignore")
 def step(model, input_data, optimizer, criteria, label):
     audio, image = input_data
     # Track history only in training
-    output = model(audio, image)
+    for mode in range(4):
+        model.audio.set_mode(mode)
+        model.image.set_mode(mode)
+        output = model(audio, image)
     # Backward
     optimizer.zero_grad()
     loss = criteria(output, label)
@@ -24,10 +27,6 @@ def train(model, train_dataset, test_dataset):
     test_loader = torch.utils.data.DataLoader(dataset=test_dataset, num_workers=workers, batch_size=batch_size, shuffle=False)
     best_acc = 0
     if args.task == 'AV':
-        # for param in model.audio.parameters():
-        #     param.requires_grad = False
-        # for param in model.image.parameters():
-        #     param.requires_grad = False
         optimizer = torch.optim.Adam(model.parameters(), lr=.0001, weight_decay=1e-4)
     else:
         optimizer = torch.optim.Adam(model.parameters(), lr=.0001, weight_decay=1e-4)
