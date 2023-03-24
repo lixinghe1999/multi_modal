@@ -46,7 +46,7 @@ def train(model, train_dataset, test_dataset):
         model.train()
         for idx, batch in enumerate(tqdm(train_loader)):
             audio, image, text, _ = batch
-            loss = step(model, input_data=(audio.to(device), image.to(device)), optimizer=optimizer,
+            step(model, input_data=(audio.to(device), image.to(device)), optimizer=optimizer,
                         criteria=criteria, label=text.to(device))
         scheduler.step()
         model.eval()

@@ -7,7 +7,7 @@ import torch.nn as nn
 import torch
 from torch.cuda.amp import autocast
 from model.vit_model import AudioTransformerDiffPruning, VisionTransformerDiffPruning
-from model.resnet_model import ResNet, Bottleneck
+from model.resnet_model import ResNet, Bottleneck, resnet50
 class MMTM(nn.Module):
       def __init__(self, dim_visual, dim_skeleton, ratio):
         super(MMTM, self).__init__()
@@ -49,7 +49,8 @@ class AVnet_Early(nn.Module):
         super(AVnet_Early, self).__init__()
         self.model = model
         if model == 'resnet':
-            self.net = ResNet(Bottleneck, [3, 4, 6, 3], input_channel=6)
+            self.net = resnet50(pretrained=pretrained)
+            self.net.conv1 = nn.Conv2d(6, self.net.inplanes, kernel_size=7, stride=2, padding=3, bias=False)
             embed_dim = 512 * 4
             self.head = nn.Sequential(nn.Linear(embed_dim, 309))
         else:
