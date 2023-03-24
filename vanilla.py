@@ -15,7 +15,7 @@ warnings.filterwarnings("ignore")
 def step(model, input_data, optimizer, criteria, label):
     audio, image = input_data
     # Track history only in training
-    if args.task == 'AV':
+    if args.task == 'AV' or args.task == 'early':
         output = model(audio, image)
     elif args.task == 'A':
         output = model(audio)
