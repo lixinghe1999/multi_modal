@@ -79,7 +79,7 @@ if __name__ == "__main__":
     torch.cuda.set_device(0)
     if args.model == 'resnet':
         if args.task == 'early':
-            model = AVnet_Early(pretrained=True, model='resnet').to(device)
+            model = AVnet_Early(pretrained=False, model='resnet').to(device)
         elif args.task == 'AV':
             model = AVnet(model='resnet').to(device)
             model.audio.load_state_dict(torch.load('vanilla_resnet_V_6_0.45464385.pth'))
