@@ -3,6 +3,7 @@ from utils.datasets.vggsound import VGGSound
 import numpy as np
 import torch
 from model.vanilla_model import AVnet
+from model.early_model import AVnet_Early
 from model.vit_model import AudioTransformerDiffPruning, VisionTransformerDiffPruning
 from model.resnet_model import resnet50
 import argparse
@@ -77,7 +78,9 @@ if __name__ == "__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     torch.cuda.set_device(0)
     if args.model == 'resnet':
-        if args.task == 'AV':
+        if args.task == 'early':
+            model = AVnet_Early(model='resnet').to(device)
+        elif args.task == 'AV':
             model = AVnet(model='resnet').to(device)
             model.audio.load_state_dict(torch.load('vanilla_resnet_V_6_0.45464385.pth'))
             model.image.load_state_dict(torch.load('vanilla_resnet_A_6_0.5008855.pth'))

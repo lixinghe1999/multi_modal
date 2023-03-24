@@ -44,11 +44,53 @@ def gumbel_softmax(logits, tau=1, hard=False, dim=1, training=True):
         # y_hard = torch.Tensor([1, 0, 0, 0]).repeat(logits.shape[0], 1).cuda()
     ret = y_hard - y_soft.detach() + y_soft
     return y_soft, ret, index
-
 def set_exist_attr(m, attr, value):
     if hasattr(m, attr):
         setattr(m, attr, value)
+class MultiHeadGate(nn.Module):
+    def __init__(self, in_chs, se_ratio=0.25, reduced_base_chs=None, act_layer=nn.ReLU,
+                 attn_act_fn=nn.Sigmoid(), divisor=1, channel_gate_num=None, gate_num_features=1024):
+        super(MultiHeadGate, self).__init__()
+        self.attn_act_fn = attn_act_fn
+        self.channel_gate_num = channel_gate_num
+        reduced_chs = make_divisible((reduced_base_chs or in_chs[-1]) * se_ratio, divisor)
+        self.avg_pool = DSAdaptiveAvgPool2d(1, channel_list=in_chs)
+        self.conv_reduce = DSpwConv2d(in_chs, [reduced_chs], bias=True)
+        self.act1 = act_layer(inplace=True)
+        self.conv_expand = DSpwConv2d([reduced_chs], in_chs, bias=True)
 
+        self.has_gate = False
+        if channel_gate_num > 1:
+            self.has_gate = True
+            self.gate = nn.Sequential(DSpwConv2d([reduced_chs], [channel_gate_num], bias=False))
+
+        self.mode = 'largest'
+        self.keep_gate, self.print_gate, self.print_idx = None, None, None
+        self.channel_choice = None
+        self.initialized = False
+
+    def forward(self, x):
+        x_pool = self.avg_pool(x)
+        x_reduced = self.conv_reduce(x_pool)
+        x_reduced = self.act1(x_reduced)
+        attn = self.conv_expand(x_reduced)
+        if self.attn_act_fn == 'tanh':
+            attn = (1 + attn.tanh())
+        else:
+            attn = self.attn_act_fn(attn)
+        x = x * attn
+
+        if self.mode == 'dynamic' and self.has_gate:
+            channel_choice = self.gate(x_reduced).squeeze(-1).squeeze(-1)
+            self.keep_gate, self.print_gate, self.print_idx = gumbel_softmax(channel_choice, dim=1, training=self.training)
+            self.channel_choice = self.print_gate, self.print_idx
+        else:
+            self.channel_choice = None
+
+        return x
+
+    def get_gate(self):
+        return self.channel_choice
 class SlimBlock(nn.Module):
     expansion: int = 4
     def __init__(
@@ -119,6 +161,9 @@ class SlimResNet(nn.Module):
         self.blocks = [self.layer1, self.layer2, self.layer3, self.layer4]
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.fc = DSLinear([p * block.expansion for p in dims[3]], num_classes)
+        has_gate = True
+        self.score_predictor = nn.ModuleList([MultiHeadGate([p * block.expansion for p in dim],
+                                                            channel_gate_num=4 if has_gate else 0) for dim in dims])
 
     def _make_layer(
         self,
@@ -146,10 +191,30 @@ class SlimResNet(nn.Module):
             )
         return nn.Sequential(*layers)
 
-    def set_gate(self, channel_choice):
-        for n, m in self.named_modules():
-            set_exist_attr(m, 'channel_choice', channel_choice)
-            set_exist_attr(m, 'prev_channel_choice', channel_choice)
+    def set_module_choice(self, m):
+        set_exist_attr(m, 'channel_choice', self.channel_choice)
+    def set_layer_choice(self, l):
+        for m in l.modules():
+            set_exist_attr(m, 'channel_choice', self.channel_choice)
+    def set_layer_mode(self, l):
+        for m in l.modules():
+            set_exist_attr(m, 'mode', self.mode)
+    def set_mode(self, mode, choice=None):
+        self.mode = mode
+        assert mode in ['largest', 'smallest', 'dynamic', 'uniform']
+        if mode == 'largest' or mode == 'dynamic':
+            self.channel_choice = -1
+        elif mode == 'smallest':
+            self.channel_choice = 0
+        elif mode == 'uniform':
+            if choice is not None:
+                self.channel_choice = choice
+            else:
+                self.channel_choice = random.randint(1, 13)
+        self.set_module_choice(self.conv1)
+        self.set_module_choice(self.bn1)
+        set_exist_attr(self.conv1, 'mode', mode)
+        set_exist_attr(self.bn1, 'mode', mode)
     def preprocess(self, x):
         x = self.conv1(x)
         x = self.bn1(x)
@@ -158,10 +223,16 @@ class SlimResNet(nn.Module):
         return x
     def forward(self, x):
         x = self.preprocess(x)
-        x = self.layer1(x)
-        x = self.layer2(x)
-        x = self.layer3(x)
-        x = self.layer4(x)
+        for i, block in enumerate(self.blocks):
+            print(x.shape, 'one block')
+            self.set_layer_choice(block)
+            self.set_layer_choice(self.score_predictor[i])
+            self.set_layer_mode(block)
+            self.set_layer_mode(self.score_predictor[i])
+            x = block(x)
+            x = self.score_predictor[i](x)
+            self.channel_choice = self.score_predictor[i].get_gate()
+            print(self.channel_choice)
         x = self.avgpool(x)
         x = torch.flatten(x, 1)
         x = self.fc(x)

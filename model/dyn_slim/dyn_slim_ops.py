@@ -72,7 +72,6 @@ class DSConv2d(nn.Conv2d):
                     self.running_inc = torch.matmul(self.prev_channel_choice[0], self.in_channels_list_tensor)
             if not self.out_chn_static:
                 self.running_outc = torch.matmul(self.channel_choice[0], self.out_channels_list_tensor)
-
             output = F.conv2d(x,
                               weight,
                               self.bias,
