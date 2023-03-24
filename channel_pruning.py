@@ -11,12 +11,7 @@ warnings.filterwarnings("ignore")
 def step(model, input_data, optimizer, criteria, label):
     audio, image = input_data
     # Track history only in training
-    if args.task == 'AV' or args.task == 'early':
-        output = model(audio, image)
-    elif args.task == 'A':
-        output = model(audio)
-    else:
-        output = model(image)
+    output = model(audio, image)
     # Backward
     optimizer.zero_grad()
     loss = criteria(output, label)
@@ -50,12 +45,7 @@ def train(model, train_dataset, test_dataset):
         with torch.no_grad():
             for batch in tqdm(test_loader):
                 audio, image, text, _ = batch
-                if args.task == 'AV' or args.task == 'early':
-                    predict = model(audio.to(device), image.to(device))
-                elif args.task == 'A':
-                    predict = model(audio.to(device))
-                else:
-                    predict = model(image.to(device))
+                predict = model(audio.to(device), image.to(device))
                 acc.append((torch.argmax(predict, dim=-1).cpu() == text).sum() / len(text))
         print('epoch', epoch, np.mean(acc))
         if np.mean(acc) > best_acc:
