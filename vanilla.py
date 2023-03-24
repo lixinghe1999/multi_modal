@@ -85,7 +85,7 @@ if __name__ == "__main__":
             model.audio.load_state_dict(torch.load('vanilla_resnet_V_6_0.45464385.pth'))
             model.image.load_state_dict(torch.load('vanilla_resnet_A_6_0.5008855.pth'))
         else:
-            model = resnet50(pretrained=True).to(device)
+            model = resnet50(pretrained=False).to(device)
     else:
         config = dict(patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True,
                       pruning_loc=())
