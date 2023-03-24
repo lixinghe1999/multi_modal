@@ -70,7 +70,6 @@ class AVnet_Early(nn.Module):
     @autocast()
     def forward(self, audio, image):
         if self.model == 'resnet':
-            print(audio.shape, image.shape)
             audio = torch.nn.functional.interpolate(audio, (224, 224))
             x = torch.cat([audio, image], dim=1)
             x = self.net.preprocess(x)
