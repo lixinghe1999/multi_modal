@@ -82,9 +82,8 @@ if __name__ == "__main__":
     batch_size = args.batch
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     torch.cuda.set_device(0)
-    if args.model == 'resnet':
-        model = AVnet_Slim().to('cuda')
-        model.load_state_dict(torch.load('vanilla_resnet_AV_19_0.65678066.pth'), strict=False)
+    model = AVnet_Slim().to('cuda')
+    model.load_state_dict(torch.load('vanilla_resnet_AV_19_0.65678066.pth'), strict=False)
     dataset = VGGSound()
     len_train = int(len(dataset) * 0.8)
     len_test = len(dataset) - len_train
