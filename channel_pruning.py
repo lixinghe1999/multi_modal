@@ -95,8 +95,7 @@ def load_batchnorm(model, state_dict):
         for name, child in module._modules.items():
             if child is not None:
                 load(child, prefix + name + '.')
-        print(missing_keys)
-        print(unexpected_keys)
+
         # Note that the hook can modify missing_keys and unexpected_keys.
         # incompatible_keys = _IncompatibleKeys(missing_keys, unexpected_keys)
         # for hook in module._load_state_dict_post_hooks.values():
@@ -108,6 +107,8 @@ def load_batchnorm(model, state_dict):
         #     )
 
     load(model)
+    print(missing_keys)
+    print(unexpected_keys)
     del load
 
     # if strict:
