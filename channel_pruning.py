@@ -28,7 +28,7 @@ def train_step(model, input_data, optimizer, criteria, soft_criteria, label):
         for j in range(mode + 1, 4):
             loss += soft_criteria(outputs[mode], outputs[j])
         loss += criteria(outputs[mode], label)
-        loss.backward()
+        loss.backward(retain_graph=True)
     optimizer.step()
 def test_step(model, input_data, label):
     audio, image = input_data
