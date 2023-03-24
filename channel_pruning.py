@@ -107,8 +107,14 @@ def load_batchnorm(model, state_dict):
         #     )
 
     load(model)
-    print(missing_keys)
-    print(unexpected_keys)
+    for k in missing_keys:
+        if k.split('.')[3][:2]!= 'bn':
+            print(k)
+    for k in unexpected_keys:
+        if k.split('.')[3][:2]!= 'bn':
+            print(k)
+    # print(missing_keys)
+    # print(unexpected_keys)
     del load
 
     # if strict:
