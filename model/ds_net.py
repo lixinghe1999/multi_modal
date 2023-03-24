@@ -144,14 +144,14 @@ class SlimResNet(nn.Module):
         norm_layer: Optional[Callable[..., nn.Module]] = None,
     ) -> None:
         super().__init__()
-        if norm_layer is None:
-            norm_layer = DSBatchNorm2d
         self.inplanes = dims[0]
         self.dilation = 1
         self.groups = groups
         self.base_width = width_per_group
-        self.conv1 = DSConv2d(3, dims[0], 7, stride=2)
-        self.bn1 = norm_layer(self.inplanes)
+        # self.conv1 = DSConv2d(3, dims[0], 7, stride=2)
+        # self.bn1 = norm_layer(self.inplanes)
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
+        self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.layer1 = self._make_layer(block, dims[0], layers[0])
@@ -191,8 +191,6 @@ class SlimResNet(nn.Module):
             )
         return nn.Sequential(*layers)
 
-    def set_module_choice(self, m):
-        set_exist_attr(m, 'channel_choice', self.channel_choice)
     def set_layer_choice(self, l):
         for m in l.modules():
             set_exist_attr(m, 'channel_choice', self.channel_choice)
@@ -209,10 +207,6 @@ class SlimResNet(nn.Module):
             self.channel_choice = random.randint(0, 3)
         else:
             self.channel_choice = mode
-        self.set_module_choice(self.conv1)
-        self.set_module_choice(self.bn1)
-        set_exist_attr(self.conv1, 'mode', mode)
-        set_exist_attr(self.bn1, 'mode', mode)
     def preprocess(self, x):
         x = self.conv1(x)
         x = self.bn1(x)
