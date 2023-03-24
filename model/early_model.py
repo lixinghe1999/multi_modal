@@ -49,7 +49,7 @@ class AVnet_Early(nn.Module):
         super(AVnet_Early, self).__init__()
         self.model = model
         if model == 'resnet':
-            self.net = ResNet(Bottleneck, [3, 4, 6, 3], num_classes=6)
+            self.net = ResNet(Bottleneck, [3, 4, 6, 3], input_channel=6)
             embed_dim = 512 * 4
             self.head = nn.Sequential(nn.Linear(embed_dim, 309))
         else:
