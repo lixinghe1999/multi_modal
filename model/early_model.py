@@ -50,7 +50,7 @@ class AVnet_Early(nn.Module):
         self.model = model
         if model == 'resnet':
             self.net = resnet50(pretrained=pretrained)
-            self.net.conv1 = nn.Conv2d(6, self.net.inplanes, kernel_size=7, stride=2, padding=3, bias=False)
+            self.net.conv1 = nn.Conv2d(6, 64, kernel_size=7, stride=2, padding=3, bias=False)
             embed_dim = 512 * 4
             self.head = nn.Sequential(nn.Linear(embed_dim, 309))
         else:
