@@ -71,7 +71,8 @@ class AVnet_Early(nn.Module):
     def forward(self, audio, image):
         if self.model == 'resnet':
             print(audio.shape, image.shape)
-            x = torch.cat([audio, image])
+            audio = torch.nn.functional.interpolate(audio, (-1, 3, 224, 224))
+            x = torch.cat([audio, image], dim=1)
             x = self.net.preprocess(x)
             for i, blk in enumerate(self.net.blocks):
                 x = blk(x)
