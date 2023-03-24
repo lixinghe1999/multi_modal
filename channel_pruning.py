@@ -75,9 +75,55 @@ def train(model, train_dataset, test_dataset):
             torch.save(model.state_dict(), 'vanilla_' + args.model + '_' + args.task + '_' +
                        str(epoch) + '_' + str(avg_acc) + '.pth')
 
-def load_batchnorm(model, weight):
-    for m, w in zip(model.modules, weight):
-        print(m, w)
+def load_batchnorm(model, state_dict):
+    from collections import OrderedDict
+    missing_keys = []
+    unexpected_keys = []
+    error_msgs = []
+
+    # copy state_dict so _load_from_state_dict can modify it
+    metadata = getattr(state_dict, '_metadata', None)
+    state_dict = OrderedDict(state_dict)
+    if metadata is not None:
+        # mypy isn't aware that "_metadata" exists in state_dict
+        state_dict._metadata = metadata  # type: ignore[attr-defined]
+
+    def load(module, prefix=''):
+        local_metadata = {} if metadata is None else metadata.get(prefix[:-1], {})
+        module._load_from_state_dict(
+            state_dict, prefix, local_metadata, True, missing_keys, unexpected_keys, error_msgs)
+        for name, child in module._modules.items():
+            if child is not None:
+                load(child, prefix + name + '.')
+        print(missing_keys)
+        print(unexpected_keys)
+        # Note that the hook can modify missing_keys and unexpected_keys.
+        # incompatible_keys = _IncompatibleKeys(missing_keys, unexpected_keys)
+        # for hook in module._load_state_dict_post_hooks.values():
+        #     out = hook(module, incompatible_keys)
+        #     assert out is None, (
+        #         "Hooks registered with ``register_load_state_dict_post_hook`` are not"
+        #         "expected to return new values, if incompatible_keys need to be modified,"
+        #         "it should be done inplace."
+        #     )
+
+    load(model)
+    del load
+
+    # if strict:
+    #     if len(unexpected_keys) > 0:
+    #         error_msgs.insert(
+    #             0, 'Unexpected key(s) in state_dict: {}. '.format(
+    #                 ', '.join('"{}"'.format(k) for k in unexpected_keys)))
+    #     if len(missing_keys) > 0:
+    #         error_msgs.insert(
+    #             0, 'Missing key(s) in state_dict: {}. '.format(
+    #                 ', '.join('"{}"'.format(k) for k in missing_keys)))
+    #
+    # if len(error_msgs) > 0:
+    #     raise RuntimeError('Error(s) in loading state_dict for {}:\n\t{}'.format(
+    #         self.__class__.__name__, "\n\t".join(error_msgs)))
+    # return _IncompatibleKeys(missing_keys, unexpected_keys)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -94,7 +140,7 @@ if __name__ == "__main__":
     weight = torch.load('vanilla_resnet_AV_19_0.65678066.pth')
     load_batchnorm(model, weight)
     # model = AVnet(model='resnet', pretrained=False).to(device)
-    #model.load_state_dict(, strict=False)
+    # model.load_state_dict(weight, strict=False)
     # dataset = VGGSound()
     # len_train = int(len(dataset) * 0.8)
     # len_test = len(dataset) - len_train
