@@ -37,7 +37,7 @@ def test_step(model, input_data, label):
         model.audio.set_mode(mode)
         model.image.set_mode(mode)
         output = model(audio, image)
-        acc.append((torch.argmax(output, dim=-1).cpu() == label).sum() / len(label))
+        acc.append((torch.argmax(output, dim=-1) == label).sum() / len(label))
     return acc
 def train(model, train_dataset, test_dataset):
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset, num_workers=workers, batch_size=batch_size, shuffle=True,
