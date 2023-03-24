@@ -76,7 +76,7 @@ def train(model, train_dataset, test_dataset):
                        str(epoch) + '_' + str(avg_acc) + '.pth')
 
 def load_batchnorm(model, weight):
-    for m, w in zip(model.modules, weight.modules):
+    for m, w in zip(model.modules, weight):
         print(m, w)
 
 if __name__ == "__main__":
