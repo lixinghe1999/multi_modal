@@ -74,6 +74,11 @@ def train(model, train_dataset, test_dataset):
             best_acc = avg_acc
             torch.save(model.state_dict(), 'vanilla_' + args.model + '_' + args.task + '_' +
                        str(epoch) + '_' + str(avg_acc) + '.pth')
+
+def load_batchnorm(model, weight):
+    for m, w in zip(model.modules, weight.modules):
+        print(m, w)
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-m', '--model', default='resnet')
@@ -85,12 +90,14 @@ if __name__ == "__main__":
     batch_size = args.batch
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     torch.cuda.set_device(0)
-    # model = AVnet_Slim().to('cuda')
-    model = AVnet(model='resnet', pretrained=False).to(device)
-    model.load_state_dict(torch.load('vanilla_resnet_AV_19_0.65678066.pth'), strict=False)
-    dataset = VGGSound()
-    len_train = int(len(dataset) * 0.8)
-    len_test = len(dataset) - len_train
-    train_dataset, test_dataset = torch.utils.data.random_split(dataset, [len_train, len_test], generator=torch.Generator().manual_seed(42))
-    train(model, train_dataset, test_dataset)
+    model = AVnet_Slim().to('cuda')
+    weight = torch.load('vanilla_resnet_AV_19_0.65678066.pth')
+    load_batchnorm(model, weight)
+    # model = AVnet(model='resnet', pretrained=False).to(device)
+    #model.load_state_dict(, strict=False)
+    # dataset = VGGSound()
+    # len_train = int(len(dataset) * 0.8)
+    # len_test = len(dataset) - len_train
+    # train_dataset, test_dataset = torch.utils.data.random_split(dataset, [len_train, len_test], generator=torch.Generator().manual_seed(42))
+    # train(model, train_dataset, test_dataset)
 

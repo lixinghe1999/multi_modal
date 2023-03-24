@@ -216,7 +216,6 @@ class SlimResNet(nn.Module):
     def forward(self, x):
         x = self.preprocess(x)
         for i, block in enumerate(self.blocks):
-            print(x.shape)
             if self.mode == 'random':
                 self.channel_choice = random.randint(0, 3)
             self.set_layer_choice(block)
