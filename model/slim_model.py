@@ -34,6 +34,5 @@ class AVnet_Slim(nn.Module):
 
             audio = torch.flatten(self.audio.avgpool(audio), 1)
             image = torch.flatten(self.image.avgpool(image), 1)
-            print(audio.shape, image.shape)
             x = self.head(torch.cat([audio, image], dim=1))
             return x
