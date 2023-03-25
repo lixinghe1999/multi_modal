@@ -162,12 +162,12 @@ class SlimResNet(nn.Module):
         self.layer4 = self._make_layer(block, dims[3], layers[3], stride=2)
         self.blocks = [self.layer1, self.layer2, self.layer3, self.layer4]
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = DSLinear([p * self.expansion for p in dims[3]], num_classes)
         has_gate = False
         self.score_predictor = nn.ModuleList([MultiHeadGate([p * self.expansion for p in dim],
                                                             channel_gate_num=4 if has_gate else 0) for dim in dims])
         if pretrained:
-            self.load_state_dict(torch.load('assets/resnet50.pth'))
+            self.load_state_dict(torch.load('assets/resnet50.pth'), strict=False)
+        self.fc = DSLinear([p * self.expansion for p in dims[3]], num_classes)
     def _make_layer(
         self,
         block,
