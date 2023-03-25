@@ -1,4 +1,4 @@
-from model.ds_net import SlimResNet, SlimBlock
+from model.ds_net import SlimResNet, Bottleneck
 from model.dyn_slim.dyn_slim_ops import DSLinear
 import torch.nn as nn
 from torch.cuda.amp import autocast
@@ -9,8 +9,8 @@ class AVnet_Slim(nn.Module):
         self.model = model
         if model == 'resnet':
             dims = [[int(0.25 * d), int(0.5 * d), int(0.75 * d), int(1 * d)] for d in [64, 128, 256, 512]]
-            self.audio = SlimResNet(SlimBlock, [3, 4, 6, 3], dims)
-            self.image = SlimResNet(SlimBlock, [3, 4, 6, 3], dims)
+            self.audio = SlimResNet(Bottleneck, [3, 4, 6, 3], dims)
+            self.image = SlimResNet(Bottleneck, [3, 4, 6, 3], dims)
             self.head = DSLinear([1024, 2048, 3072, 4096], 309)
             # self.head = nn.Sequential(nn.Linear(embed_dim * 2, 309))
     def fusion_parameter(self):
