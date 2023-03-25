@@ -84,8 +84,8 @@ if __name__ == "__main__":
         elif args.task == 'AV':
             model = AVnet_Slim().to(device)
             # model = AVnet(model='resnet', pretrained=False).to(device)
-            # model.audio.load_state_dict(torch.load('vanilla_resnet_V_6_0.45464385.pth'))
-            # model.image.load_state_dict(torch.load('vanilla_resnet_A_6_0.5008855.pth'))
+            model.audio.load_state_dict(torch.load('vanilla_resnet_V_5_0.30592376.pth'))
+            model.image.load_state_dict(torch.load('vanilla_resnet_A_5_0.5165959.pth'))
         else:
             # model = resnet50(pretrained=False).to(device)
             dims = [[int(0.25 * d), int(0.5 * d), int(0.75 * d), int(1 * d)] for d in [64, 128, 256, 512]]
