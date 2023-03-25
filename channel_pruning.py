@@ -18,7 +18,8 @@ class SoftTargetCrossEntropy(torch.nn.Module):
 def train_step(model, model_distill, input_data, optimizer, criteria, soft_criteria, label):
     audio, image = input_data
     # Track history only in training
-    output_distill = model_distill(audio, image)
+    with torch.no_grad():
+        output_distill = model_distill(audio, image)
 
     # optimizer.zero_grad()
     # mode = -1
@@ -48,11 +49,11 @@ def test_step(model, input_data, label):
     acc = []
     output = model(audio, image)
     acc.append((torch.argmax(output, dim=-1).cpu() == label).sum() / len(label))
-    # for mode in range(4):
-    #     model.audio.set_mode(mode)
-    #     model.image.set_mode(mode)
-    #     output = model(audio, image)
-    #     acc.append((torch.argmax(output, dim=-1).cpu() == label).sum() / len(label))
+    for mode in range(4):
+        model.audio.set_mode(mode)
+        model.image.set_mode(mode)
+        output = model(audio, image)
+        acc.append((torch.argmax(output, dim=-1).cpu() == label).sum() / len(label))
     return acc
 def train(model, model_distill, train_dataset, test_dataset):
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset, num_workers=workers, batch_size=batch_size, shuffle=True,
