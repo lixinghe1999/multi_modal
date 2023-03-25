@@ -9,8 +9,8 @@ class AVnet_Slim(nn.Module):
         self.model = model
         if model == 'resnet':
             dims = [[int(0.25 * d), int(0.5 * d), int(0.75 * d), int(1 * d)] for d in [64, 128, 256, 512]]
-            self.audio = SlimResNet(dims=dims)
-            self.image = SlimResNet(dims=dims)
+            self.audio = SlimResNet(pretrained=False, dims=dims)
+            self.image = SlimResNet(pretrained=False, dims=dims)
             self.head = DSLinear([1024, 2048, 3072, 4096], 309)
     def fusion_parameter(self):
         parameter = [{'params': self.head.parameters()},]

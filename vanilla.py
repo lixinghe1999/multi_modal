@@ -84,13 +84,13 @@ if __name__ == "__main__":
         elif args.task == 'AV':
             model = AVnet_Slim().to(device)
             # model = AVnet(model='resnet', pretrained=False).to(device)
-            model.audio.load_state_dict(torch.load('vanilla_resnet_V_5_0.30592376.pth'))
-            model.image.load_state_dict(torch.load('vanilla_resnet_A_5_0.5165959.pth'))
+            model.audio.load_state_dict(torch.load('vanilla_resnet_A_6_0.5008855.pth'))
+            model.image.load_state_dict(torch.load('vanilla_resnet_V_6_0.45464385.pth'))
         else:
             # model = resnet50(pretrained=False).to(device)
             dims = [[int(0.25 * d), int(0.5 * d), int(0.75 * d), int(1 * d)] for d in [64, 128, 256, 512]]
             model = SlimResNet(pretrained=False, dims=dims).to(device)
-            model.load_state_dict(torch.load('vanilla_resnet_V_6_0.45464385.pth'), strict=False)
+            # model.load_state_dict(torch.load('vanilla_resnet_V_6_0.45464385.pth'), strict=False)
 
     else:
         config = dict(patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True,
