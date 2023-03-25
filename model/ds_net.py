@@ -91,7 +91,7 @@ class MultiHeadGate(nn.Module):
 
     def get_gate(self):
         return self.channel_choice
-class SlimBlock(nn.Module):
+class Bottleneck(nn.Module):
     expansion: int = 4
     def __init__(
         self,
@@ -148,8 +148,9 @@ class SlimResNet(nn.Module):
         self.dilation = 1
         self.groups = groups
         self.base_width = width_per_group
-        # self.conv1 = DSConv2d(3, dims[0], 7, stride=2)
-        # self.bn1 = norm_layer(self.inplanes)
+        self.mode = 'largest'
+        self.channel_choice = -1
+
         self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
         self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace=True)
@@ -161,7 +162,7 @@ class SlimResNet(nn.Module):
         self.blocks = [self.layer1, self.layer2, self.layer3, self.layer4]
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.fc = DSLinear([p * block.expansion for p in dims[3]], num_classes)
-        has_gate = True
+        has_gate = False
         self.score_predictor = nn.ModuleList([MultiHeadGate([p * block.expansion for p in dim],
                                                             channel_gate_num=4 if has_gate else 0) for dim in dims])
 
