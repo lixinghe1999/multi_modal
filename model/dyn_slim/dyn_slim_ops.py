@@ -144,7 +144,7 @@ class DSBatchNorm2d(nn.BatchNorm2d):
                  num_features_list,
                  affine=True,):
         super(DSBatchNorm2d, self).__init__(
-            self.num_features_list[-1])
+            num_features_list[-1])
         self.out_channels_list = num_features_list
         self.aux_bn = nn.ModuleList([
             nn.BatchNorm2d(channel, affine=False) for channel in
