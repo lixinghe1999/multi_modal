@@ -182,12 +182,12 @@ class DSBatchNorm2d(nn.BatchNorm2d):
 
         else:
             idx = self.out_channels_list.index(self.running_inc)
-            if idx < len(self.out_channels_list):
-                running_mean = self.aux_bn[idx].running_mean
-                running_var = self.aux_bn[idx].running_var
-            else:
+            if idx == (len(self.out_channels_list) - 1):
                 running_mean = self.running_mean
                 running_var = self.running_var
+            else:
+                running_mean = self.aux_bn[idx].running_mean
+                running_var = self.aux_bn[idx].running_var
             weight = self.weight[:self.running_inc] if self.affine else None
             bias = self.bias[:self.running_inc] if self.affine else None
             return F.batch_norm(x,
