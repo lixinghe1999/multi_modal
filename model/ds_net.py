@@ -161,9 +161,9 @@ class SlimResNet(nn.Module):
         self.layer4 = self._make_layer(block, dims[3], layers[3], stride=2)
         self.blocks = [self.layer1, self.layer2, self.layer3, self.layer4]
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = DSLinear([p * block.expansion for p in dims[3]], num_classes)
+        self.fc = DSLinear([p * 4 for p in dims[3]], num_classes)
         has_gate = False
-        self.score_predictor = nn.ModuleList([MultiHeadGate([p * block.expansion for p in dim],
+        self.score_predictor = nn.ModuleList([MultiHeadGate([p * 4 for p in dim],
                                                             channel_gate_num=4 if has_gate else 0) for dim in dims])
 
     def _make_layer(
