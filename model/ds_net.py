@@ -139,7 +139,7 @@ class SlimResNet(nn.Module):
         block = Bottleneck,
         layers = [3, 4, 6, 3],
         dims=[[32, 64], [64, 128], [128, 256], [256, 512]],
-        num_classes: int = 309,
+        num_classes: int = 1000,
         groups: int = 1,
         width_per_group: int = 64,
     ) -> None:
