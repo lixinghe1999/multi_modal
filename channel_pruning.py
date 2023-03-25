@@ -20,27 +20,27 @@ def train_step(model, model_distill, input_data, optimizer, criteria, soft_crite
     # Track history only in training
     output_distill = model_distill(audio, image)
     outputs = []
-    optimizer.zero_grad()
-    mode = -1
-    model.audio.set_mode(mode)
-    model.image.set_mode(mode)
-    outputs.append(model(audio, image))
-    loss = 0
-    loss += criteria(outputs[mode], label)
-    loss += soft_criteria(outputs[mode], output_distill)
+    # optimizer.zero_grad()
+    # mode = -1
+    # model.audio.set_mode(mode)
+    # model.image.set_mode(mode)
+    # outputs.append(model(audio, image))
+    # loss = 0
+    # loss += criteria(outputs[mode], label)
+    # loss += soft_criteria(outputs[mode], output_distill)
+    # loss.backward()
 
-    loss.backward()
-    # for mode in range(4):
-    #     model.audio.set_mode(mode)
-    #     model.image.set_mode(mode)
-    #     outputs.append(model(audio, image))
-    # for mode in range(4):
-    #     loss = 0
-    #     for j in range(mode + 1, 4):
-    #         loss += soft_criteria(outputs[mode], outputs[j])
-    #     loss += criteria(outputs[mode], label)
-    #     loss += soft_criteria(outputs[mode], output_distill)
-    #     loss.backward(retain_graph=True)
+    for mode in range(3, -1, -1):
+        model.audio.set_mode(mode)
+        model.image.set_mode(mode)
+        output = model(audio, image)
+        loss = 0
+        for j in range(len(outputs)):
+            loss += soft_criteria(output, outputs[j])
+        loss += criteria(output, label)
+        loss += soft_criteria(output, output_distill)
+        outputs.append(output.detach())
+        loss.backward()
     optimizer.step()
 def test_step(model, input_data, label):
     audio, image = input_data

@@ -12,11 +12,8 @@ class AVnet_Slim(nn.Module):
             self.audio = SlimResNet(dims=dims)
             self.image = SlimResNet(dims=dims)
             self.head = DSLinear([1024, 2048, 3072, 4096], 309)
-            # self.head = nn.Sequential(nn.Linear(embed_dim * 2, 309))
     def fusion_parameter(self):
-        parameter = [{'params': self.head.parameters()},
-                     #{'params': self.fusion.parameters()}
-        ]
+        parameter = [{'params': self.head.parameters()},]
         return parameter
 
     @autocast()
