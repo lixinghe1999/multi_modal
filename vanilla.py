@@ -45,11 +45,11 @@ def train(model, train_dataset, test_dataset):
     criteria = torch.nn.CrossEntropyLoss()
     for epoch in range(20):
         model.train()
-        # for idx, batch in enumerate(tqdm(train_loader)):
-        #     audio, image, text, _ = batch
-        #     step(model, input_data=(audio.to(device), image.to(device)), optimizer=optimizer,
-        #                 criteria=criteria, label=text.to(device))
-        # scheduler.step()
+        for idx, batch in enumerate(tqdm(train_loader)):
+            audio, image, text, _ = batch
+            step(model, input_data=(audio.to(device), image.to(device)), optimizer=optimizer,
+                        criteria=criteria, label=text.to(device))
+        scheduler.step()
         model.eval()
         acc = []
         with torch.no_grad():
