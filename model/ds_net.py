@@ -223,9 +223,9 @@ class SlimResNet(nn.Module):
                 self.channel_choice = random.randint(0, 3)
             self.set_layer_choice(block)
             self.set_layer_mode(block)
-            self.set_layer_choice(self.score_predictor[i])
-            self.set_layer_mode(self.score_predictor[i])
             x = block(x)
+            # self.set_layer_choice(self.score_predictor[i])
+            # self.set_layer_mode(self.score_predictor[i])
             # x = self.score_predictor[i](x)
             # channel_choice = self.score_predictor[i].get_gate()
             # if channel_choice is not None:
