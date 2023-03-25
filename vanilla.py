@@ -87,9 +87,9 @@ if __name__ == "__main__":
             model.audio.load_state_dict(torch.load('vanilla_resnet_V_5_0.30592376.pth'))
             model.image.load_state_dict(torch.load('vanilla_resnet_A_5_0.5165959.pth'))
         else:
-            model = resnet50(pretrained=False).to(device)
-            #dims = [[int(0.25 * d), int(0.5 * d), int(0.75 * d), int(1 * d)] for d in [64, 128, 256, 512]]
-            #model = SlimResNet(pretrained=False, dims=dims).to(device)
+            # model = resnet50(pretrained=False).to(device)
+            dims = [[int(0.25 * d), int(0.5 * d), int(0.75 * d), int(1 * d)] for d in [64, 128, 256, 512]]
+            model = SlimResNet(pretrained=False, dims=dims).to(device)
             model.load_state_dict(torch.load('vanilla_resnet_V_6_0.45464385.pth'))
 
     else:
