@@ -144,6 +144,7 @@ class SlimResNet(nn.Module):
         norm_layer: Optional[Callable[..., nn.Module]] = None,
     ) -> None:
         super().__init__()
+        self.expansion = block.expansion
         self.inplanes = dims[0]
         self.dilation = 1
         self.groups = groups
@@ -161,9 +162,9 @@ class SlimResNet(nn.Module):
         self.layer4 = self._make_layer(block, dims[3], layers[3], stride=2)
         self.blocks = [self.layer1, self.layer2, self.layer3, self.layer4]
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = DSLinear([p * 4 for p in dims[3]], num_classes)
+        self.fc = DSLinear([p * self.expansion for p in dims[3]], num_classes)
         has_gate = False
-        self.score_predictor = nn.ModuleList([MultiHeadGate([p * 4 for p in dim],
+        self.score_predictor = nn.ModuleList([MultiHeadGate([p * self.expansion for p in dim],
                                                             channel_gate_num=4 if has_gate else 0) for dim in dims])
 
     def _make_layer(
@@ -175,17 +176,17 @@ class SlimResNet(nn.Module):
     ) -> nn.Sequential:
         norm_layer = DSBatchNorm2d
         downsample = None
-        if stride != 1 or self.inplanes != [p * block.expansion for p in planes]:
+        if stride != 1 or self.inplanes != [p * self.expansion for p in planes]:
             downsample = nn.Sequential(
-                DSConv2d(self.inplanes, [p * block.expansion for p in planes], 1, stride),
-                norm_layer([p * block.expansion for p in planes]),
+                DSConv2d(self.inplanes, [p * self.expansion for p in planes], 1, stride),
+                norm_layer([p * self.expansion for p in planes]),
             )
 
         layers = []
         layers.append(
             block(self.inplanes, planes, stride, downsample)
         )
-        self.inplanes = [p * block.expansion for p in planes]
+        self.inplanes = [p * self.expansion for p in planes]
         for _ in range(1, blocks):
             layers.append(
                 block(self.inplanes, planes)
