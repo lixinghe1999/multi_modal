@@ -7,6 +7,7 @@ from model.early_model import AVnet_Early
 from model.vit_model import AudioTransformerDiffPruning, VisionTransformerDiffPruning
 from model.resnet_model import resnet50
 from model.ds_net import SlimResNet
+from model.slim_model import AVnet_Slim
 import argparse
 import warnings
 from tqdm import tqdm
@@ -81,9 +82,10 @@ if __name__ == "__main__":
         if args.task == 'early':
             model = AVnet_Early(pretrained=False, model='resnet').to(device)
         elif args.task == 'AV':
-            model = AVnet(model='resnet', pretrained=False).to(device)
-            model.audio.load_state_dict(torch.load('vanilla_resnet_V_6_0.45464385.pth'))
-            model.image.load_state_dict(torch.load('vanilla_resnet_A_6_0.5008855.pth'))
+            model = AVnet_Slim().to(device)
+            # model = AVnet(model='resnet', pretrained=False).to(device)
+            # model.audio.load_state_dict(torch.load('vanilla_resnet_V_6_0.45464385.pth'))
+            # model.image.load_state_dict(torch.load('vanilla_resnet_A_6_0.5008855.pth'))
         else:
             # model = resnet50(pretrained=False).to(device)
             dims = [[int(0.25 * d), int(0.5 * d), int(0.75 * d), int(1 * d)] for d in [64, 128, 256, 512]]

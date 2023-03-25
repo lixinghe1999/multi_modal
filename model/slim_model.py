@@ -9,8 +9,8 @@ class AVnet_Slim(nn.Module):
         self.model = model
         if model == 'resnet':
             dims = [[int(0.25 * d), int(0.5 * d), int(0.75 * d), int(1 * d)] for d in [64, 128, 256, 512]]
-            self.audio = SlimResNet(Bottleneck, [3, 4, 6, 3], dims)
-            self.image = SlimResNet(Bottleneck, [3, 4, 6, 3], dims)
+            self.audio = SlimResNet(dims)
+            self.image = SlimResNet(dims)
             self.head = DSLinear([1024, 2048, 3072, 4096], 309)
             # self.head = nn.Sequential(nn.Linear(embed_dim * 2, 309))
     def fusion_parameter(self):
@@ -30,7 +30,9 @@ class AVnet_Slim(nn.Module):
                 self.image.set_layer_choice(blk_i)
                 self.image.set_layer_mode(blk_i)
                 audio = blk_a(audio)
+                audio = self.audio.score_predictor[i](audio)
                 image = blk_i(image)
+                image = self.image.score_predictor[i](image)
 
             audio = torch.flatten(self.audio.avgpool(audio), 1)
             image = torch.flatten(self.image.avgpool(image), 1)
