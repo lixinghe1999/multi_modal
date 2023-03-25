@@ -188,8 +188,8 @@ class DSBatchNorm2d(nn.BatchNorm2d):
             else:
                 running_mean = self.aux_bn[idx].running_mean
                 running_var = self.aux_bn[idx].running_var
-            weight = self.weight[:self.running_inc] if self.affine else None
-            bias = self.bias[:self.running_inc] if self.affine else None
+            weight = self.weight[:self.running_inc]
+            bias = self.bias[:self.running_inc]
             return F.batch_norm(x,
                                 running_mean,
                                 running_var,
