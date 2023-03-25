@@ -139,22 +139,20 @@ class DSdwConv2d(DSConv2d):
             padding_mode='zeros')
 
 
-class DSBatchNorm2d(nn.Module):
+class DSBatchNorm2d(nn.BatchNorm2d):
     def __init__(self,
                  num_features_list,
-                 eps=1e-5,
-                 momentum=0.1,
-                 affine=True,
-                 track_running_stats=True):
-        super(DSBatchNorm2d, self).__init__()
+                 affine=True,):
+        super(DSBatchNorm2d, self).__init__(
+            self.out_channels_list[-1])
         self.out_channels_list = num_features_list
         self.aux_bn = nn.ModuleList([
             nn.BatchNorm2d(channel, affine=False) for channel in
             self.out_channels_list[:-1]])
-        self.aux_bn.append(nn.BatchNorm2d(self.out_channels_list[-1],
-                                          eps=eps,
-                                          momentum=momentum,
-                                          affine=affine))
+        # self.aux_bn.append(nn.BatchNorm2d(self.out_channels_list[-1],
+        #                                   eps=eps,
+        #                                   momentum=momentum,
+        #                                   affine=affine))
         self.affine = affine
         self.channel_choice = -1
         self.mode = 'largest'
@@ -184,10 +182,14 @@ class DSBatchNorm2d(nn.Module):
 
         else:
             idx = self.out_channels_list.index(self.running_inc)
-            running_mean = self.aux_bn[idx].running_mean
-            running_var = self.aux_bn[idx].running_var
-            weight = self.aux_bn[-1].weight[:self.running_inc] if self.affine else None
-            bias = self.aux_bn[-1].bias[:self.running_inc] if self.affine else None
+            if idx < len(self.out_channels_list):
+                running_mean = self.aux_bn[idx].running_mean
+                running_var = self.aux_bn[idx].running_var
+            else:
+                running_mean = self.running_mean
+                running_var = self.running_var
+            weight = self.weight[:self.running_inc] if self.affine else None
+            bias = self.bias[:self.running_inc] if self.affine else None
             return F.batch_norm(x,
                                 running_mean,
                                 running_var,
