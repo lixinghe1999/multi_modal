@@ -20,19 +20,9 @@ def train_step(model, model_distill, input_data, optimizer, criteria, soft_crite
     # Track history only in training
     with torch.no_grad():
         output_distill = model_distill(audio, image)
-
-    # optimizer.zero_grad()
-    # mode = -1
-    # model.audio.set_mode(mode)
-    # model.image.set_mode(mode)
-    # outputs.append(model(audio, image))
-    # loss = 0
-    # loss += criteria(outputs[mode], label)
-    # loss += soft_criteria(outputs[mode], output_distill)
-    # loss.backward()
-
     outputs = []
     for mode in range(3, -1, -1):
+        optimizer.zero_grad()
         model.audio.set_mode(mode)
         model.image.set_mode(mode)
         output = model(audio, image)
@@ -43,6 +33,7 @@ def train_step(model, model_distill, input_data, optimizer, criteria, soft_crite
         loss += soft_criteria(output, output_distill)
         outputs.append(output.detach())
         loss.backward()
+        optimizer.step()
     optimizer.step()
 def test_step(model, input_data, label):
     audio, image = input_data
