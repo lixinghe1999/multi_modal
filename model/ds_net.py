@@ -106,11 +106,11 @@ class Bottleneck(nn.Module):
         super().__init__()
         width = [int(p * (base_width / 64.0)) * groups for p in planes]
         # Both self.conv2 and self.downsample layers downsample the input when stride != 1
-        self.conv1 = DSConv2d(inplanes, width, 1)
+        self.conv1 = DSConv2d(inplanes, width, 1, bias=False)
         self.bn1 = DSBatchNorm2d(width)
-        self.conv2 = DSConv2d(width, width, 3, stride, dilation, groups)
+        self.conv2 = DSConv2d(width, width, 3, stride, dilation, groups, bias=False)
         self.bn2 = DSBatchNorm2d(width)
-        self.conv3 = DSConv2d(width, [p * self.expansion for p in planes], 1)
+        self.conv3 = DSConv2d(width, [p * self.expansion for p in planes], 1, bias=False)
         self.bn3 = DSBatchNorm2d([p * self.expansion for p in planes])
         self.relu = nn.ReLU(inplace=True)
         self.downsample = downsample
@@ -175,12 +175,11 @@ class SlimResNet(nn.Module):
         blocks: int,
         stride: int = 1,
     ) -> nn.Sequential:
-        norm_layer = DSBatchNorm2d
         downsample = None
         if stride != 1 or self.inplanes != [p * self.expansion for p in planes]:
             downsample = nn.Sequential(
                 DSConv2d(self.inplanes, [p * self.expansion for p in planes], 1, stride),
-                norm_layer([p * self.expansion for p in planes]),
+                DSBatchNorm2d([p * self.expansion for p in planes]),
             )
 
         layers = []
