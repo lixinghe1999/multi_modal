@@ -178,7 +178,7 @@ class SlimResNet(nn.Module):
         downsample = None
         if stride != 1 or self.inplanes != [p * self.expansion for p in planes]:
             downsample = nn.Sequential(
-                DSConv2d(self.inplanes, [p * self.expansion for p in planes], 1, stride),
+                DSConv2d(self.inplanes, [p * self.expansion for p in planes], 1, stride, bias=False),
                 DSBatchNorm2d([p * self.expansion for p in planes]),
             )
 
