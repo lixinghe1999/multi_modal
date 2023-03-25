@@ -19,7 +19,7 @@ def train_step(model, model_distill, input_data, optimizer, criteria, soft_crite
     audio, image = input_data
     # Track history only in training
     output_distill = model_distill(audio, image)
-    outputs = []
+
     # optimizer.zero_grad()
     # mode = -1
     # model.audio.set_mode(mode)
@@ -30,6 +30,7 @@ def train_step(model, model_distill, input_data, optimizer, criteria, soft_crite
     # loss += soft_criteria(outputs[mode], output_distill)
     # loss.backward()
 
+    outputs = []
     for mode in range(3, -1, -1):
         model.audio.set_mode(mode)
         model.image.set_mode(mode)
@@ -98,7 +99,7 @@ if __name__ == "__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     torch.cuda.set_device(0)
     model = AVnet_Slim().to('cuda')
-
+    model.load_state_dict(torch.load('vanilla_resnet_AV_7_0.65220517.pth'))
     model_distill = AVnet(model='resnet', pretrained=False).to(device)
     model_distill.load_state_dict(torch.load('vanilla_resnet_AV_19_0.65678066.pth'), strict=False)
     model_distill.eval()
