@@ -38,8 +38,8 @@ def train_step(model, model_distill, input_data, optimizer, criteria, soft_crite
 def test_step(model, input_data, label):
     audio, image = input_data
     acc = []
-    output = model(audio, image)
-    acc.append((torch.argmax(output, dim=-1).cpu() == label).sum() / len(label))
+    # output = model(audio, image)
+    # acc.append((torch.argmax(output, dim=-1).cpu() == label).sum() / len(label))
     for mode in range(4):
         model.audio.set_mode(mode)
         model.image.set_mode(mode)
