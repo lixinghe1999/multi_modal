@@ -20,7 +20,7 @@ def train_step(model, model_distill, input_data, optimizer, criteria, soft_crite
     # Track history only in training
     with torch.no_grad():
         output_distill = model_distill(audio, image)
-    outputs = []
+    #outputs = []
     losses = []
     for mode in range(3, -1, -1):
         model.audio.set_mode(mode)
@@ -29,14 +29,13 @@ def train_step(model, model_distill, input_data, optimizer, criteria, soft_crite
         loss = 0
         # for j in range(len(outputs)):
         #     loss += soft_criteria(output, outputs[j])
-        loss += criteria(output, label)
+        loss += criteria(output, label) * 1
         # loss += soft_criteria(output, output_distill)
         loss += torch.nn.functional.kl_div(
                 torch.nn.functional.log_softmax(output, dim=-1),
                 torch.nn.functional.log_softmax(output_distill, dim=-1),
                 reduction='batchmean',
-                log_target=True
-            )
+                log_target=True) * 0.5
         loss = loss * (mode + 1)/4
         # outputs.append(output.detach())
         loss.backward()
@@ -73,7 +72,7 @@ def train(model, model_distill, train_dataset, test_dataset):
             audio, image, text, _ = batch
             losses = train_step(model, model_distill, input_data=(audio.to(device), image.to(device)), optimizer=optimizer,
                         criteria=criteria, soft_criteria=soft_criteria, label=text.to(device))
-            if idx % 50 == 0:
+            if idx % 100 == 0 and idx > 0:
                 print('iteration:', str(idx), losses)
         scheduler.step()
         model.eval()
