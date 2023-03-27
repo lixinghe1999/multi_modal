@@ -51,14 +51,14 @@ def train_step(model, input_data, optimizer, criteria, soft_criteria, label):
                 loss = criteria(output, label)
                 outputs.append(output.detach())
             elif mode == 'random':
-                loss = torch.nn.functional.kl_div(
+                loss = criteria(output, label) + torch.nn.functional.kl_div(
                         torch.nn.functional.log_softmax(output, dim=-1),
                         torch.nn.functional.log_softmax(outputs[0], dim=-1),
                         reduction='batchmean',
                         log_target=True) * 0.5
                 outputs.append(output.detach())
             else:
-                loss = torch.nn.functional.kl_div(
+                loss = criteria(output, label) + torch.nn.functional.kl_div(
                     torch.nn.functional.log_softmax(output, dim=-1),
                     torch.nn.functional.log_softmax(sum(outputs)/3, dim=-1),
                     reduction='batchmean',
