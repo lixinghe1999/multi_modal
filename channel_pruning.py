@@ -65,7 +65,7 @@ def train_step(model, input_data, optimizer, criteria, soft_criteria, label):
                     log_target=True) * 0.5
             loss.backward()
             losses.append(loss.item())
-        print(losses)
+        # print(losses)
     optimizer.step()
     optimizer.zero_grad()
     return losses
