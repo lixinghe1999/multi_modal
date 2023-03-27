@@ -31,6 +31,7 @@ def train_step(model, model_distill, input_data, optimizer, criteria, soft_crite
         #     loss += soft_criteria(output, outputs[j])
         loss += criteria(output, label)
         loss += soft_criteria(output, torch.nn.functional.softmax(output_distill))
+        loss *= (mode + 1)/4
         # outputs.append(output.detach())
         loss.backward()
         losses.append(loss.item())
@@ -66,7 +67,7 @@ def train(model, model_distill, train_dataset, test_dataset):
             audio, image, text, _ = batch
             losses = train_step(model, model_distill, input_data=(audio.to(device), image.to(device)), optimizer=optimizer,
                         criteria=criteria, soft_criteria=soft_criteria, label=text.to(device))
-            if idx % 100 == 0:
+            if idx % 50 == 0:
                 print('iteration:', str(idx), losses)
         scheduler.step()
         model.eval()
