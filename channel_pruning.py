@@ -106,12 +106,6 @@ def train(model, model_distill, train_dataset, test_dataset):
                 acc.append(accuracy)
                 comp.append(computation)
 
-        if args.task == 'random':
-            plt.scatter(comp, acc, color='blue')
-            m, b = np.polyfit(comp, acc, 1)
-            plt.plot(comp, m * comp + b, color='red')
-            plt.savefig('comp_acc.png')
-
         mean_acc = np.mean(acc, axis=0)
         print('epoch', epoch, mean_acc)
         avg_acc = np.mean(mean_acc)
@@ -119,6 +113,11 @@ def train(model, model_distill, train_dataset, test_dataset):
             best_acc = avg_acc
             torch.save(model.state_dict(), 'slim_' + args.model + '_' + args.task + '_' +
                        str(epoch) + '_' + str(avg_acc) + '.pth')
+    if args.task == 'random':
+        plt.scatter(comp, acc, color='blue')
+        m, b = np.polyfit(comp, acc, 1)
+        plt.plot(comp, m * comp + b, color='red')
+        plt.savefig('comp_acc.png')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
