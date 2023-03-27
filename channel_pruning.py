@@ -30,8 +30,14 @@ def train_step(model, model_distill, input_data, optimizer, criteria, soft_crite
         # for j in range(len(outputs)):
         #     loss += soft_criteria(output, outputs[j])
         loss += criteria(output, label)
-        loss += soft_criteria(output, output_distill)
-        loss *= (mode + 1)/4
+        # loss += soft_criteria(output, output_distill)
+        loss += torch.nn.functional.kl_div(
+                torch.nn.functional.log_softmax(output, dim=-1),
+                torch.nn.functional.log_softmax(output_distill, dim=-1),
+                reduction='batchmean',
+                log_target=True
+            )
+        # loss *= (mode + 1)/4
         # outputs.append(output.detach())
         loss.backward()
         losses.append(loss.item())
