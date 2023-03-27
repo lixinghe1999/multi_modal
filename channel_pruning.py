@@ -133,8 +133,8 @@ if __name__ == "__main__":
     model = AVnet_Slim().to('cuda')
     model.load_state_dict(torch.load('vanilla_resnet_AV_7_0.65220517.pth'))
     model_distill = AVnet(model='resnet', pretrained=False).to(device)
-    # model_distill.load_state_dict(torch.load('vanilla_resnet_AV_19_0.65678066.pth'), strict=False)
-    model_distill.load_state_dict(torch.load('slim_resnet_distill_9_0.5563375.pth'), strict=False)
+    model_distill.load_state_dict(torch.load('vanilla_resnet_AV_19_0.65678066.pth'), strict=False)
+    # model_distill.load_state_dict(torch.load('slim_resnet_distill_9_0.5563375.pth'), strict=False)
 
     model_distill.eval()
     dataset = VGGSound()
