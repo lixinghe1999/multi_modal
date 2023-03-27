@@ -117,7 +117,7 @@ def train(model, train_dataset, test_dataset):
                                                   label=text)
                 acc.append(accuracy)
                 comp.append(computation)
-
+        acc = np.array(acc)
         mean_acc = np.mean(acc, axis=0)
         print('epoch', epoch, mean_acc)
         avg_acc = np.mean(mean_acc)
@@ -126,9 +126,12 @@ def train(model, train_dataset, test_dataset):
             torch.save(model.state_dict(), 'slim_' + args.model + '_' + args.task + '_' +
                        str(epoch) + '_' + str(avg_acc) + '.pth')
     if args.task == 'random':
-        plt.scatter(comp, acc, color='blue')
-        m, b = np.polyfit(comp, acc, 1)
+        plt.scatter(comp, acc[:, 1], color='blue')
+        plt.scatter(comp, acc[:, 2], color='blue')
+        m, b = np.polyfit(comp, acc[:, 1], 1)
         plt.plot(comp, m * comp + b, color='red')
+        m, b = np.polyfit(comp, acc[:, 2], 1)
+        plt.plot(comp, m * comp + b, color='green')
         plt.savefig('comp_acc.png')
 
 if __name__ == "__main__":
