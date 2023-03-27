@@ -16,11 +16,9 @@ class SoftTargetCrossEntropy(torch.nn.Module):
     def forward(self, x, target):
         loss = torch.sum(-target * torch.nn.functional.log_softmax(x, dim=-1), dim=-1)
         return loss.mean()
-def train_step(model, model_distill, input_data, optimizer, criteria, soft_criteria, label):
+def train_step(model, input_data, optimizer, criteria, soft_criteria, label):
     audio, image = input_data
     # Track history only in training
-    with torch.no_grad():
-        output_distill = model_distill(audio, image)
     losses = []
     if args.task == 'uniform':
         # outputs = []
@@ -28,31 +26,35 @@ def train_step(model, model_distill, input_data, optimizer, criteria, soft_crite
             model.audio.set_mode(mode)
             model.image.set_mode(mode)
             output, _ = model(audio, image)
-            loss = 0
             # for j in range(len(outputs)):
             #     loss += soft_criteria(output, outputs[j])
-            loss += criteria(output, label) * 1
+            loss = criteria(output, label) * 1
             # loss += soft_criteria(output, output_distill)
-            loss += torch.nn.functional.kl_div(
-                    torch.nn.functional.log_softmax(output, dim=-1),
-                    torch.nn.functional.log_softmax(output_distill, dim=-1),
-                    reduction='batchmean',
-                    log_target=True) * 0.5
+            if mode < 3:
+                loss += torch.nn.functional.kl_div(
+                        torch.nn.functional.log_softmax(output, dim=-1),
+                        torch.nn.functional.log_softmax(output_distill, dim=-1),
+                        reduction='batchmean',
+                        log_target=True) * 0.5
+            else:
+                output_distill = output.detach()
             loss = loss * (mode + 1)/4
             loss.backward()
             losses.append(loss.item())
     else:
-        for i, mode in enumerate(['smallest', 'random', 'random', 'largest']):
+        outputs = []
+        for i, mode in enumerate(['largest', 'random', 'random', 'smallest']):
             model.audio.set_mode(mode)
             model.image.set_mode(mode)
             output, _ = model(audio, image)
-            loss = criteria(output, label) * 1
-            loss += torch.nn.functional.kl_div(
-                            torch.nn.functional.log_softmax(output, dim=-1),
-                            torch.nn.functional.log_softmax(output_distill, dim=-1),
-                            reduction='batchmean',
-                            log_target=True) * 0.5
-            loss = loss * (i + 1)/4
+            if mode == 'largest':
+                loss = criteria(output, label) * 1
+                outputs.append(output.detach())
+            elif mode == 'random':
+                loss = soft_criteria(output, outputs[0])
+                outputs.append(output.detach())
+            else:
+                loss = soft_criteria(output, sum(outputs)/3)
             loss.backward()
             losses.append(loss.item())
     optimizer.step()
@@ -62,18 +64,19 @@ def test_step(model, input_data, label):
     audio, image = input_data
     acc = []
     if args.task == 'uniform':
-        for mode in range(4):
+        for mode in range(3, -1, -1):
             model.audio.set_mode(mode)
             model.image.set_mode(mode)
             output, comp = model(audio, image)
             acc.append((torch.argmax(output, dim=-1).cpu() == label).sum() / len(label))
     else:
-        model.audio.set_mode('random')
-        model.image.set_mode('random')
-        output, comp = model(audio, image)
-        acc.append((torch.argmax(output, dim=-1).cpu() == label).sum() / len(label))
+        for i, mode in enumerate(['largest', 'random', 'random', 'smallest']):
+            model.audio.set_mode(mode)
+            model.image.set_mode(mode)
+            output, comp = model(audio, image)
+            acc.append((torch.argmax(output, dim=-1).cpu() == label).sum() / len(label))
     return acc, comp
-def train(model, model_distill, train_dataset, test_dataset):
+def train(model, train_dataset, test_dataset):
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset, num_workers=workers,
                            batch_size=batch_size, shuffle=True, drop_last=True, pin_memory=False)
     test_loader = torch.utils.data.DataLoader(dataset=test_dataset, num_workers=workers,
@@ -90,7 +93,7 @@ def train(model, model_distill, train_dataset, test_dataset):
         model.train()
         for idx, batch in enumerate(tqdm(train_loader)):
             audio, image, text, _ = batch
-            losses = train_step(model, model_distill, input_data=(audio.to(device), image.to(device)), optimizer=optimizer,
+            losses = train_step(model, input_data=(audio.to(device), image.to(device)), optimizer=optimizer,
                         criteria=criteria, soft_criteria=soft_criteria, label=text.to(device))
             if idx % 200 == 0 and idx > 0:
                 print('iteration:', str(idx), losses)
@@ -132,15 +135,15 @@ if __name__ == "__main__":
     torch.cuda.set_device(0)
     model = AVnet_Slim().to('cuda')
     model.load_state_dict(torch.load('vanilla_resnet_AV_7_0.65220517.pth'))
-    model_distill = AVnet(model='resnet', pretrained=False).to(device)
-    model_distill.load_state_dict(torch.load('vanilla_resnet_AV_19_0.65678066.pth'), strict=False)
+    # model_distill = AVnet(model='resnet', pretrained=False).to(device)
+    # model_distill.load_state_dict(torch.load('vanilla_resnet_AV_19_0.65678066.pth'), strict=False)
     # model_distill.load_state_dict(torch.load('slim_resnet_distill_9_0.5563375.pth'), strict=False)
 
-    model_distill.eval()
+    # model_distill.eval()
     dataset = VGGSound()
     len_train = int(len(dataset) * 0.8)
     len_test = len(dataset) - len_train
     train_dataset, test_dataset = torch.utils.data.random_split(dataset, [len_train, len_test],
                                                                 generator=torch.Generator().manual_seed(42))
-    train(model, model_distill, train_dataset, test_dataset)
+    train(model, train_dataset, test_dataset)
 
