@@ -48,7 +48,7 @@ def train_step(model, input_data, optimizer, criteria, soft_criteria, label):
             model.image.set_mode(mode)
             output, _ = model(audio, image)
             if mode == 'largest':
-                loss = criteria(output, label) * 1
+                loss = criteria(output, label)
                 outputs.append(output.detach())
             elif mode == 'random':
                 loss = soft_criteria(output, outputs[0])
@@ -57,6 +57,7 @@ def train_step(model, input_data, optimizer, criteria, soft_criteria, label):
                 loss = soft_criteria(output, sum(outputs)/3)
             loss.backward()
             losses.append(loss.item())
+        print(losses)
     optimizer.step()
     optimizer.zero_grad()
     return losses
