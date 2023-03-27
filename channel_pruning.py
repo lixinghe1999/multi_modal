@@ -21,8 +21,8 @@ def train_step(model, model_distill, input_data, optimizer, criteria, soft_crite
     with torch.no_grad():
         output_distill = model_distill(audio, image)
     outputs = []
+    losses = []
     for mode in range(3, -1, -1):
-        optimizer.zero_grad()
         model.audio.set_mode(mode)
         model.image.set_mode(mode)
         output = model(audio, image)
@@ -30,11 +30,13 @@ def train_step(model, model_distill, input_data, optimizer, criteria, soft_crite
         # for j in range(len(outputs)):
         #     loss += soft_criteria(output, outputs[j])
         loss += criteria(output, label)
-        loss += soft_criteria(output, output_distill)
-        outputs.append(output.detach())
+        loss += soft_criteria(output, torch.nn.functional.softmax(output_distill))
+        # outputs.append(output.detach())
         loss.backward()
-        optimizer.step()
+        losses.append(loss.item())
     optimizer.step()
+    optimizer.zero_grad()
+    return losses
 def test_step(model, input_data, label):
     audio, image = input_data
     acc = []
@@ -62,8 +64,10 @@ def train(model, model_distill, train_dataset, test_dataset):
         model.train()
         for idx, batch in enumerate(tqdm(train_loader)):
             audio, image, text, _ = batch
-            train_step(model, model_distill, input_data=(audio.to(device), image.to(device)), optimizer=optimizer,
+            losses = train_step(model, model_distill, input_data=(audio.to(device), image.to(device)), optimizer=optimizer,
                         criteria=criteria, soft_criteria=soft_criteria, label=text.to(device))
+            if idx % 100 == 0:
+                print('iteration:', str(idx), losses)
         scheduler.step()
         model.eval()
         acc = []
