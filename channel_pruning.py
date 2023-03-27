@@ -37,7 +37,7 @@ def train_step(model, model_distill, input_data, optimizer, criteria, soft_crite
                 reduction='batchmean',
                 log_target=True
             )
-        # loss *= (mode + 1)/4
+        loss = loss * (mode + 1)/4
         # outputs.append(output.detach())
         loss.backward()
         losses.append(loss.item())
