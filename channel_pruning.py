@@ -21,51 +21,57 @@ def train_step(model, model_distill, input_data, optimizer, criteria, soft_crite
     # Track history only in training
     with torch.no_grad():
         output_distill = model_distill(audio, image)
-    # outputs = []
     losses = []
-    # for mode in range(3, -1, -1):
-    #     model.audio.set_mode(mode)
-    #     model.image.set_mode(mode)
-    #     output, _ = model(audio, image)
-    #     loss = 0
-    #     # for j in range(len(outputs)):
-    #     #     loss += soft_criteria(output, outputs[j])
-    #     loss += criteria(output, label) * 1
-    #     # loss += soft_criteria(output, output_distill)
-    #     loss += torch.nn.functional.kl_div(
-    #             torch.nn.functional.log_softmax(output, dim=-1),
-    #             torch.nn.functional.log_softmax(output_distill, dim=-1),
-    #             reduction='batchmean',
-    #             log_target=True) * 0.5
-    #     loss = loss * (mode + 1)/4
-    #     loss.backward()
-    #     losses.append(loss.item())
-    model.audio.set_mode('random')
-    model.image.set_mode('random')
-    output, _ = model(audio, image)
-    loss = criteria(output, label) * 1
-    loss += torch.nn.functional.kl_div(
+    if args.task == 'uniform':
+        # outputs = []
+        for mode in range(3, -1, -1):
+            model.audio.set_mode(mode)
+            model.image.set_mode(mode)
+            output, _ = model(audio, image)
+            loss = 0
+            # for j in range(len(outputs)):
+            #     loss += soft_criteria(output, outputs[j])
+            loss += criteria(output, label) * 1
+            # loss += soft_criteria(output, output_distill)
+            loss += torch.nn.functional.kl_div(
                     torch.nn.functional.log_softmax(output, dim=-1),
                     torch.nn.functional.log_softmax(output_distill, dim=-1),
                     reduction='batchmean',
                     log_target=True) * 0.5
-    loss.backward()
-    losses.append(loss.item())
+            loss = loss * (mode + 1)/4
+            loss.backward()
+            losses.append(loss.item())
+    else:
+        for i, mode in enumerate(['smallest', 'random', 'random', 'largest']):
+            model.audio.set_mode(mode)
+            model.image.set_mode(mode)
+            output, _ = model(audio, image)
+            loss = criteria(output, label) * 1
+            loss += torch.nn.functional.kl_div(
+                            torch.nn.functional.log_softmax(output, dim=-1),
+                            torch.nn.functional.log_softmax(output_distill, dim=-1),
+                            reduction='batchmean',
+                            log_target=True) * 0.5
+            loss = loss * (i + 1)/4
+            loss.backward()
+            losses.append(loss.item())
     optimizer.step()
     optimizer.zero_grad()
     return losses
 def test_step(model, input_data, label):
     audio, image = input_data
     acc = []
-    model.audio.set_mode('random')
-    model.image.set_mode('random')
-    output, comp = model(audio, image)
-    acc.append((torch.argmax(output, dim=-1).cpu() == label).sum() / len(label))
-    # for mode in range(4):
-    #     model.audio.set_mode(mode)
-    #     model.image.set_mode(mode)
-    #     output = model(audio, image)
-    #     acc.append((torch.argmax(output, dim=-1).cpu() == label).sum() / len(label))
+    if args.task == 'uniform':
+        for mode in range(4):
+            model.audio.set_mode(mode)
+            model.image.set_mode(mode)
+            output, comp = model(audio, image)
+            acc.append((torch.argmax(output, dim=-1).cpu() == label).sum() / len(label))
+    else:
+        model.audio.set_mode('random')
+        model.image.set_mode('random')
+        output, comp = model(audio, image)
+        acc.append((torch.argmax(output, dim=-1).cpu() == label).sum() / len(label))
     return acc, comp
 def train(model, model_distill, train_dataset, test_dataset):
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset, num_workers=workers,
@@ -100,10 +106,11 @@ def train(model, model_distill, train_dataset, test_dataset):
                 acc.append(accuracy)
                 comp.append(computation)
 
-        plt.scatter(comp, acc)
-        m, b = np.polyfit(comp, acc, 1)
-        plt.plot(comp, m * comp + b, color='red')
-        plt.savefig('comp_acc.png')
+        if args.task == 'random':
+            plt.scatter(comp, acc)
+            m, b = np.polyfit(comp, acc, 1)
+            plt.plot(comp, m * comp + b, color='red')
+            plt.savefig('comp_acc.png')
 
         mean_acc = np.mean(acc, axis=0)
         print('epoch', epoch, mean_acc)
@@ -116,7 +123,7 @@ def train(model, model_distill, train_dataset, test_dataset):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-m', '--model', default='resnet')
-    parser.add_argument('-t', '--task', default='distill')
+    parser.add_argument('-t', '--task', default='random')
     parser.add_argument('-w', '--worker', default=4, type=int)
     parser.add_argument('-b', '--batch', default=32, type=int)
     args = parser.parse_args()
