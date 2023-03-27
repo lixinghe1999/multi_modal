@@ -99,12 +99,12 @@ def train(model, model_distill, train_dataset, test_dataset):
                                                   label=text)
                 acc.append(accuracy)
                 comp.append(computation)
-        acc = np.array(acc)
-        comp = np.array(comp)
+
         plt.scatter(comp, acc)
         m, b = np.polyfit(comp, acc, 1)
         plt.plot(comp, m * comp + b)
         plt.savefig('comp_acc.png')
+
         mean_acc = np.mean(acc, axis=0)
         print('epoch', epoch, mean_acc)
         avg_acc = np.mean(mean_acc)
