@@ -27,8 +27,8 @@ def train_step(model, model_distill, input_data, optimizer, criteria, soft_crite
         model.image.set_mode(mode)
         output = model(audio, image)
         loss = 0
-        for j in range(len(outputs)):
-            loss += soft_criteria(output, outputs[j])
+        # for j in range(len(outputs)):
+        #     loss += soft_criteria(output, outputs[j])
         loss += criteria(output, label)
         loss += soft_criteria(output, output_distill)
         outputs.append(output.detach())
@@ -58,13 +58,13 @@ def train(model, model_distill, train_dataset, test_dataset):
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.2)
     criteria = torch.nn.CrossEntropyLoss()
     soft_criteria = SoftTargetCrossEntropy()
-    for epoch in range(1):
+    for epoch in range(10):
         model.train()
-        # for idx, batch in enumerate(tqdm(train_loader)):
-        #     audio, image, text, _ = batch
-        #     train_step(model, model_distill, input_data=(audio.to(device), image.to(device)), optimizer=optimizer,
-        #                 criteria=criteria, soft_criteria=soft_criteria, label=text.to(device))
-        # scheduler.step()
+        for idx, batch in enumerate(tqdm(train_loader)):
+            audio, image, text, _ = batch
+            train_step(model, model_distill, input_data=(audio.to(device), image.to(device)), optimizer=optimizer,
+                        criteria=criteria, soft_criteria=soft_criteria, label=text.to(device))
+        scheduler.step()
         model.eval()
         acc = []
         with torch.no_grad():
