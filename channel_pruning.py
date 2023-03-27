@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 
 from utils.datasets.vggsound import VGGSound
 import numpy as np
@@ -20,44 +21,57 @@ def train_step(model, model_distill, input_data, optimizer, criteria, soft_crite
     # Track history only in training
     with torch.no_grad():
         output_distill = model_distill(audio, image)
-    #outputs = []
+    # outputs = []
     losses = []
-    for mode in range(3, -1, -1):
-        model.audio.set_mode(mode)
-        model.image.set_mode(mode)
-        output = model(audio, image)
-        loss = 0
-        # for j in range(len(outputs)):
-        #     loss += soft_criteria(output, outputs[j])
-        loss += criteria(output, label) * 1
-        # loss += soft_criteria(output, output_distill)
-        loss += torch.nn.functional.kl_div(
-                torch.nn.functional.log_softmax(output, dim=-1),
-                torch.nn.functional.log_softmax(output_distill, dim=-1),
-                reduction='batchmean',
-                log_target=True) * 0.5
-        loss = loss * (mode + 1)/4
-        # outputs.append(output.detach())
-        loss.backward()
-        losses.append(loss.item())
+    # for mode in range(3, -1, -1):
+    #     model.audio.set_mode(mode)
+    #     model.image.set_mode(mode)
+    #     output, _ = model(audio, image)
+    #     loss = 0
+    #     # for j in range(len(outputs)):
+    #     #     loss += soft_criteria(output, outputs[j])
+    #     loss += criteria(output, label) * 1
+    #     # loss += soft_criteria(output, output_distill)
+    #     loss += torch.nn.functional.kl_div(
+    #             torch.nn.functional.log_softmax(output, dim=-1),
+    #             torch.nn.functional.log_softmax(output_distill, dim=-1),
+    #             reduction='batchmean',
+    #             log_target=True) * 0.5
+    #     loss = loss * (mode + 1)/4
+    #     loss.backward()
+    #     losses.append(loss.item())
+    model.audio.set_mode('random')
+    model.image.set_mode('random')
+    output, _ = model(audio, image)
+    loss = criteria(output, label) * 1
+    loss += torch.nn.functional.kl_div(
+                    torch.nn.functional.log_softmax(output, dim=-1),
+                    torch.nn.functional.log_softmax(output_distill, dim=-1),
+                    reduction='batchmean',
+                    log_target=True) * 0.5
+    loss.backward()
+    losses.append(loss.item())
     optimizer.step()
     optimizer.zero_grad()
     return losses
 def test_step(model, input_data, label):
     audio, image = input_data
     acc = []
-    # output = model(audio, image)
-    # acc.append((torch.argmax(output, dim=-1).cpu() == label).sum() / len(label))
-    for mode in range(4):
-        model.audio.set_mode(mode)
-        model.image.set_mode(mode)
-        output = model(audio, image)
-        acc.append((torch.argmax(output, dim=-1).cpu() == label).sum() / len(label))
-    return acc
+    model.audio.set_mode('random')
+    model.image.set_mode('random')
+    output, comp = model(audio, image)
+    acc.append((torch.argmax(output, dim=-1).cpu() == label).sum() / len(label))
+    # for mode in range(4):
+    #     model.audio.set_mode(mode)
+    #     model.image.set_mode(mode)
+    #     output = model(audio, image)
+    #     acc.append((torch.argmax(output, dim=-1).cpu() == label).sum() / len(label))
+    return acc, comp
 def train(model, model_distill, train_dataset, test_dataset):
-    train_loader = torch.utils.data.DataLoader(dataset=train_dataset, num_workers=workers, batch_size=batch_size, shuffle=True,
-                                               drop_last=True, pin_memory=False)
-    test_loader = torch.utils.data.DataLoader(dataset=test_dataset, num_workers=workers, batch_size=batch_size, shuffle=False)
+    train_loader = torch.utils.data.DataLoader(dataset=train_dataset, num_workers=workers,
+                           batch_size=batch_size, shuffle=True, drop_last=True, pin_memory=False)
+    test_loader = torch.utils.data.DataLoader(dataset=test_dataset, num_workers=workers,
+                                              batch_size=4, shuffle=False)
     best_acc = 0
     if args.task == 'AV':
         optimizer = torch.optim.Adam(model.parameters(), lr=.0001, weight_decay=1e-4)
@@ -68,25 +82,31 @@ def train(model, model_distill, train_dataset, test_dataset):
     soft_criteria = SoftTargetCrossEntropy()
     for epoch in range(10):
         model.train()
-        for idx, batch in enumerate(tqdm(train_loader)):
-            audio, image, text, _ = batch
-            losses = train_step(model, model_distill, input_data=(audio.to(device), image.to(device)), optimizer=optimizer,
-                        criteria=criteria, soft_criteria=soft_criteria, label=text.to(device))
-            if idx % 100 == 0 and idx > 0:
-                print('iteration:', str(idx), losses)
-        scheduler.step()
+        # for idx, batch in enumerate(tqdm(train_loader)):
+        #     audio, image, text, _ = batch
+        #     losses = train_step(model, model_distill, input_data=(audio.to(device), image.to(device)), optimizer=optimizer,
+        #                 criteria=criteria, soft_criteria=soft_criteria, label=text.to(device))
+        #     if idx % 100 == 0 and idx > 0:
+        #         print('iteration:', str(idx), losses)
+        # scheduler.step()
         model.eval()
         acc = []
+        comp = []
         with torch.no_grad():
             for batch in tqdm(test_loader):
                 audio, image, text, _ = batch
-                acc.append(test_step(model, input_data=(audio.to(device), image.to(device)), label=text))
+                accuracy, computation = test_step(model, input_data=(audio.to(device), image.to(device)),
+                                                  label=text)
+                acc.append(accuracy)
+                comp.append(computation)
+        plt.plot(comp, acc)
+        plt.savefig('comp_acc.png')
         mean_acc = np.mean(acc, axis=0)
         print('epoch', epoch, mean_acc)
         avg_acc = np.mean(mean_acc)
         if avg_acc > best_acc:
             best_acc = avg_acc
-            torch.save(model.state_dict(), 'vanilla_' + args.model + '_' + args.task + '_' +
+            torch.save(model.state_dict(), 'slim_' + args.model + '_' + args.task + '_' +
                        str(epoch) + '_' + str(avg_acc) + '.pth')
 
 if __name__ == "__main__":

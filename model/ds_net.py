@@ -199,6 +199,8 @@ class SlimResNet(nn.Module):
     def set_layer_mode(self, l):
         for m in l.modules():
             set_exist_attr(m, 'mode', self.mode)
+        if self.mode == 'random':
+            self.channel_choice = random.randint(0, 3)
     def set_mode(self, mode):
         self.mode = mode
         if mode == 'largest':
@@ -218,8 +220,6 @@ class SlimResNet(nn.Module):
     def forward(self, x):
         x = self.preprocess(x)
         for i, block in enumerate(self.blocks):
-            if self.mode == 'random':
-                self.channel_choice = random.randint(0, 3)
             self.set_layer_choice(block)
             self.set_layer_mode(block)
             x = block(x)
