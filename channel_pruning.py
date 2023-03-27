@@ -88,13 +88,13 @@ def train(model, model_distill, train_dataset, test_dataset):
     soft_criteria = SoftTargetCrossEntropy()
     for epoch in range(10):
         model.train()
-        for idx, batch in enumerate(tqdm(train_loader)):
-            audio, image, text, _ = batch
-            losses = train_step(model, model_distill, input_data=(audio.to(device), image.to(device)), optimizer=optimizer,
-                        criteria=criteria, soft_criteria=soft_criteria, label=text.to(device))
-            if idx % 200 == 0 and idx > 0:
-                print('iteration:', str(idx), losses)
-        scheduler.step()
+        # for idx, batch in enumerate(tqdm(train_loader)):
+        #     audio, image, text, _ = batch
+        #     losses = train_step(model, model_distill, input_data=(audio.to(device), image.to(device)), optimizer=optimizer,
+        #                 criteria=criteria, soft_criteria=soft_criteria, label=text.to(device))
+        #     if idx % 200 == 0 and idx > 0:
+        #         print('iteration:', str(idx), losses)
+        # scheduler.step()
         model.eval()
         acc = []
         comp = []
@@ -107,7 +107,7 @@ def train(model, model_distill, train_dataset, test_dataset):
                 comp.append(computation)
 
         if args.task == 'random':
-            plt.scatter(comp, acc)
+            plt.scatter(comp, acc, color='blue')
             m, b = np.polyfit(comp, acc, 1)
             plt.plot(comp, m * comp + b, color='red')
             plt.savefig('comp_acc.png')
