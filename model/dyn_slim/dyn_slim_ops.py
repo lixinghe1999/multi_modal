@@ -166,15 +166,15 @@ class DSBatchNorm2d(nn.BatchNorm2d):
 
         if self.mode == 'dynamic' and isinstance(self.channel_choice, tuple):
             self.channel_choice, idx = self.channel_choice
-            running_mean = torch.zeros_like(self.aux_bn[-1].running_mean).repeat(len(self.out_channels_list), 1)
-            running_var = torch.zeros_like(self.aux_bn[-1].running_var).repeat(len(self.out_channels_list), 1)
-            for i in range(len(self.out_channels_list)):
+            running_mean = torch.zeros_like(self.running_mean).repeat(len(self.out_channels_list), 1)
+            running_var = torch.zeros_like(self.running_var).repeat(len(self.out_channels_list), 1)
+            for i in range(len(self.out_channels_list)-1):
                 running_mean[i, :self.out_channels_list[i]] += self.aux_bn[i].running_mean
                 running_var[i, :self.out_channels_list[i]] += self.aux_bn[i].running_var
             running_mean = torch.matmul(self.channel_choice, running_mean)[..., None, None].expand_as(x)
             running_var = torch.matmul(self.channel_choice, running_var)[..., None, None].expand_as(x)
-            weight = self.aux_bn[-1].weight[:self.running_inc] if self.affine else None
-            bias = self.aux_bn[-1].bias[:self.running_inc] if self.affine else None
+            weight = self.weight[:self.running_inc] if self.affine else None
+            bias = self.bias[:self.running_inc] if self.affine else None
 
             x = (x - running_mean) / torch.sqrt(running_var + self.aux_bn[-1].eps)
             x = x * weight[..., None, None].expand_as(x) + bias[..., None, None].expand_as(x)
