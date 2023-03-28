@@ -200,7 +200,7 @@ class SlimResNet(nn.Module):
         for m in l.modules():
             set_exist_attr(m, 'mode', self.mode)
         if self.mode == 'random':
-            self.channel_choice = random.randint(0, self.channel_choice)
+            self.channel_choice = random.randint(0, self.channel_choice + 1)
     def set_mode(self, mode):
         self.mode = mode
         if mode == 'largest':
