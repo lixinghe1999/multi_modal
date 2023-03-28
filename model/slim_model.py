@@ -4,11 +4,12 @@ import torch.nn as nn
 from torch.cuda.amp import autocast
 import torch
 class AVnet_Slim(nn.Module):
-    def __init__(self, model='resnet'):
+    def __init__(self, model='resnet', channel_split=4):
         super(AVnet_Slim, self).__init__()
+        self.channel_split = channel_split
         self.model = model
         if model == 'resnet':
-            dims = [[int(0.25 * d), int(0.5 * d), int(0.75 * d), int(1 * d)] for d in [64, 128, 256, 512]]
+            dims = [[int(i / channel_split * d) for i in range(1, channel_split+1)] for d in [64, 128, 256, 512]]
             self.audio = SlimResNet(pretrained=False, dims=dims)
             self.image = SlimResNet(pretrained=False, dims=dims)
             self.head = DSLinear([1024, 2048, 3072, 4096], 309)

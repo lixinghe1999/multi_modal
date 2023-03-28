@@ -208,7 +208,7 @@ class SlimResNet(nn.Module):
         elif mode == 'smallest' or mode == 'dynamic':
             self.channel_choice = 0
         elif mode == 'random':
-            self.channel_choice = random.randint(0, 3)
+            self.channel_choice = random.randint(0, len(self.inplanes)-1)
         else:
             self.channel_choice = mode
     def preprocess(self, x):

@@ -20,9 +20,10 @@ def train_step(model, input_data, optimizer, criteria, soft_criteria, label):
     audio, image = input_data
     # Track history only in training
     losses = []
+    max_length = model.channel_split - 1
     if args.task == 'uniform':
         # outputs = []
-        for mode in range(3, -1, -1):
+        for mode in range(max_length, -1, -1):
             model.audio.set_mode(mode)
             model.image.set_mode(mode)
             output, _ = model(audio, image)
@@ -30,7 +31,7 @@ def train_step(model, input_data, optimizer, criteria, soft_criteria, label):
             #     loss += soft_criteria(output, outputs[j])
             loss = criteria(output, label) * 1
             # loss += soft_criteria(output, output_distill)
-            if mode < 3:
+            if mode < max_length:
                 loss += torch.nn.functional.kl_div(
                         torch.nn.functional.log_softmax(output, dim=-1),
                         torch.nn.functional.log_softmax(output_distill, dim=-1),
@@ -38,7 +39,7 @@ def train_step(model, input_data, optimizer, criteria, soft_criteria, label):
                         log_target=True) * 0.5
             else:
                 output_distill = output.detach()
-            loss = loss * (mode + 1)/4
+            loss = loss * (mode + 1)/ (max_length+1)
             loss.backward()
             losses.append(loss.item())
     else:
@@ -117,7 +118,7 @@ def train(model, train_dataset, test_dataset):
                                                   label=text)
                 acc.append(accuracy)
                 comp.append(computation)
-        acc = np.array(acc)
+
         mean_acc = np.mean(acc, axis=0)
         print('epoch', epoch, mean_acc)
         avg_acc = np.mean(mean_acc)
@@ -125,14 +126,14 @@ def train(model, train_dataset, test_dataset):
             best_acc = avg_acc
             torch.save(model.state_dict(), 'slim_' + args.model + '_' + args.task + '_' +
                        str(epoch) + '_' + str(avg_acc) + '.pth')
-    if args.task == 'random':
-        plt.scatter(comp, acc[:, 1], color='blue')
-        plt.scatter(comp, acc[:, 2], color='blue')
-        m, b = np.polyfit(comp, acc[:, 1], 1)
-        plt.plot(comp, m * comp + b, color='red')
-        m, b = np.polyfit(comp, acc[:, 2], 1)
-        plt.plot(comp, m * comp + b, color='green')
-        plt.savefig('comp_acc.png')
+    # if args.task == 'random':
+    #     plt.scatter(comp, acc[:, 1], color='blue')
+    #     plt.scatter(comp, acc[:, 2], color='blue')
+    #     m, b = np.polyfit(comp, acc[:, 1], 1)
+    #     plt.plot(comp, m * comp + b, color='red')
+    #     m, b = np.polyfit(comp, acc[:, 2], 1)
+    #     plt.plot(comp, m * comp + b, color='green')
+    #     plt.savefig('comp_acc.png')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -145,7 +146,7 @@ if __name__ == "__main__":
     batch_size = args.batch
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     torch.cuda.set_device(0)
-    model = AVnet_Slim().to('cuda')
+    model = AVnet_Slim(channel_split=16).to('cuda')
     model.load_state_dict(torch.load('vanilla_resnet_AV_7_0.65220517.pth'))
     # model_distill = AVnet(model='resnet', pretrained=False).to(device)
     # model_distill.load_state_dict(torch.load('vanilla_resnet_AV_19_0.65678066.pth'), strict=False)
