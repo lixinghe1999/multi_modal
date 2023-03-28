@@ -73,8 +73,9 @@ def train_step(model, input_data, optimizer, criteria, soft_criteria, label):
 def test_step(model, input_data, label):
     audio, image = input_data
     acc = []
+    max_length = model.channel_split - 1
     if args.task == 'uniform':
-        for mode in range(3, -1, -1):
+        for mode in range(max_length, -1, -1):
             model.audio.set_mode(mode)
             model.image.set_mode(mode)
             output, comp = model(audio, image)
