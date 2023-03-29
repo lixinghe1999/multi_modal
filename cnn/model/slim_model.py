@@ -33,10 +33,10 @@ class AVnet_Slim(nn.Module):
             audio = blk_a(audio)
             image = blk_i(image)
 
-            audio, image = self.score_predictor[i](audio, image)
-            channel_choice = self.score_predictor[i].get_gate()
-            self.audio.set_layer_choice(blk_a, channel_choice[0])
-            self.image.set_layer_choice(blk_i, channel_choice[1])
+            # audio, image = self.score_predictor[i](audio, image)
+            # channel_choice = self.score_predictor[i].get_gate()
+            # self.audio.set_layer_choice(blk_a, channel_choice[0])
+            # self.image.set_layer_choice(blk_i, channel_choice[1])
 
         comp /= 4
         audio = torch.flatten(self.audio.avgpool(audio), 1)
