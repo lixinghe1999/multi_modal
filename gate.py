@@ -178,7 +178,7 @@ if __name__ == "__main__":
     elif args.task == 'test':
         test(model, test_dataset)
     elif args.task == 'distill':
-        teacher_model = AVnet(model='vit').to(device)
+        teacher_model = AVnet_Gate().to(device)
         teacher_model.load_state_dict(torch.load('vanilla_vit_AV_8_0.6951769.pth'))
         distill(model, train_dataset, test_dataset, teacher_model)
     elif args.task == 'profile':
