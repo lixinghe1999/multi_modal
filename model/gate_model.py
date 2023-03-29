@@ -157,7 +157,7 @@ class AVnet_Gate(nn.Module):
         distillation loss2: MSE of features
         '''
         with torch.no_grad():
-            output_cache_distill, output_distill = self.forward(audio, image, 'no_exit')
+            output_cache_distill, output_distill = teacher_model(audio, image)
             feature_distill = torch.cat([output_cache_distill['audio'][-1], output_cache_distill['image'][-1]], dim=-1)
 
         output_cache, output = self.forward(audio, image, 'no_exit')
