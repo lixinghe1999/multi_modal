@@ -24,7 +24,7 @@ def train_step(model, input_data, optimizer, criteria, label):
         for mode in range(max_length, -1, -1):
             model.audio.set_mode(mode)
             model.image.set_mode(mode)
-            output, _ = model(audio, image)
+            output = model(audio, image)
             # for j in range(len(outputs)):
             #     loss += soft_criteria(output, outputs[j])
             loss = criteria(output, label) * 1
@@ -43,7 +43,7 @@ def train_step(model, input_data, optimizer, criteria, label):
     else:
         model.audio.set_mode('dynamic')
         model.image.set_mode('dynamic')
-        output, _ = model(audio, image)
+        output = model(audio, image)
         loss = criteria(output, label)
         loss.backward()
         # losses.append(loss.item())
@@ -119,9 +119,7 @@ if __name__ == "__main__":
     model = AVnet_Slim(channel_split=8).to('cuda')
     model.load_state_dict(torch.load('slim_resnet_uniform_9_0.51721764.pth'), strict=False)
     # model_distill = AVnet(model='resnet', pretrained=False).to(device)
-    # model.load_state_dict(torch.load('vanilla_resnet_AV_19_0.65678066.pth'), strict=False)
     # model_distill.load_state_dict(torch.load('slim_resnet_distill_9_0.5563375.pth'), strict=False)
-
     # model_distill.eval()
     dataset = VGGSound()
     len_train = int(len(dataset) * 0.8)

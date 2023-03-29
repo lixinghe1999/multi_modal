@@ -19,28 +19,30 @@ class AVnet_Slim(nn.Module):
     def fusion_parameter(self):
         parameter = [{'params': self.head.parameters()},]
         return parameter
-
+    def set_mode(self, mode):
+        self.audio.mode = mode
+        self.image.mode = mode
+        self.channel_choice = (-1, -1)
     @autocast()
     def forward(self, audio, image):
-        comp = 0
         audio = self.audio.preprocess(audio)
         image = self.image.preprocess(image)
         for i, (blk_a, blk_i) in enumerate(zip(self.audio.blocks, self.image.blocks)):
             self.audio.set_layer_mode(blk_a)
             self.image.set_layer_mode(blk_i)
-            comp += (self.audio.channel_choice + self.image.channel_choice) / 8
+            self.audio.set_layer_choice(blk_a, self.channel_choice[0])
+            self.image.set_layer_choice(blk_i, self.channel_choice[1])
+
             audio = blk_a(audio)
             image = blk_i(image)
 
             audio, image = self.score_predictor[i](audio, image)
             print(audio.shape, image.shape)
-            channel_choice = self.score_predictor[i].get_gate()
-            print(channel_choice)
-            self.audio.set_layer_choice(blk_a, channel_choice[0])
-            self.image.set_layer_choice(blk_i, channel_choice[1])
+            self.channel_choice = self.score_predictor[i].get_gate()
+            print(self.channel_choice)
 
-        comp /= 4
+
         audio = torch.flatten(self.audio.avgpool(audio), 1)
         image = torch.flatten(self.image.avgpool(image), 1)
         x = self.head(torch.cat([audio, image], dim=1))
-        return x, comp
+        return x
