@@ -150,7 +150,8 @@ class AVnet_Gate(nn.Module):
     def gate_train(self, audio, image, label, teacher_model):
         '''
         We get three loss:
-        computation loss: absolute computation & computation difference
+        computation loss1: absolute computation
+        computation loss2: computation difference
         recognition loss: cross_entropy
         distillation loss1: KL divergence of logits
         distillation loss2: MSE of features
@@ -164,8 +165,8 @@ class AVnet_Gate(nn.Module):
         output = self.head(feature)
 
         computation_penalty = torch.range(1, 12).to('cuda')/12
-        loss_c = ((gate_a * computation_penalty + gate_i * computation_penalty).mean())
-        loss_c += ((gate_a * computation_penalty).mean() - (gate_i * computation_penalty).mean()).abs()
+        loss_c = ((gate_a * computation_penalty + gate_i * computation_penalty).mean()) ** 2
+        loss_c += ((gate_a * computation_penalty).mean() - (gate_i * computation_penalty).mean()) ** 2
 
         loss_r = nn.functional.cross_entropy(output, label) # recognition-level loss
 
@@ -179,7 +180,7 @@ class AVnet_Gate(nn.Module):
             (torch.argmax(gate_a, dim=-1) - torch.argmax(gate_i, dim=-1)).float().abs().mean().item()/12]
         acc = (torch.argmax(output, dim=-1) == label).sum().item() / len(label)
 
-        loss = loss_c * 0.5 + loss_r * 1 + loss_kd * 0.5
+        loss = loss_c * 2 + loss_r * 1 + loss_kd * 0.5
         loss.backward()
         return [loss_c.item(), loss_r.item(), loss_kd.item(), compress, acc]
 
