@@ -11,7 +11,7 @@ class AVnet_Slim(nn.Module):
         dims = [[int(i / channel_split * d) for i in range(1, channel_split+1)] for d in [64, 128, 256, 512]]
         self.audio = SlimResNet(pretrained=False, dims=dims)
         self.image = SlimResNet(pretrained=False, dims=dims)
-        self.score_predictor = nn.ModuleList([MultiHeadGate([p * 4 for p in dim],
+        self.score_predictor = nn.ModuleList([AVHeadGate([p * 4 for p in dim],
                                                      channel_gate_num=self.channel_split) for dim in dims])
         self.head = DSLinear([1024, 2048, 3072, 4096], 309)
     def fusion_parameter(self):
