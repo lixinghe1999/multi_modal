@@ -1,10 +1,10 @@
-import sys
-sys.path.append('../')
+import os
+os.path.abspath('..')
 import time
 from utils.datasets.vggsound import VGGSound
 import numpy as np
 import torch
-from transformer.model.gate_model import AVnet_Gate, Gate
+from model.gate_model import AVnet_Gate, Gate
 import warnings
 from tqdm import tqdm
 import argparse
