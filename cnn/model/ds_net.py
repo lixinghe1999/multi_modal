@@ -195,14 +195,12 @@ class SlimResNet(nn.Module):
             )
         return nn.Sequential(*layers)
 
-    def set_layer_choice(self, l):
+    def set_layer_choice(self, l, choice):
         for m in l.modules():
-            set_exist_attr(m, 'channel_choice', self.channel_choice)
+            set_exist_attr(m, 'channel_choice', choice)
     def set_layer_mode(self, l):
         for m in l.modules():
             set_exist_attr(m, 'mode', self.mode)
-        if self.mode == 'random':
-            self.channel_choice = random.randint(0, self.channel_choice)
     def set_mode(self, mode):
         self.mode = mode
         if mode == 'largest':

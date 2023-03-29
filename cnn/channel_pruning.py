@@ -90,10 +90,7 @@ def train(model, train_dataset, test_dataset):
     test_loader = torch.utils.data.DataLoader(dataset=test_dataset, num_workers=workers,
                                               batch_size=4, shuffle=False)
     best_acc = 0
-    if args.task == 'AV':
-        optimizer = torch.optim.Adam(model.parameters(), lr=.0001, weight_decay=1e-4)
-    else:
-        optimizer = torch.optim.Adam(model.parameters(), lr=.0001, weight_decay=1e-4)
+    optimizer = torch.optim.Adam(model.parameters(), lr=.0001, weight_decay=1e-4)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.2)
     criteria = torch.nn.CrossEntropyLoss()
     soft_criteria = SoftTargetCrossEntropy()
@@ -122,16 +119,8 @@ def train(model, train_dataset, test_dataset):
         avg_acc = np.mean(mean_acc)
         if avg_acc > best_acc:
             best_acc = avg_acc
-            torch.save(model.state_dict(), 'slim_' + args.model + '_' + args.task + '_' +
+            torch.save(model.state_dict(), 'slim_' + args.task + '_' +
                        str(epoch) + '_' + str(avg_acc) + '.pth')
-    # if args.task == 'random':
-    #     plt.scatter(comp, acc[:, 1], color='blue')
-    #     plt.scatter(comp, acc[:, 2], color='blue')
-    #     m, b = np.polyfit(comp, acc[:, 1], 1)
-    #     plt.plot(comp, m * comp + b, color='red')
-    #     m, b = np.polyfit(comp, acc[:, 2], 1)
-    #     plt.plot(comp, m * comp + b, color='green')
-    #     plt.savefig('comp_acc.png')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

@@ -2,7 +2,6 @@ from utils.datasets.vggsound import VGGSound
 import numpy as np
 import torch
 from cnn.model.vanilla_model import AVnet
-from transformer.model.early_model import AVnet_Early
 from cnn.model.ds_net import SlimResNet
 from cnn.model.slim_model import AVnet_Slim
 import argparse
@@ -62,7 +61,7 @@ def train(model, train_dataset, test_dataset):
         print('epoch', epoch, np.mean(acc))
         if np.mean(acc) > best_acc:
             best_acc = np.mean(acc)
-            torch.save(model.state_dict(), 'vanilla_' + args.model + '_' + args.task + '_' +
+            torch.save(model.state_dict(), 'vanilla_' + args.task + '_' +
                        str(epoch) + '_' + str(np.mean(acc)) + '.pth')
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -74,9 +73,7 @@ if __name__ == "__main__":
     batch_size = args.batch
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     torch.cuda.set_device(0)
-    if args.task == 'early':
-        model = AVnet_Early(pretrained=False, model='resnet').to(device)
-    elif args.task == 'AV':
+    if args.task == 'AV':
         model = AVnet_Slim().to(device)
         # model = AVnet(model='resnet', pretrained=False).to(device)
         model.audio.load_state_dict(torch.load('vanilla_resnet_A_6_0.5008855.pth'), strict=False)
