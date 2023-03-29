@@ -39,9 +39,9 @@ def gate_train(model, train_dataset, test_dataset):
         for idx, batch in enumerate(tqdm(train_loader)):
             audio, image, text, _ = batch
             optimizer.zero_grad()
-            [compress, acc] = model.gate_train(audio.to(device), image.to(device), text.to(device))
+            output = model.gate_train(audio.to(device), image.to(device), text.to(device))
             if idx % 50 == 0 and idx > 0:
-                print(compress, acc)
+                print(output)
             optimizer.step()
         scheduler.step()
         model.eval()
@@ -164,8 +164,9 @@ if __name__ == "__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     torch.cuda.set_device(0)
     model = AVnet_Gate().to(device)
-    model.audio.load_state_dict(torch.load('vanilla_A_6_0.5303089942924621.pth'))
-    model.image.load_state_dict(torch.load('vanilla_V_7_0.5041330446762449.pth'))
+    # model.audio.load_state_dict(torch.load('vanilla_A_6_0.5303089942924621.pth'))
+    # model.image.load_state_dict(torch.load('vanilla_V_7_0.5041330446762449.pth'))
+    model.load_state_dict(torch.load('gate_train_9_0.6756756756756757.pth'))
 
     dataset = VGGSound()
     len_train = int(len(dataset) * 0.8)

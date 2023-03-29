@@ -173,7 +173,7 @@ class AVnet_Gate(nn.Module):
         # print(loss_c.item(), loss_r.item())
         loss = loss_c * 2 + loss_r * 1
         loss.backward()
-        return [compress, acc]
+        return [loss_c.item(), loss_r.item(), compress, acc]
 
     @autocast()
     def forward(self, audio, image, mode='dynamic'):
