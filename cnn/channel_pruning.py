@@ -18,6 +18,7 @@ def train_step(model, input_data, optimizer, criteria, soft_criteria, label):
     # Track history only in training
     losses = []
     max_length = model.channel_split - 1
+    optimizer.zero_grad()
     if args.task == 'uniform':
         # outputs = []
         for mode in range(max_length, -1, -1):
@@ -40,17 +41,15 @@ def train_step(model, input_data, optimizer, criteria, soft_criteria, label):
             loss.backward()
             losses.append(loss.item())
     else:
-        outputs = []
         model.audio.set_mode('dynamic')
         model.image.set_mode('dynamic')
         output, _ = model(audio, image)
 
         loss = criteria(output, label)
-        outputs.append(output.detach())
         loss.backward()
         losses.append(loss.item())
     optimizer.step()
-    optimizer.zero_grad()
+
     return losses
 def test_step(model, input_data, label):
     audio, image = input_data
