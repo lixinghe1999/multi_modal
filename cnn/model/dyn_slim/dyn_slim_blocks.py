@@ -330,6 +330,58 @@ class MultiHeadGate(nn.Module):
     def get_gate(self):
         return self.channel_choice
 
+class AVHeadGate(nn.Module):
+    def __init__(self, in_chs, se_ratio=0.25, reduced_base_chs=None, act_layer=nn.ReLU,
+                 attn_act_fn=sigmoid, divisor=1, channel_gate_num=None, gate_num_features=1024):
+        super(AVHeadGate, self).__init__()
+        self.attn_act_fn = attn_act_fn
+        self.channel_gate_num = channel_gate_num
+        reduced_chs = make_divisible((reduced_base_chs or in_chs[-1]) * se_ratio, divisor)
+        self.avg_pool = DSAdaptiveAvgPool2d(1, channel_list=in_chs)
+        self.conv_reduce = DSpwConv2d(in_chs, [reduced_chs], bias=True)
+        self.act1 = act_layer(inplace=True)
+        self.conv_expand = DSpwConv2d([reduced_chs], in_chs, bias=True)
+
+        self.has_gate = False
+        if channel_gate_num > 1:
+            self.has_gate = True
+            self.gate = nn.Sequential(DSpwConv2d([reduced_chs], [channel_gate_num], bias=False))
+
+        self.mode = 'largest'
+        self.keep_gate, self.print_gate, self.print_idx = None, None, None
+        self.channel_choice = None
+        self.initialized = False
+    def attention(self, x):
+        x_pool = self.avg_pool(x)
+        x_reduced = self.conv_reduce(x_pool)
+        x_reduced = self.act1(x_reduced)
+        attn = self.conv_expand(x_reduced)
+        attn = self.attn_act_fn(attn)
+        x = x * attn
+        return x, x_reduced
+    def forward(self, audio, image):
+        audio, audio_reduced = self.attention(audio)
+        image, image_reduced = self.attention(image)
+
+        if self.mode == 'dynamic' and self.has_gate:
+            audio_choice = self.gate(audio_reduced).squeeze(-1).squeeze(-1)
+            self.keep_gate, self.print_gate, self.print_idx = gumbel_softmax(audio_choice, dim=1,
+                                                                             training=self.training)
+            audio_choice = (self.print_gate, self.print_idx)
+
+            image_choice = self.gate(audio_reduced).squeeze(-1).squeeze(-1)
+            self.keep_gate, self.print_gate, self.print_idx = gumbel_softmax(image_choice, dim=1,
+                                                                             training=self.training)
+            image_choice = (self.print_gate, self.print_idx)
+            self.channel_choice = (audio_choice, image_choice)
+        else:
+            self.channel_choice = None
+
+        return audio, image
+
+    def get_gate(self):
+        return self.channel_choice
+
 
 def gumbel_softmax(logits, tau=1, hard=False, dim=1, training=True):
     """ See `torch.nn.functional.gumbel_softmax()` """

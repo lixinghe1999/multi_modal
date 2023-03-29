@@ -1,6 +1,6 @@
 from model.ds_net import SlimResNet
 from model.dyn_slim.dyn_slim_ops import DSLinear
-from model.ds_net import MultiHeadGate
+from model.dyn_slim.dyn_slim_blocks import AVHeadGate
 import torch.nn as nn
 from torch.cuda.amp import autocast
 import torch
