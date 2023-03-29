@@ -203,9 +203,9 @@ class SlimResNet(nn.Module):
             set_exist_attr(m, 'mode', self.mode)
     def set_mode(self, mode):
         self.mode = mode
-        if mode == 'largest':
+        if mode == 'largest' or mode == 'dynamic':
             self.channel_choice = -1
-        elif mode == 'smallest' or mode == 'dynamic':
+        elif mode == 'smallest':
             self.channel_choice = 0
         elif mode == 'random':
             self.channel_choice = random.randint(0, len(self.inplanes)-1)
