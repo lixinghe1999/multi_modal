@@ -153,14 +153,14 @@ class AVnet_Gate(nn.Module):
         We get three loss: computation loss, Gate label loss, Recognition loss
         '''
         output_cache, output = self.forward(audio, image, 'no_exit') # get all the possibilities
-        gate_label = self.label(output_cache, label, mode='model').to('cuda')
-        gate_label = torch.argmax(gate_label, dim=-1)
+        # gate_label = self.label(output_cache, label, mode='model').to('cuda')
+        # gate_label = torch.argmax(gate_label, dim=-1)
         output, gate_a, gate_i = self.gate(audio, image, output_cache)
 
         computation_penalty = torch.range(1, 12).to('cuda')
         loss_c = (gate_a * computation_penalty + gate_i * computation_penalty).mean()
         loss_c += ((gate_a * computation_penalty - gate_i * computation_penalty)**2).mean()
-        loss_g = nn.functional.cross_entropy(gate_a, gate_label[:, 0]) + nn.functional.cross_entropy(gate_i, gate_label[:, 1])
+        #loss_g = nn.functional.cross_entropy(gate_a, gate_label[:, 0]) + nn.functional.cross_entropy(gate_i, gate_label[:, 1])
 
         output = self.projection(output)
         loss_r = nn.functional.cross_entropy(output, label) # recognition-level loss
@@ -171,8 +171,7 @@ class AVnet_Gate(nn.Module):
         acc = (torch.argmax(output, dim=-1) == label).sum().item() / len(label)
 
         # print(loss_c.item(), (loss_g1 + loss_g2).item(), loss_r.item())
-        loss = loss_c * 0.5 + loss_g * 0 + loss_r * 0.5
-        # loss = loss_c * 0.5 + loss_g * 0.4 + loss_r * 0.2
+        loss = loss_c * 0.5 + loss_r * 1
         loss.backward()
         return [compress, acc]
 
