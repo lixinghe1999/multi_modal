@@ -101,6 +101,8 @@ class AVnet_Dynamic(nn.Module):
                 else:
                     audio = blk_a(audio)
                     image = blk_i(image)
+        r = (audio.shape[1] / (audio.shape[1] + image.shape[1]))
+        ratio = [1, 1, r, 1 - r, abs(2 * r - 1)]
         x, features = self.output(audio, image)
         if self.training:
             if self.distill:
@@ -111,7 +113,7 @@ class AVnet_Dynamic(nn.Module):
             if self.distill:
                 return x, features
             else:
-                return x, 1
+                return x, ratio
 
 
 if __name__ == "__main__":

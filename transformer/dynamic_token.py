@@ -36,15 +36,14 @@ def profile(model, test_dataset):
                                               shuffle=False, drop_last=True)
     model.eval()
     token_ratio = [0.8, 0.7, 0.6, 0.5, 0.4, 0.3]
-    # token_ratio = [0.7]
     acc = []
     modality_ratio = []
     with torch.no_grad():
         for ratio in token_ratio:
             model.token_ratio = [ratio, ratio ** 2, ratio ** 3]
             # text = torch.zeros(batch_size)
-            # audio = torch.randn(args.batch, 384, 128).to(device, non_blocking=True)
-            # image = torch.randn(args.batch, 3, 224, 224).to(device, non_blocking=True)
+            # audio = torch.randn(args.batch, 384, 128).to(device)
+            # image = torch.randn(args.batch, 3, 224, 224).to(device)
             # for _ in range(50):
             #     test_step(model, input_data=[audio.to(device), image.to(device)], label=text)
             # print('warm-up')
