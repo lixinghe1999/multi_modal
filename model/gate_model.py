@@ -97,8 +97,7 @@ class AVnet_Gate(nn.Module):
         self.image = VisionTransformerDiffPruning(**config)
         if pretrained:
             self.image.load_state_dict(torch.load('assets/deit_base_patch16_224.pth')['model'], strict=False)
-        self.projection = nn.Sequential(nn.LayerNorm(embed_dim*2),
-                                        nn.Linear(embed_dim*2, 309))
+        self.head = nn.Sequential(nn.Linear(embed_dim*2, 309))
     def get_parameters(self):
         parameter = [{'params': self.gate.parameters()},
                      {'params': self.projection.parameters()}]
@@ -224,5 +223,5 @@ class AVnet_Gate(nn.Module):
 
         audio = output_cache['audio'][-1]
         image = output_cache['image'][-1]
-        output = self.projection(torch.cat([audio, image], dim=-1))
+        output = self.head(torch.cat([audio, image], dim=1))
         return output_cache, output
