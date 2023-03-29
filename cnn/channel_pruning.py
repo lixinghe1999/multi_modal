@@ -41,29 +41,14 @@ def train_step(model, input_data, optimizer, criteria, soft_criteria, label):
             losses.append(loss.item())
     else:
         outputs = []
-        for i, mode in enumerate(['largest', 'random', 'random', 'smallest']):
-            model.audio.set_mode(mode)
-            model.image.set_mode(mode)
-            output, _ = model(audio, image)
-            if mode == 'largest':
-                loss = criteria(output, label)
-                outputs.append(output.detach())
-            elif mode == 'random':
-                loss = criteria(output, label) + torch.nn.functional.kl_div(
-                        torch.nn.functional.log_softmax(output, dim=-1),
-                        torch.nn.functional.log_softmax(outputs[0], dim=-1),
-                        reduction='batchmean',
-                        log_target=True) * 0.5
-                outputs.append(output.detach())
-            else:
-                loss = criteria(output, label) + torch.nn.functional.kl_div(
-                    torch.nn.functional.log_softmax(output, dim=-1),
-                    torch.nn.functional.log_softmax(sum(outputs)/3, dim=-1),
-                    reduction='batchmean',
-                    log_target=True) * 0.5
-            loss.backward()
-            losses.append(loss.item())
-        # print(losses)
+        model.audio.set_mode('dynamic')
+        model.image.set_mode('dynamic')
+        output, _ = model(audio, image)
+
+        loss = criteria(output, label)
+        outputs.append(output.detach())
+        loss.backward()
+        losses.append(loss.item())
     optimizer.step()
     optimizer.zero_grad()
     return losses
