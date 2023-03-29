@@ -3,6 +3,7 @@ from utils.datasets.vggsound import VGGSound
 import numpy as np
 import torch
 from model.gate_model import AVnet_Gate, Gate
+from model.vanilla_model import AVnet
 import warnings
 from tqdm import tqdm
 import argparse
@@ -25,7 +26,7 @@ def test_step(model, input_data, label, mode='dynamic'):
     l = time.time() - t_start
     acc = (torch.argmax(output, dim=-1).cpu() == label).sum() / len(label)
     return acc.item(), len(output_cache['audio']) + len(output_cache['image']), l
-def gate_train(model, train_dataset, test_dataset):
+def distill(model, train_dataset, test_dataset, teacher_model):
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset, num_workers=workers, batch_size=batch_size, shuffle=True,
                                                drop_last=True, pin_memory=False)
     test_loader = torch.utils.data.DataLoader(dataset=test_dataset, num_workers=workers, batch_size=1, shuffle=False)
@@ -39,7 +40,7 @@ def gate_train(model, train_dataset, test_dataset):
         for idx, batch in enumerate(tqdm(train_loader)):
             audio, image, text, _ = batch
             optimizer.zero_grad()
-            output = model.gate_train(audio.to(device), image.to(device), text.to(device))
+            output = model.gate_train(audio.to(device), image.to(device), text.to(device), teacher_model)
             if idx % 50 == 0 and idx > 0:
                 print(output)
             optimizer.step()
@@ -81,7 +82,6 @@ def profile(model, test_dataset):
         for batch in tqdm(test_loader):
             audio, image, text, _ = batch
             output_cache, output = model(audio.to(device), image.to(device), 'no_exit')
-
             gate_label = model.label(output_cache, text)
             gate_label = torch.argmax(gate_label[0], dim=-1, keepdim=True).cpu().numpy()
             if torch.argmax(output).cpu() == text:
@@ -177,9 +177,10 @@ if __name__ == "__main__":
         train(model, train_dataset, test_dataset)
     elif args.task == 'test':
         test(model, test_dataset)
-    elif args.task == 'gate_train':
-        # model.load_state_dict(torch.load('gate_train_9_0.6756756756756757.pth'))
-        gate_train(model, train_dataset, test_dataset)
+    elif args.task == 'distill':
+        teacher_model = AVnet(model='vit').to(device)
+        teacher_model.load_state_dict(torch.load('vanilla_vit_AV_8_0.6951769.pth'))
+        distill(model, train_dataset, test_dataset, teacher_model)
     elif args.task == 'profile':
         profile(model, test_dataset)
 
