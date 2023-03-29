@@ -161,7 +161,7 @@ class AVnet_Gate(nn.Module):
 
         output_cache, output = self.forward(audio, image, 'no_exit')
         feature, gate_a, gate_i = self.gate(audio, image, output_cache)
-        output = self.projection(feature)
+        output = self.head(feature)
 
         computation_penalty = torch.range(1, 12).to('cuda')/12
         loss_c = ((gate_a * computation_penalty + gate_i * computation_penalty).mean())
