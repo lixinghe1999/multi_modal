@@ -166,9 +166,9 @@ class AVnet_Gate(nn.Module):
 
         computation_penalty = torch.range(1, 12).to('cuda')/12
         print(gate_a, gate_i)
-        loss_c = ((gate_a * computation_penalty + gate_i * computation_penalty).sum(1))
+        loss_c = (((gate_a * computation_penalty + gate_i * computation_penalty).sum(1)) ** 2).mean()
         print(loss_c)
-        loss_c += ((gate_a * computation_penalty).sum(1) - (gate_i * computation_penalty).sum(1))
+        loss_c += (((gate_a * computation_penalty).sum(1) - (gate_i * computation_penalty).sum(1)) ** 2).mean()
         print(loss_c)
 
         loss_r = nn.functional.cross_entropy(output, label) # recognition-level loss
