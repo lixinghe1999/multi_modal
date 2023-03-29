@@ -98,11 +98,11 @@ class AVnet_Runtime(nn.Module):
                 blk_i = self.image.blocks[j]
                 audio = blk_a(audio, policy=policy_a)
                 image = blk_i(image, policy=policy_i)
-             # register
-            r = (audio_token.max() / (audio_token.max() + image_token.max())).item()
-            ratio.append([torch.mean(audio_token / audio_token.max()).item(),
-                          torch.mean(image_token / image_token.max()).item(),
-                          r, 1 - r, abs(2 * r - 1)])
+        # register
+        r = (audio_token.max() / (audio_token.max() + image_token.max())).item()
+        ratio.append([torch.mean(audio_token / audio_token.max()).item(),
+                      torch.mean(image_token / image_token.max()).item(),
+                      r, 1 - r, abs(2 * r - 1)])
         x, features = self.output(audio, image)
         return x, ratio
 

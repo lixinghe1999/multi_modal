@@ -62,9 +62,9 @@ def profile(model, test_dataset):
             mean_ratio = np.mean(modality_ratio, axis=0)
             print('preserved ratio:', ratio)
             print('throughput:', len(test_loader) * batch_size / (tic2 - tic1))
-            print('modality-1 computation balance:', mean_ratio[:, 0])
-            print('modality-2 computation balance:', mean_ratio[:, 1])
-            print('modality-wise ratio:', mean_ratio[:, 2:])
+            print('modality-1 computation balance:', mean_ratio[0])
+            print('modality-2 computation balance:', mean_ratio[1])
+            print('modality-wise ratio:', mean_ratio[2:])
             print('accuracy:', mean_acc)
 def train(model, train_dataset, test_dataset):
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset, num_workers=workers, batch_size=batch_size, shuffle=True,
