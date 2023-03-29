@@ -41,7 +41,7 @@ def distill(model, train_dataset, test_dataset, teacher_model):
             audio, image, text, _ = batch
             optimizer.zero_grad()
             output = model.gate_train(audio.to(device), image.to(device), text.to(device), teacher_model)
-            if idx % 50 == 0 and idx > 0:
+            if idx % 100 == 0 and idx > 0:
                 print(output)
             optimizer.step()
         scheduler.step()
