@@ -117,7 +117,7 @@ if __name__ == "__main__":
     batch_size = args.batch
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     torch.cuda.set_device(0)
-    model = AVnet_Slim(channel_split=8).to('cuda')
+    model = AVnet_Slim(channel_split=4).to('cuda')
     model.load_state_dict(torch.load('slim_resnet_uniform_9_0.51721764.pth'), strict=False)
     # model_distill = AVnet(model='resnet', pretrained=False).to(device)
     # model.load_state_dict(torch.load('vanilla_resnet_AV_19_0.65678066.pth'), strict=False)
