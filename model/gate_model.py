@@ -157,7 +157,7 @@ class AVnet_Gate(nn.Module):
         # gate_label = torch.argmax(gate_label, dim=-1)
         output, gate_a, gate_i = self.gate(audio, image, output_cache)
 
-        computation_penalty = torch.range(1, 12).to('cuda')
+        computation_penalty = torch.range(1, 12).to('cuda')/12
         loss_c = (gate_a * computation_penalty + gate_i * computation_penalty).mean()
         loss_c += ((gate_a * computation_penalty - gate_i * computation_penalty)**2).mean()
         #loss_g = nn.functional.cross_entropy(gate_a, gate_label[:, 0]) + nn.functional.cross_entropy(gate_i, gate_label[:, 1])
@@ -171,7 +171,7 @@ class AVnet_Gate(nn.Module):
         acc = (torch.argmax(output, dim=-1) == label).sum().item() / len(label)
 
         print(loss_c.item(), loss_r.item())
-        loss = loss_c * 0.5 + loss_r * 1
+        loss = loss_c * 0.5 + loss_r * 2
         loss.backward()
         return [compress, acc]
 
