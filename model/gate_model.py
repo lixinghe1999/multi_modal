@@ -158,6 +158,8 @@ class AVnet_Gate(nn.Module):
         with torch.no_grad():
             output_cache_distill, output_distill = teacher_model(audio, image, 'no_exit')
             feature_distill = torch.cat([output_cache_distill['audio'][-1], output_cache_distill['image'][-1]], dim=-1)
+        acc = (torch.argmax(output_distill, dim=-1) == label).sum().item() / len(label)
+        print(acc)
 
         output_cache, output = self.forward(audio, image, 'no_exit')
         feature, gate_a, gate_i = self.gate(audio, image, output_cache)
