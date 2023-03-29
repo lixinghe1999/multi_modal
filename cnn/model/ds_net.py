@@ -1,4 +1,4 @@
-from cnn.model.dyn_slim.dyn_slim_ops import DSpwConv2d, DSBatchNorm2d, \
+from model.dyn_slim.dyn_slim_ops import DSpwConv2d, DSBatchNorm2d, \
     DSAdaptiveAvgPool2d, DSConv2d, DSLinear
 import torch.nn as nn
 import random
@@ -223,12 +223,6 @@ class SlimResNet(nn.Module):
             self.set_layer_choice(block)
             self.set_layer_mode(block)
             x = block(x)
-            # self.set_layer_choice(self.score_predictor[i])
-            # self.set_layer_mode(self.score_predictor[i])
-            # x = self.score_predictor[i](x)
-            # channel_choice = self.score_predictor[i].get_gate()
-            # if channel_choice is not None:
-            #     self.channel_choice = channel_choice
         x = self.avgpool(x)
         x = torch.flatten(x, 1)
         x = self.fc(x)
