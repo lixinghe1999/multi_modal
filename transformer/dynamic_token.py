@@ -135,7 +135,8 @@ if __name__ == "__main__":
                 keep_ratio=token_ratio, mse_token=True, ratio_weight=2, distill_weight=0.5)
         train(model, train_dataset, test_dataset)
     elif args.task == 'profile':
-        model = AVnet_Runtime(pruning_loc=pruning_loc, token_ratio=token_ratio, pretrained=False).to(device)
+        # model = AVnet_Runtime(pruning_loc=pruning_loc, token_ratio=token_ratio, pretrained=False).to(device)
+        model = AVnet_Dynamic(pruning_loc=pruning_loc, token_ratio=token_ratio, pretrained=False).to(device)
         model.load_state_dict(torch.load('dynamic_distill_9_0.6833300531391459.pth'), strict=False)
         profile(model, test_dataset)
 
