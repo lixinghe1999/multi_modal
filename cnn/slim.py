@@ -75,7 +75,6 @@ def train(model, train_dataset, test_dataset):
     optimizer = torch.optim.Adam(model.parameters(), lr=.0001, weight_decay=1e-4)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.2)
     criteria = torch.nn.CrossEntropyLoss()
-    soft_criteria = SoftTargetCrossEntropy()
     for epoch in range(1):
         model.train()
         for idx, batch in enumerate(tqdm(train_loader)):
@@ -110,11 +109,12 @@ if __name__ == "__main__":
     parser.add_argument('-t', '--task', default='random')
     parser.add_argument('-w', '--worker', default=4, type=int)
     parser.add_argument('-b', '--batch', default=32, type=int)
+    parser.add_argument('-g', '--gpu', default=0, type=int)
     args = parser.parse_args()
     workers = args.worker
     batch_size = args.batch
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    torch.cuda.set_device(0)
+    torch.cuda.set_device(args.gpu)
     model = AVnet_Slim(channel_split=8).to('cuda')
     model.load_state_dict(torch.load('slim_resnet_uniform_9_0.51721764.pth'), strict=False)
     # model_distill = AVnet(model='resnet', pretrained=False).to(device)
