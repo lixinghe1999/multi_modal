@@ -166,7 +166,7 @@ class AVnet_Gate(nn.Module):
 
         computation_penalty = torch.range(1, 12).to('cuda')/12
         print(gate_a, gate_i)
-        loss_c = ((gate_a * computation_penalty + gate_i * computation_penalty).mean())
+        loss_c = ((gate_a * computation_penalty + gate_i * computation_penalty).sum())
         print(loss_c.item())
         loss_c += ((gate_a * computation_penalty).mean() - (gate_i * computation_penalty).mean())
         print(loss_c.item())
