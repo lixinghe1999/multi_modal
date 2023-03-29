@@ -30,13 +30,8 @@ def gate_train(model, train_dataset, test_dataset):
                                                drop_last=True, pin_memory=False)
     test_loader = torch.utils.data.DataLoader(dataset=test_dataset, num_workers=workers, batch_size=1, shuffle=False)
     gate = Gate(option=1).to(device)
-    model.eval()
     model.gate = gate
-    for param in model.audio.parameters():
-        param.requires_grad = False
-    for param in model.image.parameters():
-        param.requires_grad = False
-    optimizer = torch.optim.Adam(model.get_parameters(), lr=.00001, weight_decay=1e-4)
+    optimizer = torch.optim.Adam(model.parameters(), lr=.0001, weight_decay=1e-4)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.2)
     best_acc = 0
     for epoch in range(5):
@@ -184,7 +179,7 @@ if __name__ == "__main__":
     elif args.task == 'test':
         test(model, test_dataset)
     elif args.task == 'gate_train':
-        model.load_state_dict(torch.load('gate_train_9_0.6756756756756757.pth'))
+        # model.load_state_dict(torch.load('gate_train_9_0.6756756756756757.pth'))
         gate_train(model, train_dataset, test_dataset)
     elif args.task == 'profile':
         profile(model, test_dataset)
