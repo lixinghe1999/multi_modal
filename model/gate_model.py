@@ -148,32 +148,41 @@ class AVnet_Gate(nn.Module):
                         i = i2; j = j2
             gate_label[b, 0, i] = 1; gate_label[b, 1, j] = 1
         return gate_label
-    def gate_train(self, audio, image, label):
+    def gate_train(self, audio, image, label, teacher_model):
         '''
-        We get three loss: computation loss, Gate label loss, Recognition loss
+        We get three loss:
+        computation loss: absolute computation & computation difference
+        recognition loss: cross_entropy
+        distillation loss1: KL divergence of logits
+        distillation loss2: MSE of features
         '''
-        output_cache, output = self.forward(audio, image, 'no_exit') # get all the possibilities
-        # gate_label = self.label(output_cache, label, mode='model').to('cuda')
-        # gate_label = torch.argmax(gate_label, dim=-1)
-        output, gate_a, gate_i = self.gate(audio, image, output_cache)
+        with torch.no_grad():
+            output_cache_distill, output_distill = self.forward(audio, image, 'no_exit')
+            feature_distill = torch.cat([output_cache_distill['audio'][-1], output_cache_distill['image'][-1]], dim=-1)
+
+        output_cache, output = self.forward(audio, image, 'no_exit')
+        feature, gate_a, gate_i = self.gate(audio, image, output_cache)
+        output = self.projection(feature)
 
         computation_penalty = torch.range(1, 12).to('cuda')/12
         loss_c = ((gate_a * computation_penalty + gate_i * computation_penalty).mean())
         loss_c += ((gate_a * computation_penalty).mean() - (gate_i * computation_penalty).mean()).abs()
-        #loss_g = nn.functional.cross_entropy(gate_a, gate_label[:, 0]) + nn.functional.cross_entropy(gate_i, gate_label[:, 1])
 
-        output = self.projection(output)
         loss_r = nn.functional.cross_entropy(output, label) # recognition-level loss
+
+        loss_kd = nn.functional.kl_div(
+                nn.functional.log_softmax(output, dim=-1), nn.functional.log_softmax(output_distill, dim=-1),
+                reduction='batchmean', log_target=True)
+        loss_kd += torch.pow(feature - feature_distill, 2).mean()
 
         compress = [(torch.argmax(gate_a, dim=-1).float().mean() + 1).item()/12 ,
               (torch.argmax(gate_i, dim=-1).float().mean() + 1).item()/12,
             (torch.argmax(gate_a, dim=-1) - torch.argmax(gate_i, dim=-1)).float().abs().mean().item()/12]
         acc = (torch.argmax(output, dim=-1) == label).sum().item() / len(label)
 
-        # print(loss_c.item(), loss_r.item())
-        loss = loss_c * 2 + loss_r * 1
+        loss = loss_c * 2 + loss_r * 1 + loss_kd * 0.5
         loss.backward()
-        return [loss_c.item(), loss_r.item(), compress, acc]
+        return [loss_c.item(), loss_r.item(), loss_kd.item(), compress, acc]
 
     @autocast()
     def forward(self, audio, image, mode='dynamic'):

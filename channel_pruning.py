@@ -102,13 +102,13 @@ def train(model, train_dataset, test_dataset):
     soft_criteria = SoftTargetCrossEntropy()
     for epoch in range(1):
         model.train()
-        # for idx, batch in enumerate(tqdm(train_loader)):
-        #     audio, image, text, _ = batch
-        #     losses = train_step(model, input_data=(audio.to(device), image.to(device)), optimizer=optimizer,
-        #                 criteria=criteria, soft_criteria=soft_criteria, label=text.to(device))
-        #     if idx % 200 == 0 and idx > 0:
-        #         print('iteration:', str(idx), losses)
-        # scheduler.step()
+        for idx, batch in enumerate(tqdm(train_loader)):
+            audio, image, text, _ = batch
+            losses = train_step(model, input_data=(audio.to(device), image.to(device)), optimizer=optimizer,
+                        criteria=criteria, soft_criteria=soft_criteria, label=text.to(device))
+            if idx % 200 == 0 and idx > 0:
+                print('iteration:', str(idx), losses)
+        scheduler.step()
         model.eval()
         acc = []
         comp = []
