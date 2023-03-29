@@ -1,5 +1,3 @@
-import os
-os.path.abspath('..')
 import time
 from utils.datasets.vggsound import VGGSound
 import numpy as np
