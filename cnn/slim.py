@@ -41,8 +41,7 @@ def train_step(model, input_data, optimizer, criteria, label):
             loss.backward()
             losses.append(loss.item())
     else:
-        model.audio.set_mode('dynamic')
-        model.image.set_mode('dynamic')
+        model.set_mode('dynamic')
         output = model(audio, image)
         loss = criteria(output, label)
         loss.backward()
