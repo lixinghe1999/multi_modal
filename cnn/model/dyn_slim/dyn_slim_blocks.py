@@ -2,9 +2,8 @@ import random
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
-from model.dyn_slim.dyn_slim_ops import DSpwConv2d, DSdwConv2d, DSBatchNorm2d, DSAvgPool2d, DSAdaptiveAvgPool2d
+from cnn.model.dyn_slim.dyn_slim_ops import DSpwConv2d, DSdwConv2d, DSBatchNorm2d, DSAvgPool2d, DSAdaptiveAvgPool2d
 from timm.models.layers import sigmoid
 
 

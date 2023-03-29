@@ -1,6 +1,6 @@
 import torch.nn as nn
 
-from model.dyn_slim.dyn_slim_blocks import DSDepthwiseSeparable, DSInvertedResidual, set_exist_attr
+from cnn.model.dyn_slim.dyn_slim_blocks import DSDepthwiseSeparable, DSInvertedResidual, set_exist_attr
 
 
 class DSStage(nn.Module):

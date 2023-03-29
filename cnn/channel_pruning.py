@@ -1,10 +1,7 @@
-import matplotlib.pyplot as plt
-
 from utils.datasets.vggsound import VGGSound
 import numpy as np
 import torch
-from model.slim_model import AVnet_Slim
-from model.vanilla_model import AVnet
+from cnn.model.slim_model import AVnet_Slim
 import argparse
 import warnings
 from tqdm import tqdm

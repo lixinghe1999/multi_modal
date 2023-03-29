@@ -3,11 +3,10 @@ Baseline1:
 add early-exit on each block
 Two modality will always have same computation
 '''
-import time
 import torch.nn as nn
 import torch
 from torch.cuda.amp import autocast
-from model.vit_model import AudioTransformerDiffPruning, VisionTransformerDiffPruning
+from transformer.model.vit_model import AudioTransformerDiffPruning, VisionTransformerDiffPruning
 class AVnet_Exit(nn.Module):
     def __init__(self, scale='base', pretrained=True):
         super(AVnet_Exit, self).__init__()

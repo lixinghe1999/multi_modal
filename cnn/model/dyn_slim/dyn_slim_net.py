@@ -5,9 +5,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from model.dyn_slim.dyn_slim_blocks import DSInvertedResidual, DSDepthwiseSeparable, set_exist_attr, MultiHeadGate
-from model.dyn_slim.dyn_slim_ops import DSConv2d, DSpwConv2d, DSBatchNorm2d, DSLinear, DSAdaptiveAvgPool2d
-from model.dyn_slim.dyn_slim_stages import DSStage
+from cnn.model.dyn_slim.dyn_slim_blocks import DSInvertedResidual, DSDepthwiseSeparable, set_exist_attr, MultiHeadGate
+from cnn.model.dyn_slim.dyn_slim_ops import DSConv2d, DSpwConv2d, DSBatchNorm2d, DSLinear, DSAdaptiveAvgPool2d
+from cnn.model.dyn_slim.dyn_slim_stages import DSStage
 from timm.models.layers import Swish
 from timm.models.registry import register_model
 

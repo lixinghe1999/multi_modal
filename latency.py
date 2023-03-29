@@ -1,8 +1,8 @@
 import torch
-from model.dynamicvit_runtime import AVnet_Runtime
-from model.dynamicvit_legacy import AVnet_Dynamic
-from model.gate_model import AVnet_Gate
-from model.dyn_slim import DSNet
+from transformer.model.dynamicvit_runtime import AVnet_Runtime
+from transformer.model.dynamicvit_legacy import AVnet_Dynamic
+from transformer.model.gate_model import AVnet_Gate
+from cnn.model.dyn_slim import DSNet
 import time
 import argparse
 from fvcore.nn import FlopCountAnalysis

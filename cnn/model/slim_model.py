@@ -1,5 +1,5 @@
-from model.ds_net import SlimResNet, Bottleneck
-from model.dyn_slim.dyn_slim_ops import DSLinear
+from cnn.model.ds_net import SlimResNet
+from cnn.model.dyn_slim.dyn_slim_ops import DSLinear
 import torch.nn as nn
 from torch.cuda.amp import autocast
 import torch

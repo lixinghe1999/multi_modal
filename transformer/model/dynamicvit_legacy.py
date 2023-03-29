@@ -1,5 +1,5 @@
-from model.vit_model import AudioTransformerDiffPruning, VisionTransformerDiffPruning, PredictorLG, \
-    batch_index_select, VisionTransformerTeacher
+from transformer.model.vit_model import AudioTransformerDiffPruning, VisionTransformerDiffPruning, PredictorLG, \
+    batch_index_select
 from torch.cuda.amp import autocast
 import torch
 import torch.nn as nn

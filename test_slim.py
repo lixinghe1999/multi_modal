@@ -1,6 +1,5 @@
-import matplotlib.pyplot as plt
-from model.ds_net import Bottleneck, SlimResNet
-from model.resnet_model import resnet50
+from cnn.model.ds_net import Bottleneck, SlimResNet
+from cnn.model.resnet_model import resnet50
 import torch
 import time
 

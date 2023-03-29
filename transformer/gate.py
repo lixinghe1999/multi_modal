@@ -2,8 +2,7 @@ import time
 from utils.datasets.vggsound import VGGSound
 import numpy as np
 import torch
-from model.gate_model import AVnet_Gate, Gate
-from model.vanilla_model import AVnet
+from transformer.model.gate_model import AVnet_Gate, Gate
 import warnings
 from tqdm import tqdm
 import argparse

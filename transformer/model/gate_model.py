@@ -5,12 +5,11 @@ We get three modes
 2. Training gate: without exit, only train the gate network, exit = False
 3. Inference: use trained gate network to do inference, exit = True
 '''
-import time
 import torch.nn as nn
 import torch
 from torch.cuda.amp import autocast
-from model.vit_model import AudioTransformerDiffPruning, VisionTransformerDiffPruning
-from model.resnet_model import ResNet
+from transformer.model.vit_model import AudioTransformerDiffPruning, VisionTransformerDiffPruning
+from cnn.model.resnet_model import ResNet
 def gumbel_softmax(logits, tau=1, hard=False, dim=1, training=True):
     """ See `torch.nn.functional.gumbel_softmax()` """
     # if training:

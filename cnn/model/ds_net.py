@@ -1,9 +1,11 @@
-from model.dyn_slim.dyn_slim_ops import DSpwConv2d, DSdwConv2d, DSBatchNorm2d, \
-    DSAvgPool2d, DSAdaptiveAvgPool2d, DSConv2d, DSLinear
+from cnn.model.dyn_slim.dyn_slim_ops import DSpwConv2d, DSBatchNorm2d, \
+    DSAdaptiveAvgPool2d, DSConv2d, DSLinear
 import torch.nn as nn
 import random
 import torch
-from typing import Callable, Optional, List
+from typing import Optional
+
+
 def make_divisible(v, divisor=8, min_value=None):
     min_value = min_value or divisor
     new_v = max(min_value, int(v + divisor / 2) // divisor * divisor)
