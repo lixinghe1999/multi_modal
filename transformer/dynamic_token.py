@@ -1,8 +1,8 @@
 from utils.datasets.vggsound import VGGSound
 import numpy as np
 import torch
-from transformer.model.dynamicvit_runtime import AVnet_Runtime
-from transformer.model.dynamicvit_legacy import AVnet_Dynamic
+from model.dynamicvit_runtime import AVnet_Runtime
+from model.dynamicvit_legacy import AVnet_Dynamic
 from utils.losses import DistillDiffPruningLoss_dynamic
 import time
 import warnings
@@ -136,8 +136,6 @@ if __name__ == "__main__":
         train(model, train_dataset, test_dataset)
     elif args.task == 'profile':
         model = AVnet_Runtime(pruning_loc=pruning_loc, token_ratio=token_ratio, pretrained=False).to(device)
-        # model = AVnet_Dynamic(pruning_loc=(), pretrained=False).to(device)
-        # model = AVnet_Runtime(pruning_loc=(), pretrained=False).to(device)
         model.load_state_dict(torch.load('dynamic_distill_9_0.6833300531391459.pth'), strict=False)
         profile(model, test_dataset)
 

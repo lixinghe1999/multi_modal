@@ -6,18 +6,13 @@ Two modality will always have same computation
 import torch.nn as nn
 import torch
 from torch.cuda.amp import autocast
-from transformer.model.vit_model import AudioTransformerDiffPruning, VisionTransformerDiffPruning
+from model.vit_model import AudioTransformerDiffPruning, VisionTransformerDiffPruning
 class AVnet_Exit(nn.Module):
-    def __init__(self, scale='base', pretrained=True):
+    def __init__(self, pretrained=True):
         super(AVnet_Exit, self).__init__()
-        if scale == 'base':
-            config = dict(patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True,
-                          pruning_loc=())
-            embed_dim = 768
-        else:
-            config = dict(patch_size=16, embed_dim=384, depth=12, num_heads=6, mlp_ratio=4, qkv_bias=True,
-                          pruning_loc=())
-            embed_dim = 384
+        config = dict(patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True,
+                      pruning_loc=())
+        embed_dim = 768
         self.audio = AudioTransformerDiffPruning(config, imagenet_pretrain=pretrained)
         self.image = VisionTransformerDiffPruning(**config)
         if pretrained:
