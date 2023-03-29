@@ -13,7 +13,7 @@ class SoftTargetCrossEntropy(torch.nn.Module):
     def forward(self, x, target):
         loss = torch.sum(-target * torch.nn.functional.log_softmax(x, dim=-1), dim=-1)
         return loss.mean()
-def train_step(model, input_data, optimizer, criteria, soft_criteria, label):
+def train_step(model, input_data, optimizer, criteria, label):
     audio, image = input_data
     # Track history only in training
     losses = []
@@ -44,10 +44,9 @@ def train_step(model, input_data, optimizer, criteria, soft_criteria, label):
         model.audio.set_mode('dynamic')
         model.image.set_mode('dynamic')
         output, _ = model(audio, image)
-
         loss = criteria(output, label)
         loss.backward()
-        losses.append(loss.item())
+        # losses.append(loss.item())
     optimizer.step()
 
     return losses
@@ -83,7 +82,7 @@ def train(model, train_dataset, test_dataset):
         for idx, batch in enumerate(tqdm(train_loader)):
             audio, image, text, _ = batch
             losses = train_step(model, input_data=(audio.to(device), image.to(device)), optimizer=optimizer,
-                        criteria=criteria, soft_criteria=soft_criteria, label=text.to(device))
+                        criteria=criteria, label=text.to(device))
             if idx % 200 == 0 and idx > 0:
                 print('iteration:', str(idx), losses)
         scheduler.step()
