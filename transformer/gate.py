@@ -1,3 +1,5 @@
+import sys
+sys.path.append('../')
 import time
 from utils.datasets.vggsound import VGGSound
 import numpy as np
