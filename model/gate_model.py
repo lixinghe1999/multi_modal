@@ -223,7 +223,7 @@ class AVnet_Gate(nn.Module):
 
         audio = output_cache['audio'][-1]
         image = output_cache['image'][-1]
-        output = torch.cat([audio[:, 0], image[:, 0]], dim=1)
+        output = torch.cat([audio, image], dim=1)
         output = torch.flatten(output, start_dim=1)
         output = self.head(output)
         return output_cache, output
