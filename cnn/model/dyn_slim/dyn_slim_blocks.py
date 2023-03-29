@@ -347,7 +347,7 @@ class AVHeadGate(nn.Module):
             self.has_gate = True
             self.gate = nn.Sequential(DSpwConv2d([reduced_chs], [channel_gate_num], bias=False))
 
-        self.mode = 'largest'
+        self.mode = 'dynamic'
         self.keep_gate, self.print_gate, self.print_idx = None, None, None
         self.channel_choice = None
         self.initialized = False

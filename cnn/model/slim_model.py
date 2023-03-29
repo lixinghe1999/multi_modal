@@ -1,3 +1,5 @@
+import sys
+sys.path.append('./cnn')
 from model.ds_net import SlimResNet
 from model.dyn_slim.dyn_slim_ops import DSLinear
 from model.dyn_slim.dyn_slim_blocks import AVHeadGate
@@ -30,6 +32,7 @@ class AVnet_Slim(nn.Module):
             comp += (self.audio.channel_choice + self.image.channel_choice) / 8
             audio = blk_a(audio)
             image = blk_i(image)
+
             audio, image = self.score_predictor[i](audio, image)
             channel_choice = self.score_predictor[i].get_gate()
             self.audio.set_layer_choice(blk_a, channel_choice[0])
