@@ -1,7 +1,7 @@
 from utils.datasets.vggsound import VGGSound
 import numpy as np
 import torch
-from cnn.model.slim_model import AVnet_Slim
+from model.slim_model import AVnet_Slim
 import argparse
 import warnings
 from tqdm import tqdm
