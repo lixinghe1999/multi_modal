@@ -3,7 +3,7 @@ import random
 import torch
 import torch.nn as nn
 
-from cnn.model.dyn_slim.dyn_slim_ops import DSpwConv2d, DSdwConv2d, DSBatchNorm2d, DSAvgPool2d, DSAdaptiveAvgPool2d
+from model.dyn_slim.dyn_slim_ops import DSpwConv2d, DSdwConv2d, DSBatchNorm2d, DSAvgPool2d, DSAdaptiveAvgPool2d
 from timm.models.layers import sigmoid
 
 
