@@ -2,7 +2,7 @@ import time
 from utils.datasets.vggsound import VGGSound
 import numpy as np
 import torch
-from model.gate_model import AVnet_Gate, Gate
+from model.gate_model import AVnet_Gate, Gate_MM, Gate_SM
 import warnings
 from tqdm import tqdm
 import argparse
@@ -29,8 +29,7 @@ def distill(model, train_dataset, test_dataset, teacher_model):
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset, num_workers=workers, batch_size=batch_size, shuffle=True,
                                                drop_last=True, pin_memory=False)
     test_loader = torch.utils.data.DataLoader(dataset=test_dataset, num_workers=workers, batch_size=1, shuffle=False)
-    gate = Gate(option=1).to(device)
-    model.gate = gate
+    model.gate = Gate_SM().to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=.0001, weight_decay=1e-4)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.2)
     best_acc = 0

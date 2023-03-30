@@ -30,41 +30,53 @@ def gumbel_softmax(logits, tau=1, hard=False, dim=1, training=True):
         # y_hard = torch.Tensor([1, 0, 0, 0]).repeat(logits.shape[0], 1).cuda()
     ret = y_hard - y_soft.detach() + y_soft
     return y_soft, ret, index
-class Gate(nn.Module):
-    def __init__(self, option=1):
-        super(Gate, self).__init__()
-        # Option1, use the embedding of first block
-        self.option = option
+class Gate_MM(nn.Module):
+    '''
+    output multi-modal decision
+    '''
+    def __init__(self, decision_space=12):
+        super(Gate_MM, self).__init__()
+        self.decision_space = decision_space
         self.bottle_neck = 768
-        if self.option == 1:
-            self.gate = nn.Linear(self.bottle_neck * 2, 24)
-        # Option2, another network: conv + max + linear
-        else:
-            self.gate_audio = ResNet(1, layers=(1, 1, 1, 1), num_classes=12)
-            self.gate_image = ResNet(3, layers=(1, 1, 1, 1), num_classes=12)
-    def forward(self, audio, image, output_cache):
-        '''
-        :param audio, image: raw data
-        :param output_cache: dict: ['audio', 'image'] list -> 12 (for example) * [batch, bottle_neck]
-         Or [batch, raw_data_shape] -> [batch, 3, 224, 224]
-        :return: Gumbel_softmax decision
-        '''
-        if self.option == 1:
-            gate_input = torch.cat([output_cache['audio'][0], output_cache['image'][0]], dim=-1)
-            logits = self.gate(gate_input)
-            logits_audio = logits[:, :12]
-            logits_image = logits[:, 12:]
-            # logits_audio = self.gate_audio(gate_input)
-            # logits_image = self.gate_image(gate_input)
-            y_soft, ret_audio, index = gumbel_softmax(logits_audio)
-            y_soft, ret_image, index = gumbel_softmax(logits_image)
-        else:
-            logits_audio = self.gate_audio(audio.unsqueeze(1))
-            y_soft, ret_audio, index = gumbel_softmax(logits_audio)
-            logits_image = self.gate_image(image)
-            y_soft, ret_image, index = gumbel_softmax(logits_image)
+        self.gate = nn.Linear(self.bottle_neck * 2, self.decision_space)
+
+    def forward(self, output_cache):
+        gate_input = torch.cat([output_cache['audio'][0], output_cache['image'][0]], dim=-1)
+        logits = self.gate(gate_input)
+        logits_audio = logits[:, :12]
+        logits_image = logits[:, 12:]
+        y_soft, ret_audio, index = gumbel_softmax(logits_audio)
+        y_soft, ret_image, index = gumbel_softmax(logits_image)
 
         if len(output_cache['audio']) == 1:
+            return ret_audio, ret_image
+        else:
+            audio = torch.cat(output_cache['audio'], dim=-1)
+            audio = (audio.reshape(-1, self.decision_space, self.bottle_neck) * ret_audio.unsqueeze(2)).mean(dim=1)
+            image = torch.cat(output_cache['image'], dim=-1)
+            image = (image.reshape(-1, self.decision_space, self.bottle_neck) * ret_image.unsqueeze(2)).mean(dim=1)
+            return torch.cat([audio, image], dim=-1), ret_audio, ret_image
+
+class Gate_SM(nn.Module):
+    '''
+    output single-modal decision -> one modality is always full
+    '''
+    def __init__(self, decision_space=12):
+        super(Gate_SM, self).__init__()
+        self.decision_space = decision_space
+        self.bottle_neck = 768
+        self.gate = nn.Linear(self.bottle_neck * 2, self.decision_space)
+
+    def forward(self, output_cache):
+        gate_input = torch.cat([output_cache['audio'][0], output_cache['image'][0]], dim=-1)
+        logits = self.gate(gate_input)
+        y_soft, ret, index = gumbel_softmax(logits)
+        hard_decision = torch.zeros((gate_input.shape[0], self.decision_space))
+        hard_decision[:, -1] = 1
+        ret_audio = hard_decision
+        ret_image = ret
+        if len(output_cache['audio']) == 1:
+            # real inference
             return ret_audio, ret_image
         else:
             audio = torch.cat(output_cache['audio'], dim=-1)
@@ -81,14 +93,9 @@ class AVnet_Gate(nn.Module):
         '''
         super(AVnet_Gate, self).__init__()
         self.gate = gate_network
-        if scale == 'base':
-            config = dict(patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True,
-                          pruning_loc=())
-            embed_dim = 768
-        else:
-            config = dict(patch_size=16, embed_dim=384, depth=12, num_heads=6, mlp_ratio=4, qkv_bias=True,
-                          pruning_loc=())
-            embed_dim = 384
+        config = dict(patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True,
+                      pruning_loc=())
+        embed_dim = 768
         self.audio = AudioTransformerDiffPruning(config, imagenet_pretrain=pretrained)
         self.image = VisionTransformerDiffPruning(**config)
         if pretrained:
@@ -99,50 +106,6 @@ class AVnet_Gate(nn.Module):
                      {'params': self.projection.parameters()}]
         return parameter
 
-    def label(self, output_cache, label, mode='flexible'):
-        # 1. model -> switch between two modality -> predict [2, 1]
-        # 2. main -> predict one branch [1, 12]
-        # 3. flexible -> predict [2, 12] currently very close to model
-        def helper_1(modal1, modal2, b):
-            for i in range(blocks):
-                predict_label = self.projection(torch.cat([modal1[i][b], modal2[-1][b]], dim=-1))
-                predict_label = torch.argmax(predict_label, dim=-1).item()
-                if predict_label == label[b]:
-                    return i, blocks - 1
-            return blocks-1, blocks-1
-        def helper_2(modal1, modal2, b):
-            for i in range(blocks):
-                predict_label = self.projection(torch.cat([modal2[-1][b], modal1[i][b]], dim=-1))
-                predict_label = torch.argmax(predict_label, dim=-1).item()
-                if predict_label == label[b]:
-                    return i, blocks - 1
-            return blocks-1, blocks-1
-
-        batch = len(label)
-        blocks = len(output_cache['audio'])
-        gate_label = torch.zeros(batch, 2, blocks, dtype=torch.int8)
-        for b in range(batch):
-            i1, j1 = helper_1(output_cache['audio'], output_cache['image'], b)
-            j2, i2 = helper_2(output_cache['image'], output_cache['audio'], b)
-            if mode == 'main':
-                i, j = i1, blocks-1
-            elif mode == 'model':
-                if i1 < j2:
-                    i = 0; j = blocks-1
-                else:
-                    i = blocks-1; j = 0
-            else: # flexible
-                if (i1 + j1) < (i2 + j2):
-                    i = i1; j = j1
-                elif (i1 + j1) > (i2 + j2):
-                    i = i2; j = j2
-                else:
-                    if torch.rand(1)<0.5:
-                        i = i1; j = j1
-                    else:
-                        i = i2; j = j2
-            gate_label[b, 0, i] = 1; gate_label[b, 1, j] = 1
-        return gate_label
     def gate_train(self, audio, image, label, teacher_model):
         '''
         We get three loss:
