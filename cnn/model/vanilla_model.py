@@ -48,54 +48,29 @@ class AVnet(nn.Module):
     def __init__(self, model='resnet', pretrained=False):
         super(AVnet, self).__init__()
         self.model = model
-        if model == 'resnet':
-            self.audio = resnet50(pretrained=pretrained)
-            self.image = resnet50(pretrained=pretrained)
-            embed_dim = 512 * 4
-            # self.fusion = nn.ModuleList([MMTM(dim, dim, 4) for dim in [256, 512, 1024, 2048]])
-            # self.norm = nn.LayerNorm(embed_dim)
-            self.head = nn.Sequential(nn.Linear(embed_dim * 2, 309))
-        else:
-            config = dict(patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True,
-                          pruning_loc=())
-            embed_dim = 768
-            self.audio = AudioTransformerDiffPruning(config, imagenet_pretrain=pretrained)
-            self.image = VisionTransformerDiffPruning(**config)
-            if pretrained:
-                self.image.load_state_dict(torch.load('assets/deit_base_patch16_224.pth')['model'], strict=False)
-            self.head = nn.Sequential(nn.Linear(embed_dim * 2, 309))
+        self.audio = resnet50(pretrained=pretrained)
+        self.image = resnet50(pretrained=pretrained)
+        embed_dim = 512 * 4
+        self.head = nn.Sequential(nn.Linear(embed_dim * 2, 309))
+
     def fusion_parameter(self):
         parameter = [{'params': self.head.parameters()},
-                     #{'params': self.fusion.parameters()}
         ]
         return parameter
 
     @autocast()
     def forward(self, audio, image):
-        if self.model == 'resnet':
-            audio = self.audio.preprocess(audio)
-            image = self.image.preprocess(image)
-            for i, (blk_a, blk_i) in enumerate(zip(self.audio.blocks, self.image.blocks)):
-                audio = blk_a(audio)
-                image = blk_i(image)
-                # audio, image = self.fusion[i](audio, image)
-            audio = torch.flatten(self.audio.avgpool(audio), 1)
-            image = torch.flatten(self.image.avgpool(image), 1)
-            x = self.head(torch.cat([audio, image], dim=1))
-            return x
-        else:
-            B, audio = self.audio.preprocess(audio.unsqueeze(1))
-            B, image = self.image.preprocess(image)
+        audio = self.audio.preprocess(audio)
+        image = self.image.preprocess(image)
+        for i, (blk_a, blk_i) in enumerate(zip(self.audio.blocks, self.image.blocks)):
+            audio = blk_a(audio)
+            image = blk_i(image)
+            # audio, image = self.fusion[i](audio, image)
+        audio = torch.flatten(self.audio.avgpool(audio), 1)
+        image = torch.flatten(self.image.avgpool(image), 1)
+        x = self.head(torch.cat([audio, image], dim=1))
+        return x
 
-            for i, (blk_a, blk_i) in enumerate(zip(self.audio.blocks, self.image.blocks)):
-                audio = blk_a(audio)
-                image = blk_i(image)
-            audio = self.audio.norm(audio)
-            image = self.image.norm(image)
-            x = torch.cat([audio[:, 0], image[:, 0]], dim=1)
-            x = torch.flatten(x, start_dim=1)
-            x = self.head(x)
-            return x
 if __name__ == "__main__":
     device = 'cuda'
     base_rate = 0.5

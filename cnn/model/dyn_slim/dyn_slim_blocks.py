@@ -351,17 +351,18 @@ class AVHeadGate(nn.Module):
         self.keep_gate, self.print_gate, self.print_idx = None, None, None
         self.channel_choice = None
         self.initialized = False
-    def attention(self, x):
-        x_pool = self.avg_pool(x)
-        x_reduced = self.conv_reduce(x_pool)
+    def attention(self, x1, x2):
+        x1_pool = self.avg_pool(x1)
+        x2_pool = self.avg_pool(x2)
+        x = torch.cat([x1_pool, x2_pool], dim=1)
+        x_reduced = self.conv_reduce(x)
         x_reduced = self.act1(x_reduced)
         attn = self.conv_expand(x_reduced)
         attn = self.attn_act_fn(attn)
         x = x * attn
         return x, x_reduced
     def forward(self, audio, image):
-        audio, audio_reduced = self.attention(audio)
-        image, image_reduced = self.attention(image)
+        x, x_reduced = self.attention(audio, image)
 
         if self.mode == 'dynamic' and self.has_gate:
             audio_choice = self.gate(audio_reduced).squeeze(-1).squeeze(-1)

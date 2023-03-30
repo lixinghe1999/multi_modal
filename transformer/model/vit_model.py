@@ -39,7 +39,7 @@ def batch_index_select(x, idx):
         N_new = idx.size(1)
         offset = torch.arange(B, dtype=torch.long, device=x.device).view(B, 1) * N
         idx = idx + offset
-        out = x.reshape(B*N, C)[idx.reshape(-1)].reshape(B, N_new, C)
+        out = torch.index_select(x.reshape(B*N, C), dim=0, index=idx.reshape(-1)).reshape(B, N_new, C)
         return out
     elif len(x.size()) == 2:
         B, N = x.size()

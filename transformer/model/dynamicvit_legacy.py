@@ -14,7 +14,11 @@ class AVnet_Dynamic(nn.Module):
                       pruning_loc=pruning_loc, token_ratio=token_ratio)
         embed_dim = 768
         self.audio = AudioTransformerDiffPruning(config, imagenet_pretrain=pretrained)
+        self.audio.score_predictor = None
+        self.audio.head = None
         self.image = VisionTransformerDiffPruning(**config)
+        self.image.score_predictor = None
+        self.image.head = None
         if pretrained:
             self.image.load_state_dict(torch.load('assets/deit_base_patch16_224.pth')['model'], strict=False)
 
@@ -78,8 +82,8 @@ class AVnet_Dynamic(nn.Module):
                     keep_audio = keep_policy < token_len_audio
                     keep_image = keep_policy >= token_len_audio
 
-                    keep_audio = keep_policy[keep_audio].unsqueeze(0)
-                    keep_image = keep_policy[keep_image].unsqueeze(0) - token_len_audio
+                    keep_audio = torch.masked_select(keep_policy, mask=keep_audio).unsqueeze(0)
+                    keep_image = torch.masked_select(keep_policy, mask=keep_image).unsqueeze(0) - token_len_audio
 
                     cls_policy = torch.zeros(B, 1, dtype=keep_policy.dtype, device=keep_policy.device)
                     now_policy = torch.cat([cls_policy, keep_audio + 1], dim=1)
@@ -102,7 +106,7 @@ class AVnet_Dynamic(nn.Module):
                     audio = blk_a(audio)
                     image = blk_i(image)
         r = (audio.shape[1] / (audio.shape[1] + image.shape[1]))
-        ratio = [1, 1, r, 1 - r, abs(2 * r - 1)]
+        # ratio = [1, 1, r, 1 - r, abs(2 * r - 1)]
         x, features = self.output(audio, image)
         if self.training:
             if self.distill:
@@ -113,7 +117,7 @@ class AVnet_Dynamic(nn.Module):
             if self.distill:
                 return x, features
             else:
-                return x, ratio
+                return x
 
 
 if __name__ == "__main__":
