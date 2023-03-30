@@ -71,7 +71,7 @@ class Gate_SM(nn.Module):
         gate_input = torch.cat([output_cache['audio'][0], output_cache['image'][0]], dim=-1)
         logits = self.gate(gate_input)
         y_soft, ret, index = gumbel_softmax(logits)
-        hard_decision = torch.zeros((gate_input.shape[0], self.decision_space))
+        hard_decision = torch.zeros((gate_input.shape[0], self.decision_space)).to(device=self.gate.device)
         hard_decision[:, -1] = 1
         ret_audio = hard_decision
         ret_image = ret
@@ -85,7 +85,7 @@ class Gate_SM(nn.Module):
             image = (image.reshape(-1, 12, self.bottle_neck) * ret_image.unsqueeze(2)).mean(dim=1)
             return torch.cat([audio, image], dim=-1), ret_audio, ret_image
 class AVnet_Gate(nn.Module):
-    def __init__(self, gate_network=None, scale='base', pretrained=True):
+    def __init__(self, gate_network=None, pretrained=True):
         '''
         :param exit: True - with exit, normally for testing, False - no exit, normally for training
         :param gate_network: extra gate network
