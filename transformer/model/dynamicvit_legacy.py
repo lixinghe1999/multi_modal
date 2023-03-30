@@ -106,7 +106,8 @@ class AVnet_Dynamic(nn.Module):
                     audio = blk_a(audio)
                     image = blk_i(image)
         r = (audio.shape[1] / (audio.shape[1] + image.shape[1]))
-        # ratio = [1, 1, r, 1 - r, abs(2 * r - 1)]
+        # ratio = torch.tensor([1, 1, r, 1 - r, abs(2 * r - 1)])
+        self.ratio = [1, 1, r, 1 - r, abs(2 * r - 1)]
         x, features = self.output(audio, image)
         if self.training:
             if self.distill:

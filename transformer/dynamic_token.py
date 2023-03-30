@@ -24,7 +24,8 @@ def train_step(model, input_data, optimizer, criteria, label):
 def test_step(model, input_data, label):
     outputs = model(*input_data)
     if args.task == 'profile':
-        output, r = outputs
+        output = outputs
+        r = model.ratio
         acc = (torch.argmax(output, dim=-1).cpu() == label).sum() / len(label)
         return acc.item(), r
     else:
