@@ -80,9 +80,9 @@ class Gate_SM(nn.Module):
             return ret_audio, ret_image
         else:
             audio = torch.cat(output_cache['audio'], dim=-1)
-            audio = (audio.reshape(-1, 12, self.bottle_neck) * ret_audio.unsqueeze(2)).mean(dim=1)
+            audio = (audio.reshape(-1, self.decision_space, self.bottle_neck) * ret_audio.unsqueeze(2)).mean(dim=1)
             image = torch.cat(output_cache['image'], dim=-1)
-            image = (image.reshape(-1, 12, self.bottle_neck) * ret_image.unsqueeze(2)).mean(dim=1)
+            image = (image.reshape(-1, self.decision_space, self.bottle_neck) * ret_image.unsqueeze(2)).mean(dim=1)
             return torch.cat([audio, image], dim=-1), ret_audio, ret_image
 class AVnet_Gate(nn.Module):
     def __init__(self, gate_network=None, pretrained=True):
@@ -127,7 +127,7 @@ class AVnet_Gate(nn.Module):
         loss_c = (((gate_a * computation_penalty + gate_i * computation_penalty).sum(1)) ** 2).mean()
         loss_c += (((gate_a * computation_penalty).sum(1) - (gate_i * computation_penalty).sum(1)) ** 2).mean()
 
-        loss_r = nn.functional.cross_entropy(output, label) # recognition-level loss
+        loss_r = nn.functional.cross_entropy(output, label)# recognition-level loss
 
         loss_kd = nn.functional.kl_div(
                 nn.functional.log_softmax(output, dim=-1), nn.functional.log_softmax(output_distill, dim=-1),
@@ -139,7 +139,7 @@ class AVnet_Gate(nn.Module):
             (torch.argmax(gate_a, dim=-1) - torch.argmax(gate_i, dim=-1)).float().abs().mean().item()/12]
         acc = (torch.argmax(output, dim=-1) == label).sum().item() / len(label)
 
-        loss = loss_c * 0.5 + loss_r * 1 + loss_kd * 0.5
+        loss = loss_c * 1 + loss_r * 1 + loss_kd * 0.5
         loss.backward()
         return [loss_c.item(), loss_r.item(), loss_kd.item(), compress, acc]
 
@@ -166,7 +166,7 @@ class AVnet_Gate(nn.Module):
             self.exit = torch.tensor([11, 11])
         elif mode == 'gate':
             # not implemented yet
-            gate_a, gate_i = self.gate(audio_norm, image_norm, output_cache)
+            gate_a, gate_i = self.gate(output_cache)
             self.exit = torch.argmax(torch.cat([gate_a, gate_i], dim=0), dim=-1)
         else: # directly get the exit
             self.exit = mode

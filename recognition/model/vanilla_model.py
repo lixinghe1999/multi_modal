@@ -53,7 +53,6 @@ class AVnet(nn.Module):
         self.head = nn.Sequential(nn.Linear(embed_dim * 2, 309))
     def fusion_parameter(self):
         parameter = [{'params': self.head.parameters()},
-                     #{'params': self.fusion.parameters()}
         ]
         return parameter
 
