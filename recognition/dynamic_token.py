@@ -37,12 +37,14 @@ def profile(model, test_dataset):
                                               shuffle=False, drop_last=True)
     model.eval()
     # token_ratio = [0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.05]
-    token_ratio = [0.8]
+    threshold = [-0.22]
     acc = []
     modality_ratio = []
     with torch.no_grad():
-        for ratio in token_ratio:
-            model.token_ratio = [ratio, ratio ** 2, ratio ** 3]
+        # for ratio in token_ratio:
+        #     model.token_ratio = [ratio, ratio ** 2, ratio ** 3]
+        for thres in threshold:
+            model.threshold = thres
             # text = torch.zeros(batch_size)
             # audio = torch.randn(args.batch, 384, 128).to(device)
             # image = torch.randn(args.batch, 3, 224, 224).to(device)
