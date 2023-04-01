@@ -37,7 +37,7 @@ def profile(model, test_dataset):
                                               shuffle=False, drop_last=True)
     model.eval()
     # token_ratio = [0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.05]
-    threshold = [0.7, 0.6, 0.5, 0.4, 0.3]
+    threshold = [0.2, 0.1]
     acc = []
     modality_ratio = []
     with torch.no_grad():
