@@ -8,7 +8,7 @@ import time
 
 class AVnet_Dynamic(nn.Module):
     def __init__(self, distill=False, \
-                 pruning_loc=[3, 6, 9], token_ratio=[0.7, 0.7 ** 2, 0.7 ** 3], pretrained=True):
+                 pruning_loc=[3, 6, 9], token_ratio=[0.7, 0.7 ** 2, 0.7 ** 3], pretrained=True, threshold=0.99):
         super(AVnet_Dynamic, self).__init__()
         config = dict(patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True,
                       pruning_loc=pruning_loc, token_ratio=token_ratio)
@@ -33,6 +33,7 @@ class AVnet_Dynamic(nn.Module):
 
         self.pruning_loc = pruning_loc
         self.token_ratio = token_ratio
+        self.threshold = threshold
 
     def output(self, audio, image):
         audio = self.audio.norm(audio)
@@ -80,7 +81,7 @@ class AVnet_Dynamic(nn.Module):
                     # TopK selection
                     # num_keep_node = int(self.num_patches * self.token_ratio[p_count])
                     # threshold selection
-                    num_keep_node = torch.argmax((values < 0.8).float()).item()
+                    num_keep_node = torch.argmax((values < self.threshold).float())[0].item()
                     keep_policy = indices[:, :num_keep_node]
 
                     keep_token.append(num_keep_node / indices.shape[1])
