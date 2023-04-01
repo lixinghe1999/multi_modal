@@ -83,6 +83,7 @@ class AVnet_Dynamic(nn.Module):
                     # threshold selection
                     # print(torch.argmax((values < self.threshold).int()))
                     num_keep_node = torch.searchsorted(torch.exp(values)[0], self.threshold)
+                    print(num_keep_node, indices.shape[1])
                     keep_policy = indices[:, :num_keep_node]
 
                     keep_token.append(num_keep_node.item() / indices.shape[1])
@@ -117,7 +118,7 @@ class AVnet_Dynamic(nn.Module):
                     image = blk_i(image)
         r = (audio.shape[1] / (audio.shape[1] + image.shape[1]))
         # ratio = torch.tensor([1, 1, r, 1 - r, abs(2 * r - 1)])
-        average_token = 1 + keep_token[0] + keep_token[1] ** 2 + keep_token[2] ** 3
+        average_token = (1 + keep_token[0] + keep_token[1] ** 2 + keep_token[2] ** 3)/4
         self.ratio = [average_token, average_token, r, 1 - r, abs(2 * r - 1)]
         x, features = self.output(audio, image)
         if self.training:
