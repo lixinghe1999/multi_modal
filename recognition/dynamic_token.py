@@ -37,8 +37,7 @@ def profile(model, test_dataset):
                                               shuffle=False, drop_last=True)
     model.eval()
     # token_ratio = [0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.05]
-    # threshold = [-0.22, -0.36, -0.51]
-    threshold = [0.7, 0.7, 0.6]
+    threshold = [0.95, 0.9, 0.8, 0.5, 0.4, 0.3]
     acc = []
     modality_ratio = []
     with torch.no_grad():
@@ -46,12 +45,6 @@ def profile(model, test_dataset):
         #     model.token_ratio = [ratio, ratio ** 2, ratio ** 3]
         for thres in threshold:
             model.threshold = thres
-            # text = torch.zeros(batch_size)
-            # audio = torch.randn(args.batch, 384, 128).to(device)
-            # image = torch.randn(args.batch, 3, 224, 224).to(device)
-            # for _ in range(50):
-            #     test_step(model, input_data=[audio.to(device), image.to(device)], label=text)
-            # print('warm-up')
 
             torch.cuda.synchronize()
             tic1 = time.time()

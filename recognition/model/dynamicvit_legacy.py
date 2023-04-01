@@ -81,12 +81,9 @@ class AVnet_Dynamic(nn.Module):
                     # TopK selection
                     # num_keep_node = int(self.num_patches * self.token_ratio[p_count])
                     # threshold selection
-                    # print(torch.argmax((values < self.threshold).int()))
-                    # print(torch.exp(values).max(), torch.exp(values).min(), self.threshold)
-                    num_keep_node = torch.searchsorted(torch.exp(values)[0], self.threshold)
-                    # print(num_keep_node, indices.shape[1])
-                    keep_policy = indices[:, -num_keep_node:]
 
+                    num_keep_node = torch.searchsorted(torch.exp(values)[0], self.threshold)
+                    keep_policy = indices[:, -num_keep_node:]
                     keep_token.append(num_keep_node.item() / indices.shape[1])
 
                     prev_decision = batch_index_select(prev_decision, keep_policy)
