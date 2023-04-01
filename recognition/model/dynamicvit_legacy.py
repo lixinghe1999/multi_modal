@@ -77,7 +77,7 @@ class AVnet_Dynamic(nn.Module):
                     early_output.append(self.output(audio, image)[0])
                 else:
                     score = pred_score[:, :, 0]
-                    values, indices = torch.sort(score, dim=1, descending=True)
+                    values, indices = torch.sort(score, dim=1, descending=False)
                     # TopK selection
                     # num_keep_node = int(self.num_patches * self.token_ratio[p_count])
                     # threshold selection
@@ -85,7 +85,7 @@ class AVnet_Dynamic(nn.Module):
                     print(torch.exp(values).max(), torch.exp(values).min(), self.threshold)
                     num_keep_node = torch.searchsorted(torch.exp(values)[0], self.threshold)
                     print(num_keep_node, indices.shape[1])
-                    keep_policy = indices[:, :num_keep_node]
+                    keep_policy = indices[:, -num_keep_node:]
 
                     keep_token.append(num_keep_node.item() / indices.shape[1])
 
