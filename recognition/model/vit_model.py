@@ -204,7 +204,7 @@ class Attention(nn.Module):
 
     def forward(self, x, policy):
         B, N, C = x.shape
-        qkv = self.qkv(x).reshape(B, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
+        qkv = self.qkv(x).reshape(B, N, 3, self.num_heads, torch.div(C, self.num_heads, rounding_mode='trunc')).permute(2, 0, 3, 1, 4)
         q, k, v = qkv[0], qkv[1], qkv[2]   # make torchscript happy (cannot use tensor as tuple)
 
         attn = (q @ k.transpose(-2, -1)) * self.scale
@@ -325,12 +325,14 @@ class PredictorLG(nn.Module):
             nn.LogSoftmax(dim=-1)
         )
 
-    def forward(self, x, policy  ):
+    def forward(self, x, policy):
+
         x = self.in_conv(x)
         B, N, C = x.size()
-        local_x = x[:,:, :C//2]
-        global_x = (x[:,:, C//2:] * policy).sum(dim=1, keepdim=True) / torch.sum(policy, dim=1, keepdim=True)
-        x = torch.cat([local_x, global_x.expand(B, N, C//2)], dim=-1)
+        half_C = torch.div(C, 2, rounding_mode='trunc')
+        local_x = x[:,:, :half_C]
+        global_x = (x[:,:, half_C:] * policy).sum(dim=1, keepdim=True) / torch.sum(policy, dim=1, keepdim=True)
+        x = torch.cat([local_x, global_x.expand(B, N, half_C)], dim=-1)
         return self.out_conv(x)
 
 

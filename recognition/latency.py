@@ -1,10 +1,7 @@
 import os
-os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
+# os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 import torch
-from model.dynamicvit_runtime import AVnet_Runtime
 from model.dynamicvit_legacy import AVnet_Dynamic
-from model.vit_model import VisionTransformerDiffPruning
-from model.gate_model import AVnet_Gate
 import time
 import argparse
 from fvcore.nn import FlopCountAnalysis, parameter_count_table
@@ -20,6 +17,7 @@ def rfft_flop_jit(inputs, outputs):
     return flops
 
 def calc_flops(model, input, show_details=False, ratios=None):
+    model.eval()
     with torch.no_grad():
         model.default_ratio = ratios
         fca1 = FlopCountAnalysis(model, input)
@@ -29,8 +27,8 @@ def calc_flops(model, input, show_details=False, ratios=None):
         }
         fca1.set_op_handle(**handlers)
         flops1 = fca1.total()
-        # if show_details:
-        #     print(fca1.by_module())
+        if show_details:
+            print(fca1.by_module())
         print("#### GFLOPs: {} for ratio {}".format(flops1 / 1e9, ratios))
     return flops1 / 1e9
 
@@ -51,12 +49,12 @@ def throughput(model, images):
     print('memory:', torch.cuda.max_memory_allocated() / MB)
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-t', '--task', default='gate')
+    parser.add_argument('-t', '--task', default='dynamic')
     parser.add_argument('-d', '--device', default='cuda')
     parser.add_argument('-b', '--batch', default=1, type=int)
     parser.add_argument('-e', '--exits', nargs='+', default='11 11')
     parser.add_argument('-l', '--locations', nargs='+', default='3 6 9')
-    parser.add_argument('-r', '--rate', default=0.3, type=float)
+    parser.add_argument('-r', '--rate', default=0.7, type=float)
     args = parser.parse_args()
     task = args.task
     device = torch.device(args.device)
@@ -68,27 +66,26 @@ if __name__ == "__main__":
     audio = torch.randn(args.batch, 384, 128).to(device, non_blocking=True)
     image = torch.randn(args.batch, 3, 224, 224).to(device, non_blocking=True)
 
-    if task == 'gate':
+    model = AVnet_Dynamic(pruning_loc=pruning_loc, token_ratio=token_ratio, pretrained=False).to(device)
+    model.eval()
+    # throughput(model, (audio, image))
+    # calc_flops(model, (audio, image), show_details=False)
+    # torch.save(model.state_dict(), 'dynamic_token.pth')
+    # torch.onnx.export(model, (audio, image), 'dynamic.onnx', input_names=['input_1', 'input_2'],
+    #                  output_names=['output'], export_params=True)
 
-        model = AVnet_Gate().to(device)
-        throughput([audio, image, exits], model)
+    # import onnx
+    # onnx_model = onnx.load("dynamic.onnx")
+    # onnx.checker.check_model(onnx_model)
 
-    elif task == 'dynamic':
 
-        # model = AVnet_Runtime(pruning_loc=pruning_loc, token_ratio=token_ratio, pretrained=False).to(device)
-        # throughput([audio, image], model)
-        # calc_flops(model, (audio, image))
-
-        model = AVnet_Dynamic(pruning_loc=pruning_loc, token_ratio=token_ratio, pretrained=False).to(device)
-        model.eval()
-        # flops = FlopCountAnalysis(model, (audio, image))
-        # print(flops.total() / 1e9)
-        calc_flops(model, (audio, image))
-
-        # throughput(model, [audio, image], )
-
-        # model = VisionTransformerDiffPruning(pruning_loc=pruning_loc, token_ratio=token_ratio).to(device)
-        # model.eval()
-        # calc_flops(model, (image))
-        # flops = FlopCountAnalysis(model, (image))
-        # print(flops.total() / 1e9)
+    import onnxruntime
+    torch_out = model(audio, image)
+    ort_session = onnxruntime.InferenceSession("dynamic.onnx")
+    ort_outs = ort_session.run(None,  {
+    "input_1": audio.detach().cpu().numpy().astype(np.float32),
+    "input_2": image.detach().cpu().numpy().astype(np.float32)
+    })
+    # compare ONNX Runtime and PyTorch results
+    np.testing.assert_allclose(torch_out.detach().cpu().numpy(), ort_outs[0], rtol=1e-02, atol=1e-05)
+    print("Exported model has been tested with ONNXRuntime, and the result looks good!")
