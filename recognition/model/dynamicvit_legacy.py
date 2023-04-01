@@ -47,7 +47,7 @@ class AVnet_Dynamic(nn.Module):
     def forward(self, audio, image):
         B, audio = self.audio.preprocess(audio.unsqueeze(1))
         B, image = self.image.preprocess(image)
-
+        keep_token = []
         p_count = 0
         out_pred_prob = []
         early_output = []
@@ -83,6 +83,8 @@ class AVnet_Dynamic(nn.Module):
                     num_keep_node = torch.argmax(values < 0.8)[0]
                     keep_policy = indices[:, :num_keep_node]
 
+                    keep_token.append(num_keep_node / indices.shaep[1])
+
                     prev_decision = batch_index_select(prev_decision, keep_policy)
 
                     keep_audio = keep_policy < token_len_audio
@@ -113,7 +115,8 @@ class AVnet_Dynamic(nn.Module):
                     image = blk_i(image)
         r = (audio.shape[1] / (audio.shape[1] + image.shape[1]))
         # ratio = torch.tensor([1, 1, r, 1 - r, abs(2 * r - 1)])
-        self.ratio = [1, 1, r, 1 - r, abs(2 * r - 1)]
+        average_token = 1 + keep_token[0] + keep_token[1] ** 2 + keep_token[2] ** 3
+        self.ratio = [average_token, average_token, r, 1 - r, abs(2 * r - 1)]
         x, features = self.output(audio, image)
         if self.training:
             if self.distill:
