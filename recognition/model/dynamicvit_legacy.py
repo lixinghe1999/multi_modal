@@ -83,7 +83,7 @@ class AVnet_Dynamic(nn.Module):
                     num_keep_node = torch.argmax((values < 0.8).float()).item()
                     keep_policy = indices[:, :num_keep_node]
 
-                    keep_token.append(num_keep_node / indices.shaep[1])
+                    keep_token.append(num_keep_node / indices.shape[1])
 
                     prev_decision = batch_index_select(prev_decision, keep_policy)
 
