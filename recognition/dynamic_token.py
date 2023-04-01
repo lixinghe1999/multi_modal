@@ -64,7 +64,7 @@ def profile(model, test_dataset):
 
             mean_acc = np.mean(acc)
             mean_ratio = np.mean(modality_ratio, axis=0)
-            print('preserved ratio:', ratio)
+            print('preserved ratio:', thres)
             print('throughput:', len(test_loader) * batch_size / (tic2 - tic1))
             print('modality-1 balance:', mean_ratio[0], 'modality-2 balance:', mean_ratio[1])
             print('modality-wise ratio:', mean_ratio[2:])
