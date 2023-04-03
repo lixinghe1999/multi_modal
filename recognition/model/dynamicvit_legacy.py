@@ -11,7 +11,7 @@ class AVnet_Dynamic(nn.Module):
                  pruning_loc=[3, 6, 9], token_ratio=[0.7, 0.7 ** 2, 0.7 ** 3], pretrained=True, threshold=0.99):
         super(AVnet_Dynamic, self).__init__()
         embed_dim = 384
-        config = dict(patch_size=16, embed_dim=embed_dim, depth=12, num_heads=12, mlp_ratio=1, qkv_bias=True,
+        config = dict(patch_size=16, embed_dim=embed_dim, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True,
                       pruning_loc=pruning_loc, token_ratio=token_ratio)
         self.audio = AudioTransformerDiffPruning(config, imagenet_pretrain=pretrained)
         self.audio.score_predictor = None
