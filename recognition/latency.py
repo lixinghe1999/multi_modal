@@ -70,7 +70,7 @@ if __name__ == "__main__":
     model = AVnet_Dynamic(pruning_loc=pruning_loc, token_ratio=token_ratio, pretrained=False).to(device)
     model.eval()
     throughput(model, (audio, image))
-    calc_flops(model, (audio, image), show_details=False)
+    # calc_flops(model, (audio, image), show_details=False)
     # torch.save(model.state_dict(), 'dynamic_token.pth')
     # torch.onnx.export(model, (audio, image), 'dynamic.onnx', input_names=['input_1', 'input_2'],
     #                  output_names=['output'], export_params=True)
