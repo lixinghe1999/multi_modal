@@ -36,7 +36,7 @@ def throughput(model, images):
     model.eval()
     batch_size = images[0].shape[0]
     print('start warm-up')
-    for i in range(10):
+    for i in tqdm(range(10)):
         model(*images)
     print('finish warm-up')
     torch.cuda.synchronize()
