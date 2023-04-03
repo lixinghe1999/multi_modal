@@ -20,7 +20,7 @@ Hacked together by / Copyright 2020 Ross Wightman
 
 import logging
 from functools import partial
-from collections import OrderedDict
+from collections import OrderedDict, abc
 
 from torch.cuda.amp import autocast
 
@@ -28,8 +28,38 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
-from timm.models.layers import DropPath, to_2tuple, trunc_normal_
+from itertools import repeat
+
+class DropPath(nn.Module):
+    """Drop paths (Stochastic Depth) per sample  (when applied in main path of residual blocks).
+    """
+    def __init__(self, drop_prob=None):
+        super(DropPath, self).__init__()
+        self.drop_prob = drop_prob
+
+    def forward(self, x):
+        """Drop paths (Stochastic Depth) per sample (when applied in main path of residual blocks).
+
+        This is the same as the DropConnect impl I created for EfficientNet, etc networks, however,
+        the original name is misleading as 'Drop Connect' is a different form of dropout in a separate paper...
+        See discussion: https://github.com/tensorflow/tpu/issues/494#issuecomment-532968956 ... I've opted for
+        changing the layer and argument names to 'drop path' rather than mix DropConnect as a layer name and use
+        'survival rate' as the argument.
+
+        """
+        if self.drop_prob == 0. or not self.training:
+            return x
+        keep_prob = 1 - self.drop_prob
+        shape = (x.shape[0],) + (1,) * (x.ndim - 1)  # work with diff dim tensors, not just 2D ConvNets
+        random_tensor = keep_prob + torch.rand(shape, dtype=x.dtype, device=x.device)
+        random_tensor.floor_()  # binarize
+        output = x.div(keep_prob) * random_tensor
+        return output
+
+def to_2tuple(x):
+    if isinstance(x, abc.Iterable):
+        return x
+    return tuple(repeat(x, 2))
 
 _logger = logging.getLogger(__name__)
 
@@ -50,101 +80,6 @@ def batch_index_select(x, idx):
         return out
     else:
         raise NotImplementedError
-def _cfg(url='', **kwargs):
-    return {
-        'url': url,
-        'num_classes': 1000, 'input_size': (3, 224, 224), 'pool_size': None,
-        'crop_pct': .9, 'interpolation': 'bicubic',
-        'mean': IMAGENET_DEFAULT_MEAN, 'std': IMAGENET_DEFAULT_STD,
-        'first_conv': 'patch_embed.proj', 'classifier': 'head',
-        **kwargs
-    }
-
-
-default_cfgs = {
-    # patch models (my experiments)
-    'vit_small_patch16_224': _cfg(
-        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/vit_small_p16_224-15ec54c9.pth',
-    ),
-
-    # patch models (weights ported from official Google JAX impl)
-    'vit_base_patch16_224': _cfg(
-        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-vitjx/jx_vit_base_p16_224-80ecf9dd.pth',
-        mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5),
-    ),
-    'vit_base_patch32_224': _cfg(
-        url='',  # no official model weights for this combo, only for in21k
-        mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
-    'vit_base_patch16_384': _cfg(
-        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-vitjx/jx_vit_base_p16_384-83fb41ba.pth',
-        input_size=(3, 384, 384), mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5), crop_pct=1.0),
-    'vit_base_patch32_384': _cfg(
-        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-vitjx/jx_vit_base_p32_384-830016f5.pth',
-        input_size=(3, 384, 384), mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5), crop_pct=1.0),
-    'vit_large_patch16_224': _cfg(
-        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-vitjx/jx_vit_large_p16_224-4ee7a4dc.pth',
-        mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
-    'vit_large_patch32_224': _cfg(
-        url='',  # no official model weights for this combo, only for in21k
-        mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
-    'vit_large_patch16_384': _cfg(
-        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-vitjx/jx_vit_large_p16_384-b3be5167.pth',
-        input_size=(3, 384, 384), mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5), crop_pct=1.0),
-    'vit_large_patch32_384': _cfg(
-        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-vitjx/jx_vit_large_p32_384-9b920ba8.pth',
-        input_size=(3, 384, 384), mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5), crop_pct=1.0),
-
-    # patch models, imagenet21k (weights ported from official Google JAX impl)
-    'vit_base_patch16_224_in21k': _cfg(
-        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-vitjx/jx_vit_base_patch16_224_in21k-e5005f0a.pth',
-        num_classes=21843, mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
-    'vit_base_patch32_224_in21k': _cfg(
-        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-vitjx/jx_vit_base_patch32_224_in21k-8db57226.pth',
-        num_classes=21843, mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
-    'vit_large_patch16_224_in21k': _cfg(
-        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-vitjx/jx_vit_large_patch16_224_in21k-606da67d.pth',
-        num_classes=21843, mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
-    'vit_large_patch32_224_in21k': _cfg(
-        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-vitjx/jx_vit_large_patch32_224_in21k-9046d2e7.pth',
-        num_classes=21843, mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
-    'vit_huge_patch14_224_in21k': _cfg(
-        hf_hub='timm/vit_huge_patch14_224_in21k',
-        num_classes=21843, mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
-
-    # hybrid models (weights ported from official Google JAX impl)
-    'vit_base_resnet50_224_in21k': _cfg(
-        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-vitjx/jx_vit_base_resnet50_224_in21k-6f7c7740.pth',
-        num_classes=21843, mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5), crop_pct=0.9, first_conv='patch_embed.backbone.stem.conv'),
-    'vit_base_resnet50_384': _cfg(
-        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-vitjx/jx_vit_base_resnet50_384-9fd3c705.pth',
-        input_size=(3, 384, 384), mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5), crop_pct=1.0, first_conv='patch_embed.backbone.stem.conv'),
-
-    # hybrid models (my experiments)
-    'vit_small_resnet26d_224': _cfg(),
-    'vit_small_resnet50d_s3_224': _cfg(),
-    'vit_base_resnet26d_224': _cfg(),
-    'vit_base_resnet50d_224': _cfg(),
-
-    # deit models (FB weights)
-    'vit_deit_tiny_patch16_224': _cfg(
-        url='https://dl.fbaipublicfiles.com/deit/deit_tiny_patch16_224-a1311bcf.pth'),
-    'vit_deit_small_patch16_224': _cfg(
-        url='https://dl.fbaipublicfiles.com/deit/deit_small_patch16_224-cd65a155.pth'),
-    'vit_deit_base_patch16_224': _cfg(
-        url='https://dl.fbaipublicfiles.com/deit/deit_base_patch16_224-b5f2ef4d.pth',),
-    'vit_deit_base_patch16_384': _cfg(
-        url='https://dl.fbaipublicfiles.com/deit/deit_base_patch16_384-8de9b5d1.pth',
-        input_size=(3, 384, 384), crop_pct=1.0),
-    'vit_deit_tiny_distilled_patch16_224': _cfg(
-        url='https://dl.fbaipublicfiles.com/deit/deit_tiny_distilled_patch16_224-b40b3cf7.pth'),
-    'vit_deit_small_distilled_patch16_224': _cfg(
-        url='https://dl.fbaipublicfiles.com/deit/deit_small_distilled_patch16_224-649709d9.pth'),
-    'vit_deit_base_distilled_patch16_224': _cfg(
-        url='https://dl.fbaipublicfiles.com/deit/deit_base_distilled_patch16_224-df68dfff.pth', ),
-    'vit_deit_base_distilled_patch16_384': _cfg(
-        url='https://dl.fbaipublicfiles.com/deit/deit_base_distilled_patch16_384-d0272ac0.pth',
-        input_size=(3, 384, 384), crop_pct=1.0),
-}
 
 
 class Mlp(nn.Module):
@@ -414,18 +349,6 @@ class VisionTransformerDiffPruning(nn.Module):
         self.pruning_loc = pruning_loc
         self.token_ratio = token_ratio
 
-        trunc_normal_(self.pos_embed, std=.02)
-        trunc_normal_(self.cls_token, std=.02)
-        self.apply(self._init_weights)
-
-    def _init_weights(self, m):
-        if isinstance(m, nn.Linear):
-            trunc_normal_(m.weight, std=.02)
-            if isinstance(m, nn.Linear) and m.bias is not None:
-                nn.init.constant_(m.bias, 0)
-        elif isinstance(m, nn.LayerNorm):
-            nn.init.constant_(m.bias, 0)
-            nn.init.constant_(m.weight, 1.0)
 
     @torch.jit.ignore
     def no_weight_decay(self):
@@ -561,19 +484,6 @@ class VisionTransformerTeacher(nn.Module):
         # Classifier head
         self.head = nn.Linear(self.num_features, num_classes) if num_classes > 0 else nn.Identity()
 
-        trunc_normal_(self.pos_embed, std=.02)
-        trunc_normal_(self.cls_token, std=.02)
-        self.apply(self._init_weights)
-
-    def _init_weights(self, m):
-        if isinstance(m, nn.Linear):
-            trunc_normal_(m.weight, std=.02)
-            if isinstance(m, nn.Linear) and m.bias is not None:
-                nn.init.constant_(m.bias, 0)
-        elif isinstance(m, nn.LayerNorm):
-            nn.init.constant_(m.bias, 0)
-            nn.init.constant_(m.weight, 1.0)
-
     @torch.jit.ignore
     def no_weight_decay(self):
         return {'pos_embed', 'cls_token'}
@@ -665,7 +575,7 @@ class AudioTransformerDiffPruning(VisionTransformerDiffPruning):
             # TODO can use sinusoidal positional embedding instead
             new_pos_embed = nn.Parameter(torch.zeros(1, self.patch_embed.num_patches + 1, self.original_embedding_dim))
             self.pos_embed = new_pos_embed
-            trunc_normal_(self.pos_embed, std=.02)
+            # trunc_normal_(self.pos_embed, std=.02)
 
     def get_shape(self, fstride, tstride, input_fdim=128, input_tdim=1024):
         test_input = torch.randn(1, 1, input_fdim, input_tdim)

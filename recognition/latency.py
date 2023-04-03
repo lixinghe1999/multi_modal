@@ -1,5 +1,3 @@
-import os
-# os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 import torch
 from model.dynamicvit_legacy import AVnet_Dynamic
 import time
