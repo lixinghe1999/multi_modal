@@ -2,8 +2,8 @@ import torch
 from model.dynamicvit_legacy import AVnet_Dynamic
 import time
 import argparse
-
 import numpy as np
+from tqdm import tqdm
 def rfft_flop_jit(inputs, outputs):
     """
     Count flops for the rfft/rfftn operator.
@@ -35,11 +35,13 @@ def calc_flops(model, input, show_details=False, ratios=None):
 def throughput(model, images):
     model.eval()
     batch_size = images[0].shape[0]
-    for i in range(50):
+    print('start warm-up')
+    for i in range(10):
         model(*images)
+    print('finish warm-up')
     torch.cuda.synchronize()
     tic1 = time.time()
-    for i in range(30):
+    for i in tqdm(range(30)):
         model(*images)
     torch.cuda.synchronize()
     tic2 = time.time()
@@ -61,7 +63,7 @@ if __name__ == "__main__":
     pruning_loc = [int(i) for i in args.locations.split()]
     base_rate = args.rate
     token_ratio = [base_rate, base_rate ** 2, base_rate ** 3]
-
+    print(args)
     audio = torch.randn(args.batch, 384, 128).to(device, non_blocking=True)
     image = torch.randn(args.batch, 3, 224, 224).to(device, non_blocking=True)
 
