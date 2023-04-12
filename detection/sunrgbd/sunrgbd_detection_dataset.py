@@ -100,7 +100,6 @@ class SunrgbdDetectionVotesDataset(Dataset):
         point_cloud = np.load(os.path.join(self.data_path, f'{fname}_pc.npz'))['pc']
         bboxes = np.load(os.path.join(self.data_path, f'{fname}_bbox.npy'))
         vote = np.load(os.path.join(self.data_path, f'{fname}_votes.npz'))['point_votes']
-        print(point_cloud.shape, bboxes.shape, vote.shape)
         point_obj_mask = vote[:, 0]
         point_instance_label = vote[:, 10]
         # point_cloud = self.point_cloud_list[idx]  # Nx6

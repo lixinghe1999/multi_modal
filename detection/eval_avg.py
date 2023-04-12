@@ -231,7 +231,6 @@ def evaluate_one_time(test_loader, DATASET_CONFIG, CONFIG_DICT, AP_IOU_THRESHOLD
         t_start = time.time()
         # Accumulate statistics and print out
         for key in end_points:
-            print(key, end_points[key].shape)
             if 'loss' in key or 'acc' in key or 'ratio' in key:
                 if key not in stat_dict: stat_dict[key] = 0
                 if isinstance(end_points[key], float):
@@ -286,7 +285,8 @@ def evaluate_one_time(test_loader, DATASET_CONFIG, CONFIG_DICT, AP_IOU_THRESHOLD
                                                   size_cls_agnostic=args.size_cls_agnostic)
             batch_pred_map_cls_dict[prefix].append(batch_pred_map_cls)
             batch_gt_map_cls_dict[prefix].append(batch_gt_map_cls)
-
+        print('loss time', time.time() - t_start)
+        t_start = time.time()
         if (batch_idx + 1) % 100 == 0:
             logger.info(f'T[{t}] Eval: [{batch_idx + 1}/{len(test_loader)}]  ' + ''.join(
                 [f'{key} {stat_dict[key] / (float(batch_idx + 1)):.4f} \t'
