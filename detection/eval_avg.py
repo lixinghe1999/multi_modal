@@ -198,7 +198,8 @@ def evaluate_one_time(test_loader, DATASET_CONFIG, CONFIG_DICT, AP_IOU_THRESHOLD
     batch_gt_map_cls_dict = {k: [] for k in prefixes}
     t_start = time.time()
     for batch_idx, batch_data_label in enumerate(tqdm(test_loader)):
-        print(time.time() - t_start)
+        print('loading time', time.time() - t_start)
+        t_start = time.time()
         for key in batch_data_label:
             batch_data_label[key] = batch_data_label[key].cuda(non_blocking=True)
 
@@ -206,7 +207,7 @@ def evaluate_one_time(test_loader, DATASET_CONFIG, CONFIG_DICT, AP_IOU_THRESHOLD
         inputs = {'point_clouds': batch_data_label['point_clouds']}
         with torch.no_grad():
             end_points = model(inputs)
-        print(time.time() - t_start)
+        print('inference time', time.time() - t_start)
         # Compute loss
         for key in batch_data_label:
             assert (key not in end_points)
@@ -225,7 +226,7 @@ def evaluate_one_time(test_loader, DATASET_CONFIG, CONFIG_DICT, AP_IOU_THRESHOLD
                                      heading_loss_type=args.heading_loss_type,
                                      heading_delta=args.heading_delta,
                                      size_cls_agnostic=args.size_cls_agnostic)
-        print(time.time() - t_start)
+        print('loss time', time.time() - t_start)
         # Accumulate statistics and print out
         for key in end_points:
             if 'loss' in key or 'acc' in key or 'ratio' in key:
