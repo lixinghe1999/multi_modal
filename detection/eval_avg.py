@@ -18,7 +18,7 @@ def parse_option():
     parser = argparse.ArgumentParser()
     # Eval
     parser.add_argument('--checkpoint_path', default=None, required=True, help='Model checkpoint path [default: None]')
-    parser.add_argument('--avg_times', default=5, type=int, help='Average times')
+    parser.add_argument('--avg_times', default=1, type=int, help='Average times')
     parser.add_argument("--rng_seed", type=int, default=0, help='manual seed')
     parser.add_argument('--dump_dir', default='dump', help='Dump dir to save sample outputs [default: None]')
     parser.add_argument('--use_old_type_nms', action='store_true', help='Use old type of NMS, IoBox2Area.')
