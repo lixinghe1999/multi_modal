@@ -302,16 +302,34 @@ def evaluate_one_time(test_loader, DATASET_CONFIG, CONFIG_DICT, AP_IOU_THRESHOLD
         # Evaluate average precision
         for i, ap_calculator in enumerate(ap_calculator_list):
             metrics_dict = ap_calculator.compute_metrics()
-            logger.info(f'===================>T{time} {prefix} IOU THRESH: {AP_IOU_THRESHOLDS[i]}<==================')
+            logger.info(f'===================>T{t} {prefix} IOU THRESH: {AP_IOU_THRESHOLDS[i]}<==================')
             for key in metrics_dict:
                 logger.info(f'{key} {metrics_dict[key]}')
 
             mAPs[i][1][prefix] = metrics_dict['mAP']
             ap_calculator.reset()
     for mAP in mAPs:
-        logger.info(f'T[{time}] IoU[{mAP[0]}]: ' +
+        logger.info(f'T[{t}] IoU[{mAP[0]}]: ' +
                     ''.join([f'{key}: {mAP[1][key]:.4f} \t' for key in sorted(mAP[1].keys())]))
     return mAPs
+
+def test(args):
+    test_loader, DATASET_CONFIG = get_loader(args)
+    n_data = len(test_loader.dataset)
+    logger.info(f"length of testing dataset: {n_data}")
+    model, criterion = get_model(args, DATASET_CONFIG)
+    model = model.cuda()
+
+    logger.info(str(datetime.now()))
+    for batch_idx, batch_data_label in enumerate(tqdm(test_loader)):
+        for key in batch_data_label:
+            batch_data_label[key] = batch_data_label[key].cuda(non_blocking=True)
+
+        # Forward pass
+        inputs = {'point_clouds': batch_data_label['point_clouds']}
+        with torch.no_grad():
+            end_points = model(inputs)
+        break
 
 
 def eval(args, avg_times=1):
@@ -340,7 +358,6 @@ def eval(args, avg_times=1):
         mAPs = evaluate_one_time(test_loader, DATASET_CONFIG, CONFIG_DICT, args.ap_iou_thresholds,
                                  model, criterion, args, i)
         mAPs_times[i] = mAPs
-        logger.info(f"checkpoint path {save_path}")
 
     mAPs_avg = mAPs.copy()
 
@@ -370,4 +387,5 @@ if __name__ == '__main__':
     opt.dump_dir = os.path.join(opt.dump_dir, f'eval_{opt.dataset}_{int(time.time())}_{np.random.randint(100000000)}')
     logger = setup_logger(output=opt.dump_dir, name="eval")
 
-    eval(opt, opt.avg_times)
+    # eval(opt, opt.avg_times)
+    test(opt)
