@@ -39,24 +39,24 @@ def parse_option():
                         help='position embedding in cross attention (none, xyz_learned)')
 
     # Loss
-    parser.add_argument('--query_points_generator_loss_coef', default=0.8, type=float)
-    parser.add_argument('--obj_loss_coef', default=0.1, type=float, help='Loss weight for objectness loss')
+    parser.add_argument('--query_points_generator_loss_coef', default=0.2, type=float)
+    parser.add_argument('--obj_loss_coef', default=0.4, type=float, help='Loss weight for objectness loss')
     parser.add_argument('--box_loss_coef', default=1, type=float, help='Loss weight for box loss')
     parser.add_argument('--sem_cls_loss_coef', default=0.1, type=float, help='Loss weight for classification loss')
     parser.add_argument('--center_loss_type', default='smoothl1', type=str, help='(smoothl1, l1)')
-    parser.add_argument('--center_delta', default=1.0, type=float, help='delta for smoothl1 loss in center loss')
+    parser.add_argument('--center_delta', default=0.111, type=float, help='delta for smoothl1 loss in center loss')
     parser.add_argument('--size_loss_type', default='smoothl1', type=str, help='(smoothl1, l1)')
-    parser.add_argument('--size_delta', default=1.0, type=float, help='delta for smoothl1 loss in size loss')
+    parser.add_argument('--size_delta', default=0.0625, type=float, help='delta for smoothl1 loss in size loss')
     parser.add_argument('--heading_loss_type', default='smoothl1', type=str, help='(smoothl1, l1)')
-    parser.add_argument('--heading_delta', default=1.0, type=float, help='delta for smoothl1 loss in heading loss')
+    parser.add_argument('--heading_delta', default=0.04, type=float, help='delta for smoothl1 loss in heading loss')
     parser.add_argument('--query_points_obj_topk', default=4, type=int, help='query_points_obj_topk')
-    parser.add_argument('--size_cls_agnostic', action='store_true', help='Use class-agnostic size prediction.')
+    parser.add_argument('--size_cls_agnostic', default=True, action='store_true', help='Use class-agnostic size prediction.')
 
     # Data
     parser.add_argument('--batch_size', type=int, default=16, help='Batch Size per GPU during training [default: 8]')
-    parser.add_argument('--dataset', default='scannet', help='Dataset name. sunrgbd or scannet. [default: scannet]')
-    parser.add_argument('--num_point', type=int, default=50000, help='Point Number [default: 50000]')
-    parser.add_argument('--data_root', default='data', help='data root path')
+    parser.add_argument('--dataset', default='sunrgbd', help='Dataset name. sunrgbd or scannet. [default: scannet]')
+    parser.add_argument('--num_point', type=int, default=10000, help='Point Number [default: 50000]')
+    parser.add_argument('--data_root', default='./', help='data root path')
     parser.add_argument('--use_height', action='store_true', help='Use height signal in input.')
     parser.add_argument('--use_color', action='store_true', help='Use RGB color in input.')
     parser.add_argument('--use_sunrgbd_v2', action='store_true', help='Use V2 box labels for SUN RGB-D dataset')
@@ -64,20 +64,20 @@ def parse_option():
 
     # Training
     parser.add_argument('--start_epoch', type=int, default=1, help='Epoch to run [default: 1]')
-    parser.add_argument('--max_epoch', type=int, default=400, help='Epoch to run [default: 180]')
+    parser.add_argument('--max_epoch', type=int, default=50, help='Epoch to run [default: 180]')
     parser.add_argument('--optimizer', type=str, default='adamW', help='optimizer')
     parser.add_argument('--momentum', type=float, default=0.9, help='momentum for SGD')
-    parser.add_argument('--weight_decay', type=float, default=0.0005,
+    parser.add_argument('--weight_decay', type=float, default=0.000001,
                         help='Optimization L2 weight decay [default: 0.0005]')
     parser.add_argument('--learning_rate', type=float, default=0.004,
                         help='Initial learning rate for all except decoder [default: 0.004]')
-    parser.add_argument('--decoder_learning_rate', type=float, default=0.0004,
+    parser.add_argument('--decoder_learning_rate', type=float, default=0.0002,
                         help='Initial learning rate for decoder [default: 0.0004]')
     parser.add_argument('--lr-scheduler', type=str, default='step',
                         choices=["step", "cosine"], help="learning rate scheduler")
     parser.add_argument('--warmup-epoch', type=int, default=-1, help='warmup epoch')
     parser.add_argument('--warmup-multiplier', type=int, default=100, help='warmup multiplier')
-    parser.add_argument('--lr_decay_epochs', type=int, default=[280, 340], nargs='+',
+    parser.add_argument('--lr_decay_epochs', type=int, default=[40, 60, 80], nargs='+',
                         help='for step scheduler. where to decay lr, can be a list')
     parser.add_argument('--lr_decay_rate', type=float, default=0.1,
                         help='for step scheduler. decay rate for learning rate')
