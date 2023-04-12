@@ -239,17 +239,17 @@ def extract_sunrgbd_data(idx_filename, split, output_folder, num_point=20000,
         pc_upright_depth = dataset.get_depth(data_idx)
         pc_upright_depth_subsampled = pc_util.random_sampling(pc_upright_depth, num_point)
 
-        # np.savez_compressed(os.path.join(output_folder, '%06d_pc.npz' % (data_idx)),
-        #                     pc=pc_upright_depth_subsampled)
-        # np.save(os.path.join(output_folder, '%06d_bbox.npy' % (data_idx)), obbs)
-        #
-        # # pickle save
-        # with open(os.path.join(output_folder, '%06d_pc.pkl' % (data_idx)), 'wb') as f:
-        #     pickle.dump(pc_upright_depth_subsampled, f)
-        #     print(f"{os.path.join(output_folder, '%06d_pc.pkl' % (data_idx))} saved successfully !!")
-        # with open(os.path.join(output_folder, '%06d_bbox.pkl' % (data_idx)), 'wb') as f:
-        #     pickle.dump(obbs, f)
-        #     print(f"{os.path.join(output_folder, '%06d_bbox.pkl' % (data_idx))} saved successfully !!")
+        np.savez_compressed(os.path.join(output_folder, '%06d_pc.npz' % (data_idx)),
+                            pc=pc_upright_depth_subsampled)
+        np.save(os.path.join(output_folder, '%06d_bbox.npy' % (data_idx)), obbs)
+
+        # pickle save
+        with open(os.path.join(output_folder, '%06d_pc.pkl' % (data_idx)), 'wb') as f:
+            pickle.dump(pc_upright_depth_subsampled, f)
+            print(f"{os.path.join(output_folder, '%06d_pc.pkl' % (data_idx))} saved successfully !!")
+        with open(os.path.join(output_folder, '%06d_bbox.pkl' % (data_idx)), 'wb') as f:
+            pickle.dump(obbs, f)
+            print(f"{os.path.join(output_folder, '%06d_bbox.pkl' % (data_idx))} saved successfully !!")
         # add to collection
         all_pc_upright_depth_subsampled.append(pc_upright_depth_subsampled)
         all_obbs.append(obbs)
@@ -326,37 +326,37 @@ def extract_sunrgbd_data(idx_filename, split, output_folder, num_point=20000,
                 assert point_votes[ip, 12] == -1, "error"
 
         print(f"{data_idx}_votes.npz has {i_obj} gt bboxes")
-        # np.savez_compressed(os.path.join(output_folder, '%06d_votes.npz' % (data_idx)),
-        #                     point_votes=point_votes)
-        # with open(os.path.join(output_folder, '%06d_votes.pkl' % (data_idx)), 'wb') as f:
-        #     pickle.dump(point_votes, f)
-        #     print(f"{os.path.join(output_folder, '%06d_votes.pkl' % (data_idx))} saved successfully !!")
+        np.savez_compressed(os.path.join(output_folder, '%06d_votes.npz' % (data_idx)),
+                            point_votes=point_votes)
+        with open(os.path.join(output_folder, '%06d_votes.pkl' % (data_idx)), 'wb') as f:
+            pickle.dump(point_votes, f)
+            print(f"{os.path.join(output_folder, '%06d_votes.pkl' % (data_idx))} saved successfully !!")
         all_point_votes.append(point_votes)
         # print(pc_upright_depth_subsampled.shape, obbs.shape, point_votes.shape)
-
-    pickle_filename = os.path.join(output_folder, 'all_obbs_modified_nearest_has_empty.pkl')
-    with open(pickle_filename, 'wb') as f:
-        pickle.dump(all_obbs, f)
-        print(f"{pickle_filename} saved successfully !!")
-
-    pickle_filename = os.path.join(output_folder, 'all_pc_modified_nearest_has_empty.pkl')
-    with open(pickle_filename, 'wb') as f:
-        pickle.dump(all_pc_upright_depth_subsampled, f)
-        print(f"{pickle_filename} saved successfully !!")
-
-    pickle_filename = os.path.join(output_folder, 'all_point_votes_nearest_has_empty.pkl')
-    with open(pickle_filename, 'wb') as f:
-        pickle.dump(all_point_votes, f)
-        print(f"{pickle_filename} saved successfully !!")
-
-    all_point_labels = []
-    for point_votes in all_point_votes:
-        point_labels = point_votes[:, [0, 10]]
-        all_point_labels.append(point_labels)
-    pickle_filename = os.path.join(output_folder, 'all_point_labels_nearest_has_empty.pkl')
-    with open(pickle_filename, 'wb') as f:
-        pickle.dump(all_point_labels, f)
-        print(f"{pickle_filename} saved successfully !!")
+        break
+    # pickle_filename = os.path.join(output_folder, 'all_obbs_modified_nearest_has_empty.pkl')
+    # with open(pickle_filename, 'wb') as f:
+    #     pickle.dump(all_obbs, f)
+    #     print(f"{pickle_filename} saved successfully !!")
+    #
+    # pickle_filename = os.path.join(output_folder, 'all_pc_modified_nearest_has_empty.pkl')
+    # with open(pickle_filename, 'wb') as f:
+    #     pickle.dump(all_pc_upright_depth_subsampled, f)
+    #     print(f"{pickle_filename} saved successfully !!")
+    #
+    # pickle_filename = os.path.join(output_folder, 'all_point_votes_nearest_has_empty.pkl')
+    # with open(pickle_filename, 'wb') as f:
+    #     pickle.dump(all_point_votes, f)
+    #     print(f"{pickle_filename} saved successfully !!")
+    #
+    # all_point_labels = []
+    # for point_votes in all_point_votes:
+    #     point_labels = point_votes[:, [0, 10]]
+    #     all_point_labels.append(point_labels)
+    # pickle_filename = os.path.join(output_folder, 'all_point_labels_nearest_has_empty.pkl')
+    # with open(pickle_filename, 'wb') as f:
+    #     pickle.dump(all_point_labels, f)
+    #     print(f"{pickle_filename} saved successfully !!")
 
 
 def get_box3d_dim_statistics(idx_filename,
