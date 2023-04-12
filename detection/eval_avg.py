@@ -62,7 +62,7 @@ def parse_option():
     parser.add_argument('--size_cls_agnostic', action='store_true', help='Use class-agnostic size prediction.')
 
     # Data
-    parser.add_argument('--batch_size', type=int, default=1, help='Batch Size during training [default: 8]')
+    parser.add_argument('--batch_size', type=int, default=16, help='Batch Size during training [default: 8]')
     parser.add_argument('--dataset', default='scannet', help='Dataset name. sunrgbd or scannet. [default: scannet]')
     parser.add_argument('--num_point', type=int, default=50000, help='Point Number [default: 50000]')
     parser.add_argument('--data_root', default='data', help='data root path')
@@ -178,7 +178,7 @@ def evaluate_one_time(test_loader, DATASET_CONFIG, CONFIG_DICT, AP_IOU_THRESHOLD
     else:
         prefixes = ['proposal_']  # only proposal
         _prefixes = prefixes
-    prefixes = ['proposal_']  # only proposal
+    prefixes = ['last_']  # only proposal
     _prefixes = prefixes
 
     if args.num_decoder_layers >= 3:
@@ -200,8 +200,6 @@ def evaluate_one_time(test_loader, DATASET_CONFIG, CONFIG_DICT, AP_IOU_THRESHOLD
     batch_gt_map_cls_dict = {k: [] for k in prefixes}
     t_start = time.time()
     for batch_idx, batch_data_label in enumerate(tqdm(test_loader)):
-        print('loading time', time.time() - t_start)
-        t_start = time.time()
         for key in batch_data_label:
             batch_data_label[key] = batch_data_label[key].cuda(non_blocking=True)
 
@@ -209,8 +207,6 @@ def evaluate_one_time(test_loader, DATASET_CONFIG, CONFIG_DICT, AP_IOU_THRESHOLD
         inputs = {'point_clouds': batch_data_label['point_clouds']}
         with torch.no_grad():
             end_points = model(inputs)
-        print('inference time', time.time() - t_start)
-        t_start = time.time()
         # Compute loss
         for key in batch_data_label:
             assert (key not in end_points)
@@ -229,8 +225,6 @@ def evaluate_one_time(test_loader, DATASET_CONFIG, CONFIG_DICT, AP_IOU_THRESHOLD
                                      heading_loss_type=args.heading_loss_type,
                                      heading_delta=args.heading_delta,
                                      size_cls_agnostic=args.size_cls_agnostic)
-        print('loss time', time.time() - t_start)
-        t_start = time.time()
         # Accumulate statistics and print out
         for key in end_points:
             if 'loss' in key or 'acc' in key or 'ratio' in key:
@@ -239,9 +233,6 @@ def evaluate_one_time(test_loader, DATASET_CONFIG, CONFIG_DICT, AP_IOU_THRESHOLD
                     stat_dict[key] += end_points[key]
                 else:
                     stat_dict[key] += end_points[key].item()
-        print('accumulate time', time.time() - t_start)
-        t_start = time.time()
-        print(prefixes)
         for prefix in prefixes:
             if prefix == 'last_three_':
                 end_points[f'{prefix}center'] = torch.cat([end_points[f'{ppx}center']
@@ -289,10 +280,6 @@ def evaluate_one_time(test_loader, DATASET_CONFIG, CONFIG_DICT, AP_IOU_THRESHOLD
                                                   size_cls_agnostic=args.size_cls_agnostic)
             batch_pred_map_cls_dict[prefix].append(batch_pred_map_cls)
             batch_gt_map_cls_dict[prefix].append(batch_gt_map_cls)
-            print(batch_pred_map_cls_dict[prefix])
-            print(batch_gt_map_cls_dict[prefix])
-        print('save time', time.time() - t_start)
-        t_start = time.time()
         if (batch_idx + 1) % 100 == 0:
             logger.info(f'T[{t}] Eval: [{batch_idx + 1}/{len(test_loader)}]  ' + ''.join(
                 [f'{key} {stat_dict[key] / (float(batch_idx + 1)):.4f} \t'
