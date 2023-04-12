@@ -150,7 +150,7 @@ class GroupFreeDetector(nn.Module):
         end_points = {}
 
         end_points = self.backbone_net(inputs['point_clouds'], end_points)
-
+        print(end_points.keys())
         # Query Points Generation
         points_xyz = end_points['fp2_xyz']
         points_features = end_points['fp2_features']
