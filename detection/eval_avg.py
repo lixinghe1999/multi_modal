@@ -1,6 +1,6 @@
 import os
 import sys
-import time as t
+import time
 import numpy as np
 from datetime import datetime
 import argparse
@@ -164,7 +164,7 @@ def load_checkpoint(args, model):
     return save_path
 
 
-def evaluate_one_time(test_loader, DATASET_CONFIG, CONFIG_DICT, AP_IOU_THRESHOLDS, model, criterion, args, time=0):
+def evaluate_one_time(test_loader, DATASET_CONFIG, CONFIG_DICT, AP_IOU_THRESHOLDS, model, criterion, args, t=0):
     stat_dict = {}
     if args.num_decoder_layers > 0:
         if args.dataset == 'sunrgbd':
@@ -196,9 +196,9 @@ def evaluate_one_time(test_loader, DATASET_CONFIG, CONFIG_DICT, AP_IOU_THRESHOLD
 
     batch_pred_map_cls_dict = {k: [] for k in prefixes}
     batch_gt_map_cls_dict = {k: [] for k in prefixes}
-    t_start = t.time()
+    t_start = time.time()
     for batch_idx, batch_data_label in enumerate(tqdm(test_loader)):
-        print(t.time() - t_start)
+        print(time.time() - t_start)
         for key in batch_data_label:
             batch_data_label[key] = batch_data_label[key].cuda(non_blocking=True)
 
@@ -206,7 +206,7 @@ def evaluate_one_time(test_loader, DATASET_CONFIG, CONFIG_DICT, AP_IOU_THRESHOLD
         inputs = {'point_clouds': batch_data_label['point_clouds']}
         with torch.no_grad():
             end_points = model(inputs)
-        print(t.time() - t_start)
+        print(time.time() - t_start)
         # Compute loss
         for key in batch_data_label:
             assert (key not in end_points)
@@ -225,7 +225,7 @@ def evaluate_one_time(test_loader, DATASET_CONFIG, CONFIG_DICT, AP_IOU_THRESHOLD
                                      heading_loss_type=args.heading_loss_type,
                                      heading_delta=args.heading_delta,
                                      size_cls_agnostic=args.size_cls_agnostic)
-        print(t.time() - t_start)
+        print(time.time() - t_start)
         # Accumulate statistics and print out
         for key in end_points:
             if 'loss' in key or 'acc' in key or 'ratio' in key:
@@ -284,7 +284,7 @@ def evaluate_one_time(test_loader, DATASET_CONFIG, CONFIG_DICT, AP_IOU_THRESHOLD
             batch_gt_map_cls_dict[prefix].append(batch_gt_map_cls)
 
         if (batch_idx + 1) % 10 == 0:
-            logger.info(f'T[{time}] Eval: [{batch_idx + 1}/{len(test_loader)}]  ' + ''.join(
+            logger.info(f'T[{t}] Eval: [{batch_idx + 1}/{len(test_loader)}]  ' + ''.join(
                 [f'{key} {stat_dict[key] / (float(batch_idx + 1)):.4f} \t'
                  for key in sorted(stat_dict.keys()) if 'loss' not in key]))
             logger.info(''.join([f'{key} {stat_dict[key] / (float(batch_idx + 1)):.4f} \t'
