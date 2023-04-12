@@ -193,7 +193,7 @@ class GroupFreeDetector(nn.Module):
 
         base_xyz = proposal_center.detach().clone()
         base_size = proposal_size.detach().clone()
-        print(proposal_center.shape, proposal_size.shape)
+        print(base_xyz.shape, base_size.shape)
         # Transformer Decoder and Prediction
         if self.num_decoder_layers > 0:
             query = self.decoder_query_proj(cluster_feature)
@@ -218,7 +218,7 @@ class GroupFreeDetector(nn.Module):
                 query_pos = torch.cat([base_xyz, base_size], -1)
             else:
                 raise NotImplementedError(f"self_position_embedding not supported {self.self_position_embedding}")
-
+            print(query.shape, key.shape)
             # Transformer Decoder Layer
             query = self.decoder[i](query, key, query_pos, key_pos)
 
@@ -230,7 +230,7 @@ class GroupFreeDetector(nn.Module):
 
             base_xyz = base_xyz.detach().clone()
             base_size = base_size.detach().clone()
-
+            print(base_xyz.shape, base_size.shape)
         return end_points
 
     def init_weights(self):
