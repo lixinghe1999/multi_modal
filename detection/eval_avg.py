@@ -324,11 +324,16 @@ def test(args):
     for batch_idx, batch_data_label in enumerate(tqdm(test_loader)):
         for key in batch_data_label:
             batch_data_label[key] = batch_data_label[key].cuda(non_blocking=True)
-
         # Forward pass
         inputs = {'point_clouds': batch_data_label['point_clouds']}
+        print(inputs['point_clouds'].shape)
         with torch.no_grad():
             end_points = model(inputs)
+        for key in end_points:
+            try:
+                print(end_points[key].shape)
+            except:
+                print(end_points[key])
         break
 
 
