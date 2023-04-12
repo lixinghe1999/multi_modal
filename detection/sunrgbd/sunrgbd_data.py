@@ -333,7 +333,6 @@ def extract_sunrgbd_data(idx_filename, split, output_folder, num_point=20000,
         #     print(f"{os.path.join(output_folder, '%06d_votes.pkl' % (data_idx))} saved successfully !!")
         all_point_votes.append(point_votes)
         # print(pc_upright_depth_subsampled.shape, obbs.shape, point_votes.shape)
-        break
     # pickle_filename = os.path.join(output_folder, 'all_obbs_modified_nearest_has_empty.pkl')
     # with open(pickle_filename, 'wb') as f:
     #     pickle.dump(all_obbs, f)
