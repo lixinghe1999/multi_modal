@@ -90,8 +90,8 @@ def parse_option():
     parser.add_argument('--checkpoint_path', default=None, help='Model checkpoint path [default: None]')
     parser.add_argument('--log_dir', default='log', help='Dump dir to save model checkpoint [default: log]')
     parser.add_argument('--print_freq', type=int, default=100, help='print frequency')
-    parser.add_argument('--save_freq', type=int, default=100, help='save frequency')
-    parser.add_argument('--val_freq', type=int, default=50, help='val frequency')
+    parser.add_argument('--save_freq', type=int, default=5, help='save frequency')
+    parser.add_argument('--val_freq', type=int, default=20, help='val frequency')
 
     # others
     parser.add_argument("--local_rank", type=int, help='local rank for DistributedDataParallel')
