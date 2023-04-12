@@ -169,12 +169,14 @@ class GroupFreeDetector(nn.Module):
             end_points['query_points_feature'] = features  # (batch_size, C, num_proposal)
             end_points['query_points_sample_inds'] = sample_inds  # (bsz, num_proposal) # should be 0,1,...,num_proposal
         elif self.sampling == 'kps':
-            print(xyz.shape, features.shape)
+
             points_obj_cls_logits = self.points_obj_cls(features)  # (batch_size, 1, num_seed)
+            print(points_obj_cls_logits.shape)
             end_points['seeds_obj_cls_logits'] = points_obj_cls_logits
             points_obj_cls_scores = torch.sigmoid(points_obj_cls_logits).squeeze(1)
             sample_inds = torch.topk(points_obj_cls_scores, self.num_proposal)[1].int()
             xyz, features, sample_inds = self.gsample_module(xyz, features, sample_inds)
+            print(xyz.shape, features.shape)
             cluster_feature = features
             cluster_xyz = xyz
             end_points['query_points_xyz'] = xyz  # (batch_size, num_proposal, 3)
