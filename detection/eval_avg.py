@@ -6,7 +6,7 @@ from datetime import datetime
 import argparse
 import torch
 from torch.utils.data import DataLoader
-
+from tqdm import tqdm
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = BASE_DIR
 
