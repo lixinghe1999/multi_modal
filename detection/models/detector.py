@@ -148,15 +148,12 @@ class GroupFreeDetector(nn.Module):
             end_points: dict
         """
         end_points = {}
-
         end_points = self.backbone_net(inputs['point_clouds'], end_points)
-        print(end_points.keys())
         # Query Points Generation
         points_xyz = end_points['fp2_xyz']
         points_features = end_points['fp2_features']
         xyz = end_points['fp2_xyz']
         features = end_points['fp2_features']
-        print(xyz.shape, features.shape)
         end_points['seed_inds'] = end_points['fp2_inds']
         end_points['seed_xyz'] = xyz
         end_points['seed_features'] = features
@@ -171,12 +168,10 @@ class GroupFreeDetector(nn.Module):
         elif self.sampling == 'kps':
 
             points_obj_cls_logits = self.points_obj_cls(features)  # (batch_size, 1, num_seed)
-            print(points_obj_cls_logits.shape)
             end_points['seeds_obj_cls_logits'] = points_obj_cls_logits
             points_obj_cls_scores = torch.sigmoid(points_obj_cls_logits).squeeze(1)
             sample_inds = torch.topk(points_obj_cls_scores, self.num_proposal)[1].int()
             xyz, features, sample_inds = self.gsample_module(xyz, features, sample_inds)
-            print(xyz.shape, features.shape)
             cluster_feature = features
             cluster_xyz = xyz
             end_points['query_points_xyz'] = xyz  # (batch_size, num_proposal, 3)
@@ -193,7 +188,6 @@ class GroupFreeDetector(nn.Module):
 
         base_xyz = proposal_center.detach().clone()
         base_size = proposal_size.detach().clone()
-        print(base_xyz.shape, base_size.shape)
         # Transformer Decoder and Prediction
         if self.num_decoder_layers > 0:
             query = self.decoder_query_proj(cluster_feature)
@@ -218,7 +212,6 @@ class GroupFreeDetector(nn.Module):
                 query_pos = torch.cat([base_xyz, base_size], -1)
             else:
                 raise NotImplementedError(f"self_position_embedding not supported {self.self_position_embedding}")
-            print(query.shape, key.shape)
             # Transformer Decoder Layer
             query = self.decoder[i](query, key, query_pos, key_pos)
 
@@ -230,7 +223,6 @@ class GroupFreeDetector(nn.Module):
 
             base_xyz = base_xyz.detach().clone()
             base_size = base_size.detach().clone()
-            print(base_xyz.shape, base_size.shape)
         return end_points
 
     def init_weights(self):
