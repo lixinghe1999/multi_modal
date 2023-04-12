@@ -421,10 +421,10 @@ if __name__ == '__main__':
         exit()
 
     if args.gen_v1_data:
-        # extract_sunrgbd_data(os.path.join(BASE_DIR, 'sunrgbd_trainval/train_data_idx.txt'),
-        #                      split='training',
-        #                      output_folder=os.path.join(BASE_DIR, 'sunrgbd_pc_bbox_votes_50k_v1_train'),
-        #                      save_votes=True, num_point=20000, use_v1=True, skip_empty_scene=False)
+        extract_sunrgbd_data(os.path.join(BASE_DIR, 'sunrgbd_trainval/train_data_idx.txt'),
+                             split='training',
+                             output_folder=os.path.join(BASE_DIR, 'sunrgbd_pc_bbox_votes_50k_v1_train'),
+                             save_votes=True, num_point=20000, use_v1=True, skip_empty_scene=False)
         extract_sunrgbd_data(os.path.join(BASE_DIR, 'sunrgbd_trainval/val_data_idx.txt'),
                              split='training',
                              output_folder=os.path.join(BASE_DIR, 'sunrgbd_pc_bbox_votes_50k_v1_val'),
