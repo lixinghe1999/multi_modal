@@ -106,7 +106,7 @@ class Pointnet2Backbone(nn.Module):
         batch_size = pointcloud.shape[0]
 
         xyz, features = self._break_up_pc(pointcloud)
-
+        print(xyz.shape, features.shape)
         # --------- 4 SET ABSTRACTION LAYERS ---------
         xyz, features, fps_inds = self.sa1(xyz, features)
         end_points['sa1_inds'] = fps_inds
@@ -131,7 +131,6 @@ class Pointnet2Backbone(nn.Module):
                             end_points['sa4_features'])
         print(features.shape)
         features = self.fp2(end_points['sa2_xyz'], end_points['sa3_xyz'], end_points['sa2_features'], features)
-        print(features.shape)
         end_points['fp2_features'] = features
         end_points['fp2_xyz'] = end_points['sa2_xyz']
         num_seed = end_points['fp2_xyz'].shape[1]
