@@ -231,6 +231,7 @@ def evaluate_one_time(test_loader, DATASET_CONFIG, CONFIG_DICT, AP_IOU_THRESHOLD
         t_start = time.time()
         # Accumulate statistics and print out
         for key in end_points:
+            print(key, end_points[key].shape)
             if 'loss' in key or 'acc' in key or 'ratio' in key:
                 if key not in stat_dict: stat_dict[key] = 0
                 if isinstance(end_points[key], float):
@@ -341,7 +342,7 @@ def eval(args, avg_times=1):
                    'conf_thresh': args.conf_thresh, 'dataset_config': DATASET_CONFIG}
 
     logger.info(str(datetime.now()))
-    mAPs_times = [None for i in range(avg_times)]
+    mAPs_times = [None for _ in range(avg_times)]
     for i in range(avg_times):
         np.random.seed(i + args.rng_seed)
         mAPs = evaluate_one_time(test_loader, DATASET_CONFIG, CONFIG_DICT, args.ap_iou_thresholds,
