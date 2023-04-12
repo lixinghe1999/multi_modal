@@ -329,11 +329,11 @@ def test(args):
         print(inputs['point_clouds'].shape)
         with torch.no_grad():
             end_points = model(inputs)
-        for key in end_points:
-            try:
-                print(key, end_points[key].shape)
-            except:
-                print(key, end_points[key])
+        # for key in end_points:
+        #     try:
+        #         print(key, end_points[key].shape)
+        #     except:
+        #         print(key, end_points[key])
         break
 
 

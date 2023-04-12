@@ -156,6 +156,7 @@ class GroupFreeDetector(nn.Module):
         points_features = end_points['fp2_features']
         xyz = end_points['fp2_xyz']
         features = end_points['fp2_features']
+        print(xyz.shape, features.shape)
         end_points['seed_inds'] = end_points['fp2_inds']
         end_points['seed_xyz'] = xyz
         end_points['seed_features'] = features
