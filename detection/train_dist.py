@@ -53,7 +53,7 @@ def parse_option():
     parser.add_argument('--size_cls_agnostic', action='store_true', help='Use class-agnostic size prediction.')
 
     # Data
-    parser.add_argument('--batch_size', type=int, default=8, help='Batch Size per GPU during training [default: 8]')
+    parser.add_argument('--batch_size', type=int, default=64, help='Batch Size per GPU during training [default: 8]')
     parser.add_argument('--dataset', default='scannet', help='Dataset name. sunrgbd or scannet. [default: scannet]')
     parser.add_argument('--num_point', type=int, default=50000, help='Point Number [default: 50000]')
     parser.add_argument('--data_root', default='data', help='data root path')
@@ -89,7 +89,7 @@ def parse_option():
     # io
     parser.add_argument('--checkpoint_path', default=None, help='Model checkpoint path [default: None]')
     parser.add_argument('--log_dir', default='log', help='Dump dir to save model checkpoint [default: log]')
-    parser.add_argument('--print_freq', type=int, default=10, help='print frequency')
+    parser.add_argument('--print_freq', type=int, default=100, help='print frequency')
     parser.add_argument('--save_freq', type=int, default=100, help='save frequency')
     parser.add_argument('--val_freq', type=int, default=50, help='val frequency')
 
