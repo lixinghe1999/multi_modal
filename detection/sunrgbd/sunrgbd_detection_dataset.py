@@ -60,24 +60,25 @@ class SunrgbdDetectionVotesDataset(Dataset):
             self.data_path = os.path.join(data_root, f'sunrgbd/sunrgbd_pc_bbox_votes_50k_v1_{split_set}')
         else:
             self.data_path = os.path.join(data_root, f'sunrgbd/sunrgbd_pc_bbox_votes_50k_v2_{split_set}')
+        self.data = ['005051_','005051_','005051_','005051_','005051_','005051_']
 
-        pickle_filename = os.path.join(self.data_path, 'all_obbs_modified_nearest_has_empty.pkl')
-        with open(pickle_filename, 'rb') as f:
-            self.bboxes_list = pickle.load(f)
-        print(f"{pickle_filename} loaded successfully !!!")
-
-        pickle_filename = os.path.join(self.data_path, 'all_pc_modified_nearest_has_empty.pkl')
-        with open(pickle_filename, 'rb') as f:
-            self.point_cloud_list = pickle.load(f)
-        print(f"{pickle_filename} loaded successfully !!!")
-
-        pickle_filename = os.path.join(self.data_path, 'all_point_labels_nearest_has_empty.pkl')
-        with open(pickle_filename, 'rb') as f:
-            self.point_labels_list = pickle.load(f)
-        print(f"{pickle_filename} loaded successfully !!!")
+        # pickle_filename = os.path.join(self.data_path, 'all_obbs_modified_nearest_has_empty.pkl')
+        # with open(pickle_filename, 'rb') as f:
+        #     self.bboxes_list = pickle.load(f)
+        # print(f"{pickle_filename} loaded successfully !!!")
+        #
+        # pickle_filename = os.path.join(self.data_path, 'all_pc_modified_nearest_has_empty.pkl')
+        # with open(pickle_filename, 'rb') as f:
+        #     self.point_cloud_list = pickle.load(f)
+        # print(f"{pickle_filename} loaded successfully !!!")
+        #
+        # pickle_filename = os.path.join(self.data_path, 'all_point_labels_nearest_has_empty.pkl')
+        # with open(pickle_filename, 'rb') as f:
+        #     self.point_labels_list = pickle.load(f)
+        # print(f"{pickle_filename} loaded successfully !!!")
 
     def __len__(self):
-        return len(self.point_cloud_list)
+        return len(self.data)
 
     def __getitem__(self, idx):
         """
@@ -95,10 +96,16 @@ class SunrgbdDetectionVotesDataset(Dataset):
             scan_idx: int scan index in scan_names list
             max_gt_bboxes: unused
         """
-        point_cloud = self.point_cloud_list[idx]  # Nx6
-        bboxes = self.bboxes_list[idx]  # K,8
-        point_obj_mask = self.point_labels_list[idx][:, 0]
-        point_instance_label = self.point_labels_list[idx][:, -1]
+        fname = self.data[idx]
+        point_cloud = np.load(os.path.join(self.data_path, f'{fname}pc.npz'))
+        bboxes = np.load(os.path.join(self.data_path, f'{fname}bbox.npy'))
+        vote = np.load(os.path.join(self.data_path, f'{fname}votes.npz'))
+        point_obj_mask = vote[0]
+        point_instance_label = vote[10]
+        # point_cloud = self.point_cloud_list[idx]  # Nx6
+        # bboxes = self.bboxes_list[idx]  # K,8
+        # point_obj_mask = self.point_labels_list[idx][:, 0]
+        # point_instance_label = self.point_labels_list[idx][:, -1]
 
         if not self.use_color:
             point_cloud = point_cloud[:, 0:3]
