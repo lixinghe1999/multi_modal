@@ -193,7 +193,7 @@ class GroupFreeDetector(nn.Module):
 
         base_xyz = proposal_center.detach().clone()
         base_size = proposal_size.detach().clone()
-
+        print(proposal_center.shape, proposal_size.shape)
         # Transformer Decoder and Prediction
         if self.num_decoder_layers > 0:
             query = self.decoder_query_proj(cluster_feature)
