@@ -112,20 +112,20 @@ class Pointnet2Backbone(nn.Module):
         end_points['sa1_inds'] = fps_inds
         end_points['sa1_xyz'] = xyz
         end_points['sa1_features'] = features
-        print(xyz.shape, features)
+        print(xyz.shape, features.shape)
         xyz, features, fps_inds = self.sa2(xyz, features)  # this fps_inds is just 0,1,...,1023
         end_points['sa2_inds'] = fps_inds
         end_points['sa2_xyz'] = xyz
         end_points['sa2_features'] = features
-        print(xyz.shape, features)
+        print(xyz.shape, features.shape)
         xyz, features, fps_inds = self.sa3(xyz, features)  # this fps_inds is just 0,1,...,511
         end_points['sa3_xyz'] = xyz
         end_points['sa3_features'] = features
-        print(xyz.shape, features)
+        print(xyz.shape, features.shape)
         xyz, features, fps_inds = self.sa4(xyz, features)  # this fps_inds is just 0,1,...,255
         end_points['sa4_xyz'] = xyz
         end_points['sa4_features'] = features
-        print(xyz.shape, features)
+        print(xyz.shape, features.shape)
         # --------- 2 FEATURE UPSAMPLING LAYERS --------
         features = self.fp1(end_points['sa3_xyz'], end_points['sa4_xyz'], end_points['sa3_features'],
                             end_points['sa4_features'])
