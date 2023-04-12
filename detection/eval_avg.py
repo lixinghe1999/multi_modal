@@ -289,6 +289,8 @@ def evaluate_one_time(test_loader, DATASET_CONFIG, CONFIG_DICT, AP_IOU_THRESHOLD
                                                   size_cls_agnostic=args.size_cls_agnostic)
             batch_pred_map_cls_dict[prefix].append(batch_pred_map_cls)
             batch_gt_map_cls_dict[prefix].append(batch_gt_map_cls)
+            print(batch_pred_map_cls_dict[prefix])
+            print(batch_gt_map_cls_dict[prefix])
         print('save time', time.time() - t_start)
         t_start = time.time()
         if (batch_idx + 1) % 100 == 0:
