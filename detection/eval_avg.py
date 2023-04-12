@@ -178,8 +178,8 @@ def evaluate_one_time(test_loader, DATASET_CONFIG, CONFIG_DICT, AP_IOU_THRESHOLD
     else:
         prefixes = ['proposal_']  # only proposal
         _prefixes = prefixes
-    prefixes = ['last_']  # only proposal
-    _prefixes = prefixes
+    # prefixes = ['last_']  # only proposal
+    # _prefixes = prefixes
 
     if args.num_decoder_layers >= 3:
         last_three_prefixes = ['last_', f'{args.num_decoder_layers - 2}head_', f'{args.num_decoder_layers - 3}head_']
@@ -198,7 +198,6 @@ def evaluate_one_time(test_loader, DATASET_CONFIG, CONFIG_DICT, AP_IOU_THRESHOLD
 
     batch_pred_map_cls_dict = {k: [] for k in prefixes}
     batch_gt_map_cls_dict = {k: [] for k in prefixes}
-    t_start = time.time()
     for batch_idx, batch_data_label in enumerate(tqdm(test_loader)):
         for key in batch_data_label:
             batch_data_label[key] = batch_data_label[key].cuda(non_blocking=True)
@@ -280,20 +279,20 @@ def evaluate_one_time(test_loader, DATASET_CONFIG, CONFIG_DICT, AP_IOU_THRESHOLD
                                                   size_cls_agnostic=args.size_cls_agnostic)
             batch_pred_map_cls_dict[prefix].append(batch_pred_map_cls)
             batch_gt_map_cls_dict[prefix].append(batch_gt_map_cls)
-        if (batch_idx + 1) % 100 == 0:
-            logger.info(f'T[{t}] Eval: [{batch_idx + 1}/{len(test_loader)}]  ' + ''.join(
-                [f'{key} {stat_dict[key] / (float(batch_idx + 1)):.4f} \t'
-                 for key in sorted(stat_dict.keys()) if 'loss' not in key]))
-            logger.info(''.join([f'{key} {stat_dict[key] / (float(batch_idx + 1)):.4f} \t'
-                                 for key in sorted(stat_dict.keys()) if
-                                 'loss' in key and 'proposal_' not in key and 'last_' not in key and 'head_' not in key]))
-            logger.info(''.join([f'{key} {stat_dict[key] / (float(batch_idx + 1)):.4f} \t'
-                                 for key in sorted(stat_dict.keys()) if 'last_' in key]))
-            logger.info(''.join([f'{key} {stat_dict[key] / (float(batch_idx + 1)):.4f} \t'
-                                 for key in sorted(stat_dict.keys()) if 'proposal_' in key]))
-            for ihead in range(args.num_decoder_layers - 2, -1, -1):
-                logger.info(''.join([f'{key} {stat_dict[key] / (float(batch_idx + 1)):.4f} \t'
-                                     for key in sorted(stat_dict.keys()) if f'{ihead}head_' in key]))
+        # if (batch_idx + 1) % 100 == 0:
+        #     logger.info(f'T[{t}] Eval: [{batch_idx + 1}/{len(test_loader)}]  ' + ''.join(
+        #         [f'{key} {stat_dict[key] / (float(batch_idx + 1)):.4f} \t'
+        #          for key in sorted(stat_dict.keys()) if 'loss' not in key]))
+        #     logger.info(''.join([f'{key} {stat_dict[key] / (float(batch_idx + 1)):.4f} \t'
+        #                          for key in sorted(stat_dict.keys()) if
+        #                          'loss' in key and 'proposal_' not in key and 'last_' not in key and 'head_' not in key]))
+        #     logger.info(''.join([f'{key} {stat_dict[key] / (float(batch_idx + 1)):.4f} \t'
+        #                          for key in sorted(stat_dict.keys()) if 'last_' in key]))
+        #     logger.info(''.join([f'{key} {stat_dict[key] / (float(batch_idx + 1)):.4f} \t'
+        #                          for key in sorted(stat_dict.keys()) if 'proposal_' in key]))
+        #     for ihead in range(args.num_decoder_layers - 2, -1, -1):
+        #         logger.info(''.join([f'{key} {stat_dict[key] / (float(batch_idx + 1)):.4f} \t'
+        #                              for key in sorted(stat_dict.keys()) if f'{ihead}head_' in key]))
 
     for prefix in prefixes:
         for (batch_pred_map_cls, batch_gt_map_cls) in zip(batch_pred_map_cls_dict[prefix],
