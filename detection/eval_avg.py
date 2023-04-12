@@ -196,7 +196,7 @@ def evaluate_one_time(test_loader, DATASET_CONFIG, CONFIG_DICT, AP_IOU_THRESHOLD
     batch_pred_map_cls_dict = {k: [] for k in prefixes}
     batch_gt_map_cls_dict = {k: [] for k in prefixes}
 
-    for batch_idx, batch_data_label in enumerate(test_loader):
+    for batch_idx, batch_data_label in enumerate(tqdm(test_loader)):
         for key in batch_data_label:
             batch_data_label[key] = batch_data_label[key].cuda(non_blocking=True)
 
