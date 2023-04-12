@@ -1,6 +1,6 @@
 import os
 import sys
-import time
+import time as t
 import numpy as np
 from datetime import datetime
 import argparse
@@ -13,7 +13,6 @@ ROOT_DIR = BASE_DIR
 from utils import setup_logger
 from models import GroupFreeDetector, get_loss
 from models import APCalculator, parse_predictions, parse_groundtruths
-
 
 def parse_option():
     parser = argparse.ArgumentParser()
@@ -109,7 +108,9 @@ def get_loader(args):
 
     logger.info(str(len(TEST_DATASET)))
 
-    TEST_DATALOADER = DataLoader(TEST_DATASET, batch_size=args.batch_size * torch.cuda.device_count(),
+    TEST_DATALOADER = DataLoader(TEST_DATASET,
+                                 batch_size=args.batch_size,
+                                 # batch_size=args.batch_size * torch.cuda.device_count(),
                                  shuffle=args.shuffle_dataset,
                                  num_workers=4,
                                  worker_init_fn=my_worker_init_fn)
@@ -195,8 +196,9 @@ def evaluate_one_time(test_loader, DATASET_CONFIG, CONFIG_DICT, AP_IOU_THRESHOLD
 
     batch_pred_map_cls_dict = {k: [] for k in prefixes}
     batch_gt_map_cls_dict = {k: [] for k in prefixes}
-
+    t_start = t.time()
     for batch_idx, batch_data_label in enumerate(tqdm(test_loader)):
+        print(t.time() - t_start)
         for key in batch_data_label:
             batch_data_label[key] = batch_data_label[key].cuda(non_blocking=True)
 
@@ -204,7 +206,7 @@ def evaluate_one_time(test_loader, DATASET_CONFIG, CONFIG_DICT, AP_IOU_THRESHOLD
         inputs = {'point_clouds': batch_data_label['point_clouds']}
         with torch.no_grad():
             end_points = model(inputs)
-
+        print(t.time() - t_start)
         # Compute loss
         for key in batch_data_label:
             assert (key not in end_points)
@@ -223,7 +225,7 @@ def evaluate_one_time(test_loader, DATASET_CONFIG, CONFIG_DICT, AP_IOU_THRESHOLD
                                      heading_loss_type=args.heading_loss_type,
                                      heading_delta=args.heading_delta,
                                      size_cls_agnostic=args.size_cls_agnostic)
-
+        print(t.time() - t_start)
         # Accumulate statistics and print out
         for key in end_points:
             if 'loss' in key or 'acc' in key or 'ratio' in key:
