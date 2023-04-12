@@ -242,6 +242,7 @@ def extract_sunrgbd_data(idx_filename, split, output_folder, num_point=20000,
         np.savez_compressed(os.path.join(output_folder, '%06d_pc.npz' % (data_idx)),
                             pc=pc_upright_depth_subsampled)
         np.save(os.path.join(output_folder, '%06d_bbox.npy' % (data_idx)), obbs)
+
         # pickle save
         with open(os.path.join(output_folder, '%06d_pc.pkl' % (data_idx)), 'wb') as f:
             pickle.dump(pc_upright_depth_subsampled, f)
@@ -332,6 +333,7 @@ def extract_sunrgbd_data(idx_filename, split, output_folder, num_point=20000,
             pickle.dump(point_votes, f)
             print(f"{os.path.join(output_folder, '%06d_votes.pkl' % (data_idx))} saved successfully !!")
         all_point_votes.append(point_votes)
+        print(pc_upright_depth_subsampled.shape, obbs.shape, point_votes.shape)
         break
 
     pickle_filename = os.path.join(output_folder, 'all_obbs_modified_nearest_has_empty.pkl')
@@ -420,10 +422,10 @@ if __name__ == '__main__':
         exit()
 
     if args.gen_v1_data:
-        extract_sunrgbd_data(os.path.join(BASE_DIR, 'sunrgbd_trainval/train_data_idx.txt'),
-                             split='training',
-                             output_folder=os.path.join(BASE_DIR, 'sunrgbd_pc_bbox_votes_50k_v1_train'),
-                             save_votes=True, num_point=50000, use_v1=True, skip_empty_scene=False)
+        # extract_sunrgbd_data(os.path.join(BASE_DIR, 'sunrgbd_trainval/train_data_idx.txt'),
+        #                      split='training',
+        #                      output_folder=os.path.join(BASE_DIR, 'sunrgbd_pc_bbox_votes_50k_v1_train'),
+        #                      save_votes=True, num_point=50000, use_v1=True, skip_empty_scene=False)
         extract_sunrgbd_data(os.path.join(BASE_DIR, 'sunrgbd_trainval/val_data_idx.txt'),
                              split='training',
                              output_folder=os.path.join(BASE_DIR, 'sunrgbd_pc_bbox_votes_50k_v1_val'),
