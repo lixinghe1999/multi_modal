@@ -208,6 +208,7 @@ def evaluate_one_time(test_loader, DATASET_CONFIG, CONFIG_DICT, AP_IOU_THRESHOLD
         with torch.no_grad():
             end_points = model(inputs)
         print('inference time', time.time() - t_start)
+        t_start = time.time()
         # Compute loss
         for key in batch_data_label:
             assert (key not in end_points)
@@ -227,6 +228,7 @@ def evaluate_one_time(test_loader, DATASET_CONFIG, CONFIG_DICT, AP_IOU_THRESHOLD
                                      heading_delta=args.heading_delta,
                                      size_cls_agnostic=args.size_cls_agnostic)
         print('loss time', time.time() - t_start)
+        t_start = time.time()
         # Accumulate statistics and print out
         for key in end_points:
             if 'loss' in key or 'acc' in key or 'ratio' in key:
