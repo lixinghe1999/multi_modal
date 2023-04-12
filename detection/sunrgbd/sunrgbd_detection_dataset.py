@@ -97,9 +97,9 @@ class SunrgbdDetectionVotesDataset(Dataset):
             max_gt_bboxes: unused
         """
         fname = self.data[idx]
-        point_cloud = np.load(os.path.join(self.data_path, f'{fname}pc.npz'))
-        bboxes = np.load(os.path.join(self.data_path, f'{fname}bbox.npy'))
-        vote = np.load(os.path.join(self.data_path, f'{fname}votes.npz'))
+        point_cloud = np.load(os.path.join(self.data_path, f'{fname}_pc.npz'))
+        bboxes = np.load(os.path.join(self.data_path, f'{fname}_bbox.npy'))
+        vote = np.load(os.path.join(self.data_path, f'{fname}_votes.npz'))
         point_obj_mask = vote[0]
         point_instance_label = vote[10]
         # point_cloud = self.point_cloud_list[idx]  # Nx6
