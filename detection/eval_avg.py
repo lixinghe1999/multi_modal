@@ -239,6 +239,7 @@ def evaluate_one_time(test_loader, DATASET_CONFIG, CONFIG_DICT, AP_IOU_THRESHOLD
                     stat_dict[key] += end_points[key].item()
         print('accumulate time', time.time() - t_start)
         t_start = time.time()
+        print(prefixes)
         for prefix in prefixes:
             if prefix == 'last_three_':
                 end_points[f'{prefix}center'] = torch.cat([end_points[f'{ppx}center']
