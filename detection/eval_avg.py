@@ -237,7 +237,8 @@ def evaluate_one_time(test_loader, DATASET_CONFIG, CONFIG_DICT, AP_IOU_THRESHOLD
                     stat_dict[key] += end_points[key]
                 else:
                     stat_dict[key] += end_points[key].item()
-
+        print('accumulate time', time.time() - t_start)
+        t_start = time.time()
         for prefix in prefixes:
             if prefix == 'last_three_':
                 end_points[f'{prefix}center'] = torch.cat([end_points[f'{ppx}center']
@@ -285,7 +286,7 @@ def evaluate_one_time(test_loader, DATASET_CONFIG, CONFIG_DICT, AP_IOU_THRESHOLD
                                                   size_cls_agnostic=args.size_cls_agnostic)
             batch_pred_map_cls_dict[prefix].append(batch_pred_map_cls)
             batch_gt_map_cls_dict[prefix].append(batch_gt_map_cls)
-        print('loss time', time.time() - t_start)
+        print('save time', time.time() - t_start)
         t_start = time.time()
         if (batch_idx + 1) % 100 == 0:
             logger.info(f'T[{t}] Eval: [{batch_idx + 1}/{len(test_loader)}]  ' + ''.join(
