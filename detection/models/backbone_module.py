@@ -106,7 +106,7 @@ class Pointnet2Backbone(nn.Module):
         batch_size = pointcloud.shape[0]
 
         xyz, features = self._break_up_pc(pointcloud)
-        print(xyz.shape, features.shape)
+        print(xyz.shape, features)
         # --------- 4 SET ABSTRACTION LAYERS ---------
         xyz, features, fps_inds = self.sa1(xyz, features)
         end_points['sa1_inds'] = fps_inds
