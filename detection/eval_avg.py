@@ -178,6 +178,8 @@ def evaluate_one_time(test_loader, DATASET_CONFIG, CONFIG_DICT, AP_IOU_THRESHOLD
     else:
         prefixes = ['proposal_']  # only proposal
         _prefixes = prefixes
+    prefixes = ['proposal_']  # only proposal
+    _prefixes = prefixes
 
     if args.num_decoder_layers >= 3:
         last_three_prefixes = ['last_', f'{args.num_decoder_layers - 2}head_', f'{args.num_decoder_layers - 3}head_']
