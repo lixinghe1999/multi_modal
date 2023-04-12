@@ -4,7 +4,7 @@ import time
 import numpy as np
 import json
 import argparse
-
+from tqdm import tqdm
 import torch
 import torch.optim as optim
 from torch.utils.data import DataLoader
@@ -308,7 +308,7 @@ def main(args):
 def train_one_epoch(epoch, train_loader, DATASET_CONFIG, model, criterion, optimizer, scheduler, config):
     stat_dict = {}  # collect statistics
     model.train()  # set model to training mode
-    for batch_idx, batch_data_label in enumerate(train_loader):
+    for batch_idx, batch_data_label in enumerate(tqdm(train_loader)):
         for key in batch_data_label:
             batch_data_label[key] = batch_data_label[key].cuda(non_blocking=True)
         inputs = {'point_clouds': batch_data_label['point_clouds']}
