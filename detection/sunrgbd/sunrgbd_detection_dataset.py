@@ -60,7 +60,7 @@ class SunrgbdDetectionVotesDataset(Dataset):
             self.data_path = os.path.join(data_root, f'sunrgbd/sunrgbd_pc_bbox_votes_50k_v1_{split_set}')
         else:
             self.data_path = os.path.join(data_root, f'sunrgbd/sunrgbd_pc_bbox_votes_50k_v2_{split_set}')
-        self.data = ['005051_','005051_','005051_','005051_','005051_','005051_']
+        self.data = ['000001','000001','000001','000001','000001']
 
         # pickle_filename = os.path.join(self.data_path, 'all_obbs_modified_nearest_has_empty.pkl')
         # with open(pickle_filename, 'rb') as f:
