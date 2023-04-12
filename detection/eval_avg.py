@@ -238,55 +238,55 @@ def evaluate_one_time(test_loader, DATASET_CONFIG, CONFIG_DICT, AP_IOU_THRESHOLD
                 else:
                     stat_dict[key] += end_points[key].item()
 
-        for prefix in prefixes:
-            if prefix == 'last_three_':
-                end_points[f'{prefix}center'] = torch.cat([end_points[f'{ppx}center']
-                                                           for ppx in last_three_prefixes], 1)
-                end_points[f'{prefix}heading_scores'] = torch.cat([end_points[f'{ppx}heading_scores']
-                                                                   for ppx in last_three_prefixes], 1)
-                end_points[f'{prefix}heading_residuals'] = torch.cat([end_points[f'{ppx}heading_residuals']
-                                                                      for ppx in last_three_prefixes], 1)
-                if args.size_cls_agnostic:
-                    end_points[f'{prefix}pred_size'] = torch.cat([end_points[f'{ppx}pred_size']
-                                                                  for ppx in last_three_prefixes], 1)
-                else:
-                    end_points[f'{prefix}size_scores'] = torch.cat([end_points[f'{ppx}size_scores']
-                                                                    for ppx in last_three_prefixes], 1)
-                    end_points[f'{prefix}size_residuals'] = torch.cat([end_points[f'{ppx}size_residuals']
-                                                                       for ppx in last_three_prefixes], 1)
-                end_points[f'{prefix}sem_cls_scores'] = torch.cat([end_points[f'{ppx}sem_cls_scores']
-                                                                   for ppx in last_three_prefixes], 1)
-                end_points[f'{prefix}objectness_scores'] = torch.cat([end_points[f'{ppx}objectness_scores']
-                                                                      for ppx in last_three_prefixes], 1)
+        # for prefix in prefixes:
+        #     if prefix == 'last_three_':
+        #         end_points[f'{prefix}center'] = torch.cat([end_points[f'{ppx}center']
+        #                                                    for ppx in last_three_prefixes], 1)
+        #         end_points[f'{prefix}heading_scores'] = torch.cat([end_points[f'{ppx}heading_scores']
+        #                                                            for ppx in last_three_prefixes], 1)
+        #         end_points[f'{prefix}heading_residuals'] = torch.cat([end_points[f'{ppx}heading_residuals']
+        #                                                               for ppx in last_three_prefixes], 1)
+        #         if args.size_cls_agnostic:
+        #             end_points[f'{prefix}pred_size'] = torch.cat([end_points[f'{ppx}pred_size']
+        #                                                           for ppx in last_three_prefixes], 1)
+        #         else:
+        #             end_points[f'{prefix}size_scores'] = torch.cat([end_points[f'{ppx}size_scores']
+        #                                                             for ppx in last_three_prefixes], 1)
+        #             end_points[f'{prefix}size_residuals'] = torch.cat([end_points[f'{ppx}size_residuals']
+        #                                                                for ppx in last_three_prefixes], 1)
+        #         end_points[f'{prefix}sem_cls_scores'] = torch.cat([end_points[f'{ppx}sem_cls_scores']
+        #                                                            for ppx in last_three_prefixes], 1)
+        #         end_points[f'{prefix}objectness_scores'] = torch.cat([end_points[f'{ppx}objectness_scores']
+        #                                                               for ppx in last_three_prefixes], 1)
+        #
+        #     elif prefix == 'all_layers_':
+        #         end_points[f'{prefix}center'] = torch.cat([end_points[f'{ppx}center']
+        #                                                    for ppx in _prefixes], 1)
+        #         end_points[f'{prefix}heading_scores'] = torch.cat([end_points[f'{ppx}heading_scores']
+        #                                                            for ppx in _prefixes], 1)
+        #         end_points[f'{prefix}heading_residuals'] = torch.cat([end_points[f'{ppx}heading_residuals']
+        #                                                               for ppx in _prefixes], 1)
+        #         if args.size_cls_agnostic:
+        #             end_points[f'{prefix}pred_size'] = torch.cat([end_points[f'{ppx}pred_size']
+        #                                                           for ppx in _prefixes], 1)
+        #         else:
+        #             end_points[f'{prefix}size_scores'] = torch.cat([end_points[f'{ppx}size_scores']
+        #                                                             for ppx in _prefixes], 1)
+        #             end_points[f'{prefix}size_residuals'] = torch.cat([end_points[f'{ppx}size_residuals']
+        #                                                                for ppx in _prefixes], 1)
+        #         end_points[f'{prefix}sem_cls_scores'] = torch.cat([end_points[f'{ppx}sem_cls_scores']
+        #                                                            for ppx in _prefixes], 1)
+        #         end_points[f'{prefix}objectness_scores'] = torch.cat([end_points[f'{ppx}objectness_scores']
+        #                                                               for ppx in _prefixes], 1)
+        #
+        #     batch_pred_map_cls = parse_predictions(end_points, CONFIG_DICT, prefix,
+        #                                            size_cls_agnostic=args.size_cls_agnostic)
+        #     batch_gt_map_cls = parse_groundtruths(end_points, CONFIG_DICT,
+        #                                           size_cls_agnostic=args.size_cls_agnostic)
+        #     batch_pred_map_cls_dict[prefix].append(batch_pred_map_cls)
+        #     batch_gt_map_cls_dict[prefix].append(batch_gt_map_cls)
 
-            elif prefix == 'all_layers_':
-                end_points[f'{prefix}center'] = torch.cat([end_points[f'{ppx}center']
-                                                           for ppx in _prefixes], 1)
-                end_points[f'{prefix}heading_scores'] = torch.cat([end_points[f'{ppx}heading_scores']
-                                                                   for ppx in _prefixes], 1)
-                end_points[f'{prefix}heading_residuals'] = torch.cat([end_points[f'{ppx}heading_residuals']
-                                                                      for ppx in _prefixes], 1)
-                if args.size_cls_agnostic:
-                    end_points[f'{prefix}pred_size'] = torch.cat([end_points[f'{ppx}pred_size']
-                                                                  for ppx in _prefixes], 1)
-                else:
-                    end_points[f'{prefix}size_scores'] = torch.cat([end_points[f'{ppx}size_scores']
-                                                                    for ppx in _prefixes], 1)
-                    end_points[f'{prefix}size_residuals'] = torch.cat([end_points[f'{ppx}size_residuals']
-                                                                       for ppx in _prefixes], 1)
-                end_points[f'{prefix}sem_cls_scores'] = torch.cat([end_points[f'{ppx}sem_cls_scores']
-                                                                   for ppx in _prefixes], 1)
-                end_points[f'{prefix}objectness_scores'] = torch.cat([end_points[f'{ppx}objectness_scores']
-                                                                      for ppx in _prefixes], 1)
-
-            batch_pred_map_cls = parse_predictions(end_points, CONFIG_DICT, prefix,
-                                                   size_cls_agnostic=args.size_cls_agnostic)
-            batch_gt_map_cls = parse_groundtruths(end_points, CONFIG_DICT,
-                                                  size_cls_agnostic=args.size_cls_agnostic)
-            batch_pred_map_cls_dict[prefix].append(batch_pred_map_cls)
-            batch_gt_map_cls_dict[prefix].append(batch_gt_map_cls)
-
-        if (batch_idx + 1) % 10 == 0:
+        if (batch_idx + 1) % 100 == 0:
             logger.info(f'T[{t}] Eval: [{batch_idx + 1}/{len(test_loader)}]  ' + ''.join(
                 [f'{key} {stat_dict[key] / (float(batch_idx + 1)):.4f} \t'
                  for key in sorted(stat_dict.keys()) if 'loss' not in key]))
