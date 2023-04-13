@@ -34,27 +34,6 @@ class SunrgbdDatasetConfig(object):
                                'sofa': np.array([0.923508, 1.867419, 0.845495]),
                                'table': np.array([0.791118, 1.279516, 0.718182]),
                                'toilet': np.array([0.699104, 0.454178, 0.756250])}
-        self.type_mean_size = {'bag': np.array([0.355188,0.378856,0.346023]),
-                                'blinds': np.array([0.151844,0.967588,1.358532]),
-                                'books': np.array([0.287604,0.295896,0.205587]),
-                                'box': np.array([0.351994,0.364480,0.309092]),
-                                'cabinet': np.array([0.571631,1.214407,0.963636]),
-                                'counter': np.array([0.760644,2.236330,0.850000]),
-                                'curtain': np.array([0.257625,0.711000,1.659091]),
-                                'door': np.array([0.160932,0.690090,1.880588]),
-                                'fridge': np.array([0.732086,0.754600,1.650000]),
-                                'lamp': np.array([0.367022,0.379614,0.690910]),
-                                'mirror': np.array([0.140872,0.706094,0.990909]),
-                                'paper': np.array([0.238536,0.245622,0.090910]),
-                                'person': np.array([0.551934,0.630834,1.218182]),
-                                'picture': np.array([0.118182,0.455344,0.472728]),
-                                'pillow': np.array([0.355497,0.560770,0.318182]),
-                                'shower_curtain': np.array([0.243048,0.415382,1.154546]),
-                                'sink': np.array([0.502248,0.599351,0.457344]),
-                                'towel': np.array([0.197596,0.313472,0.350000]),
-                                'tv': np.array([0.248484,0.800022,0.608334]),
-                                'whiteboard': np.array([0.140555,1.654753,1.045454]),
-                                'window': np.array([0.138318,1.854300,1.009090])}
         self.mean_size_arr = np.zeros((self.num_size_cluster, 3))
         for i in range(self.num_size_cluster):
             self.mean_size_arr[i, :] = self.type_mean_size[self.class2type[i]]
