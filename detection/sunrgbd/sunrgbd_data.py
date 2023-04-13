@@ -403,14 +403,13 @@ if __name__ == '__main__':
                         help='Compute median 3D bounding box sizes for each class.')
     parser.add_argument('--gen_v1_data', action='store_true', help='Generate V1 dataset.')
     parser.add_argument('--gen_v2_data', action='store_true', help='Generate V2 dataset.')
-    parser.add_argument('--dim_stat', action='store_true', help='Get box statistics.')
     parser.add_argument('--common', default=False, action='store_true', help='use common class or not.')
     args = parser.parse_args()
     common_whitelist = ['bed', 'table', 'sofa', 'chair', 'toilet', 'desk', 'dresser', 'night_stand', 'bookshelf',
                         'bathtub']
     uncommon_whitelist = ['wall', 'floor', 'cabinet', 'door', 'window', 'picture', 'counter', 'blinds', 'shelves', 'curtain', 'pillow',
-                          'mirror', 'floor_mat', 'clothes', 'ceiling', 'books', 'fridge', 'tv', 'paper', 'towel',
-                          'shower_curtain', 'box', 'whiteboard', 'person', 'sink', 'lamp', 'bag' ]
+                          'mirror', 'floormat', 'clothes', 'ceiling', 'books', 'fridge', 'tv', 'paper', 'towel',
+                          'shower_curtain', 'box', 'whiteboard', 'person', 'sink', 'lamp', 'bag']
     if args.common:
         whitelist = common_whitelist
     else:
@@ -418,21 +417,19 @@ if __name__ == '__main__':
     if args.viz:
         data_viz(os.path.join(BASE_DIR, 'sunrgbd_trainval'))
         exit()
-
     if args.compute_median_size:
-        get_box3d_dim_statistics(os.path.join(BASE_DIR, 'sunrgbd_trainval/train_data_idx.txt'))
-        exit()
-    if args.dim_stat:
         get_box3d_dim_statistics(os.path.join(BASE_DIR, 'sunrgbd_trainval/train_data_idx.txt'),
-                                 type_whitelist=whitelist, save_path=None)
+                                 type_whitelist=whitelist,)
+        exit()
     if args.gen_v1_data:
+        fname = '_common' if args.common else '_uncommon'
         extract_sunrgbd_data(os.path.join(BASE_DIR, 'sunrgbd_trainval/train_data_idx.txt'),
                              split='training', type_whitelist=whitelist,
-                             output_folder=os.path.join(BASE_DIR, 'sunrgbd_pc_bbox_votes_50k_v1_train'),
+                             output_folder=os.path.join(BASE_DIR, 'sunrgbd_pc_bbox_votes_50k_v1_train' + fname),
                              save_votes=True, num_point=20000, use_v1=True, skip_empty_scene=False)
         extract_sunrgbd_data(os.path.join(BASE_DIR, 'sunrgbd_trainval/val_data_idx.txt'),
                              split='training', type_whitelist=whitelist,
-                             output_folder=os.path.join(BASE_DIR, 'sunrgbd_pc_bbox_votes_50k_v1_val'),
+                             output_folder=os.path.join(BASE_DIR, 'sunrgbd_pc_bbox_votes_50k_v1_val' + fname),
                              save_votes=True, num_point=20000, use_v1=True, skip_empty_scene=False,)
 
     if args.gen_v2_data:
