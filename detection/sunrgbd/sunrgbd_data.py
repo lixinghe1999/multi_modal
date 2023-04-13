@@ -24,6 +24,7 @@ from PIL import Image
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR)
 sys.path.append(os.path.join(BASE_DIR, '../utils/'))
+import pickle
 import pc_util
 import sunrgbd_utils
 DEFAULT_TYPE_WHITELIST = ['bed', 'table', 'sofa', 'chair', 'toilet', 'desk', 'dresser', 'night_stand', 'bookshelf', 'bathtub']
@@ -373,7 +374,6 @@ def get_box3d_dim_statistics(idx_filename,
             type_list.append(obj.classname)
             ry_list.append(heading_angle)
 
-    import cPickle as pickle
     if save_path is not None:
         with open(save_path, 'wb') as fp:
             pickle.dump(type_list, fp)
