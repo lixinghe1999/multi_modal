@@ -408,7 +408,7 @@ if __name__ == '__main__':
     common_whitelist = ['bed', 'table', 'sofa', 'chair', 'toilet', 'desk', 'dresser', 'night_stand', 'bookshelf',
                         'bathtub']
     uncommon_whitelist = ['wall', 'floor', 'cabinet', 'door', 'window', 'picture', 'counter', 'blinds', 'shelves', 'curtain', 'pillow',
-                          'mirror', 'floormat', 'clothes', 'ceiling', 'books', 'fridge', 'tv', 'paper', 'towel',
+                          'mirror', 'floor_mat', 'clothes', 'ceiling', 'books', 'fridge', 'tv', 'paper', 'towel',
                           'shower_curtain', 'box', 'whiteboard', 'person', 'sink', 'lamp', 'bag']
     if args.common:
         whitelist = common_whitelist
