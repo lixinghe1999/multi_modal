@@ -89,8 +89,8 @@ def parse_option():
     # io
     parser.add_argument('--checkpoint_path', default=None, help='Model checkpoint path [default: None]')
     parser.add_argument('--log_dir', default='log', help='Dump dir to save model checkpoint [default: log]')
-    parser.add_argument('--print_freq', type=int, default=100, help='print frequency')
-    parser.add_argument('--save_freq', type=int, default=5, help='save frequency')
+    parser.add_argument('--print_freq', type=int, default=300, help='print frequency')
+    parser.add_argument('--save_freq', type=int, default=20, help='save frequency')
     parser.add_argument('--val_freq', type=int, default=20, help='val frequency')
 
     # others

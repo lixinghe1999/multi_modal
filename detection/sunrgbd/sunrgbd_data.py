@@ -16,24 +16,17 @@ Modified by Ze to support Certain GT Center Assign
 '''
 
 import os
-import sys
 import numpy as np
 import sys
 import cv2
 import argparse
 from PIL import Image
-
-import pickle
-
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR)
 sys.path.append(os.path.join(BASE_DIR, '../utils/'))
 import pc_util
 import sunrgbd_utils
-
-DEFAULT_TYPE_WHITELIST = ['bed', 'table', 'sofa', 'chair', 'toilet', 'desk', 'dresser', 'night_stand', 'bookshelf',
-                          'bathtub']
-
+DEFAULT_TYPE_WHITELIST = ['bed', 'table', 'sofa', 'chair', 'toilet', 'desk', 'dresser', 'night_stand', 'bookshelf', 'bathtub']
 
 class sunrgbd_object(object):
     ''' Load and parse object data '''
@@ -402,14 +395,26 @@ def get_box3d_dim_statistics(idx_filename,
 
 
 if __name__ == '__main__':
+
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--viz', action='store_true', help='Run data visualization.')
     parser.add_argument('--compute_median_size', action='store_true',
                         help='Compute median 3D bounding box sizes for each class.')
     parser.add_argument('--gen_v1_data', action='store_true', help='Generate V1 dataset.')
     parser.add_argument('--gen_v2_data', action='store_true', help='Generate V2 dataset.')
+    parser.add_argument('--dim_stat', action='store_true', help='Get box statistics.')
+    parser.add_argument('--common', default=False, action='store_true', help='use common class or not.')
     args = parser.parse_args()
-
+    common_whitelist = ['bed', 'table', 'sofa', 'chair', 'toilet', 'desk', 'dresser', 'night_stand', 'bookshelf',
+                        'bathtub']
+    uncommon_whitelist = ['wall', 'floor', 'cabinet', 'door', 'window', 'picture', 'counter', 'blinds', 'shelves', 'curtain', 'pillow',
+                          'mirror', 'floor_mat', 'clothes', 'ceiling', 'books', 'fridge', 'tv', 'paper', 'towel',
+                          'shower_curtain', 'box', 'whiteboard', 'person', 'sink', 'lamp', 'bag' ]
+    if args.common:
+        whitelist = common_whitelist
+    else:
+        whitelist = uncommon_whitelist
     if args.viz:
         data_viz(os.path.join(BASE_DIR, 'sunrgbd_trainval'))
         exit()
@@ -417,16 +422,18 @@ if __name__ == '__main__':
     if args.compute_median_size:
         get_box3d_dim_statistics(os.path.join(BASE_DIR, 'sunrgbd_trainval/train_data_idx.txt'))
         exit()
-
+    if args.dim_stat:
+        get_box3d_dim_statistics(os.path.join(BASE_DIR, 'sunrgbd_trainval/train_data_idx.txt'),
+                                 type_whitelist=whitelist, save_path=None)
     if args.gen_v1_data:
         extract_sunrgbd_data(os.path.join(BASE_DIR, 'sunrgbd_trainval/train_data_idx.txt'),
-                             split='training',
+                             split='training', type_whitelist=whitelist,
                              output_folder=os.path.join(BASE_DIR, 'sunrgbd_pc_bbox_votes_50k_v1_train'),
                              save_votes=True, num_point=20000, use_v1=True, skip_empty_scene=False)
         extract_sunrgbd_data(os.path.join(BASE_DIR, 'sunrgbd_trainval/val_data_idx.txt'),
-                             split='training',
+                             split='training', type_whitelist=whitelist,
                              output_folder=os.path.join(BASE_DIR, 'sunrgbd_pc_bbox_votes_50k_v1_val'),
-                             save_votes=True, num_point=20000, use_v1=True, skip_empty_scene=False)
+                             save_votes=True, num_point=20000, use_v1=True, skip_empty_scene=False,)
 
     if args.gen_v2_data:
         extract_sunrgbd_data(os.path.join(BASE_DIR, 'sunrgbd_trainval/train_data_idx.txt'),
