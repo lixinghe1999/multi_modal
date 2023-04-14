@@ -14,18 +14,17 @@ Note: removed basis loading.
 '''
 import numpy as np
 import cv2
-import os
 import scipy.io as sio  # to load .mat files for depth points
 
 # type2class = {'bed': 0, 'table': 1, 'sofa': 2, 'chair': 3, 'toilet': 4, 'desk': 5, 'dresser': 6, 'night_stand': 7,
 #               'bookshelf': 8, 'bathtub': 9}
-type2class = {'bag': 0, 'blinds': 1,'books': 2, 'box': 3,
-                               'cabinet': 4, 'clothes': 5, 'counter': 6, 'curtain': 7,
-                               'door': 8, 'fridge': 9, 'lamp': 10,
-                               'mirror': 11, 'paper': 12, 'person': 13,
-                               'picture': 14, 'pillow': 15, 'shower_curtain': 16,
-                               'sink': 17, 'towel': 18, 'tv': 19, 'whiteboard': 20, 'window': 21}
-class2type = {type2class[t]: t for t in type2class}
+# type2class = {'bag': 0, 'blinds': 1,'books': 2, 'box': 3,
+#                                'cabinet': 4, 'clothes': 5, 'counter': 6, 'curtain': 7,
+#                                'door': 8, 'fridge': 9, 'lamp': 10,
+#                                'mirror': 11, 'paper': 12, 'person': 13,
+#                                'picture': 14, 'pillow': 15, 'shower_curtain': 16,
+#                                'sink': 17, 'towel': 18, 'tv': 19, 'whiteboard': 20, 'window': 21}
+# class2type = {type2class[t]: t for t in type2class}
 
 
 def flip_axis_to_camera(pc):
