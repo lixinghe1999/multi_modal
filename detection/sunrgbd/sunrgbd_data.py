@@ -24,7 +24,6 @@ from PIL import Image
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR)
 sys.path.append(os.path.join(BASE_DIR, '../utils/'))
-import pickle
 import pc_util
 import sunrgbd_utils
 DEFAULT_TYPE_WHITELIST = ['bed', 'table', 'sofa', 'chair', 'toilet', 'desk', 'dresser', 'night_stand', 'bookshelf', 'bathtub']
@@ -204,7 +203,7 @@ def extract_sunrgbd_data(idx_filename, split, output_folder, num_point=20000,
     all_obbs = []
     all_pc_upright_depth_subsampled = []
     all_point_votes = []
-    for data_idx in data_idx_list:
+    for data_idx in tqdm(data_idx_list):
         # print('------------- ', data_idx)
         objects = dataset.get_label_objects(data_idx)
 
@@ -228,7 +227,7 @@ def extract_sunrgbd_data(idx_filename, split, output_folder, num_point=20000,
             obbs = np.zeros((0, 8))
         else:
             obbs = np.vstack(object_list)  # (K,8)
-        print(f"{data_idx} has {obbs.shape[0]} gt bboxes")
+        # print(f"{data_idx} has {obbs.shape[0]} gt bboxes")
 
         pc_upright_depth = dataset.get_depth(data_idx)
         pc_upright_depth_subsampled = pc_util.random_sampling(pc_upright_depth, num_point)
@@ -319,7 +318,7 @@ def extract_sunrgbd_data(idx_filename, split, output_folder, num_point=20000,
                 assert point_votes[ip, 11] == -1, "error"
                 assert point_votes[ip, 12] == -1, "error"
 
-        print(f"{data_idx}_votes.npz has {i_obj} gt bboxes")
+        # print(f"{data_idx}_votes.npz has {i_obj} gt bboxes")
         np.savez_compressed(os.path.join(output_folder, '%06d_votes.npz' % (data_idx)),
                             point_votes=point_votes)
         # with open(os.path.join(output_folder, '%06d_votes.pkl' % (data_idx)), 'wb') as f:
