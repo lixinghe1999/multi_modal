@@ -343,7 +343,7 @@ def get_box3d_dim_statistics(idx_filename,
     from collections import Counter
     counter = Counter(type_list)
     # box3d_pts = np.vstack(dimension_list)
-    for class_type in counter.keys()[:20]:
+    for class_type in list(counter.keys())[:20]:
         cnt = 0
         box3d_list = []
         for i in range(len(dimension_list)):
