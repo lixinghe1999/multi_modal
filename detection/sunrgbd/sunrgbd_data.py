@@ -340,8 +340,10 @@ def get_box3d_dim_statistics(idx_filename,
             type_list.append(obj.classname)
             ry_list.append(heading_angle)
     # Get average box size for different catgories
-    box3d_pts = np.vstack(dimension_list)
-    for class_type in sorted(set(type_list)):
+    from collections import Counter
+    counter = Counter(type_list)
+    # box3d_pts = np.vstack(dimension_list)
+    for class_type in counter.keys()[:20]:
         cnt = 0
         box3d_list = []
         for i in range(len(dimension_list)):
@@ -349,10 +351,9 @@ def get_box3d_dim_statistics(idx_filename,
                 cnt += 1
                 box3d_list.append(dimension_list[i])
         median_box3d = np.median(box3d_list, 0)
-        # print("\'%s\': np.array([%f,%f,%f])," % \
-        #       (class_type, median_box3d[0] * 2, median_box3d[1] * 2, median_box3d[2] * 2))
-    from collections import Counter
-    print(Counter(type_list))
+        print("\'%s\': np.array([%f,%f,%f])," % \
+              (class_type, median_box3d[0] * 2, median_box3d[1] * 2, median_box3d[2] * 2))
+
 
 if __name__ == '__main__':
 
