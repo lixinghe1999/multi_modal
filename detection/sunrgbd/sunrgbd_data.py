@@ -222,7 +222,7 @@ def extract_sunrgbd_data(idx_filename, split, output_folder, num_point=20000,
             # neither do we flip the heading angle
             obb[3:6] = np.array([obj.l, obj.w, obj.h])
             obb[6] = obj.heading_angle
-            obb[7] = sunrgbd_utils.type2class[obj.classname]
+            obb[7] = type2class[obj.classname]
             object_list.append(obb)
         if len(object_list) == 0:
             obbs = np.zeros((0, 8))
