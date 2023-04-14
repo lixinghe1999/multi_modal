@@ -349,9 +349,10 @@ def get_box3d_dim_statistics(idx_filename,
                 cnt += 1
                 box3d_list.append(dimension_list[i])
         median_box3d = np.median(box3d_list, 0)
-        print("\'%s\': np.array([%f,%f,%f])," % \
-              (class_type, median_box3d[0] * 2, median_box3d[1] * 2, median_box3d[2] * 2))
-
+        # print("\'%s\': np.array([%f,%f,%f])," % \
+        #       (class_type, median_box3d[0] * 2, median_box3d[1] * 2, median_box3d[2] * 2))
+    from collections import Counter
+    print(Counter(type_list))
 
 if __name__ == '__main__':
 
