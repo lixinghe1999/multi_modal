@@ -333,7 +333,9 @@ def get_box3d_dim_statistics(idx_filename,
         objects = dataset.get_label_objects(data_idx)
         for obj_idx in range(len(objects)):
             obj = objects[obj_idx]
-            # if obj.classname not in type_whitelist: continue
+            if type_whitelist is None:
+                pass
+            elif obj.classname not in type_whitelist: continue
             # if obj.classname in type_whitelist: continue
             heading_angle = -1 * np.arctan2(obj.orientation[1], obj.orientation[0])
             dimension_list.append(np.array([obj.l, obj.w, obj.h]))
@@ -343,7 +345,11 @@ def get_box3d_dim_statistics(idx_filename,
     from collections import Counter
     counter = Counter(type_list)
     # box3d_pts = np.vstack(dimension_list)
-    for class_type in list(counter.keys())[:20]:
+    if type_whitelist is None:
+        classes = list(counter.keys())[:20]
+    else:
+        classes = sorted(set(type_list))
+    for class_type in classes:
         cnt = 0
         box3d_list = []
         for i in range(len(dimension_list)):
@@ -353,7 +359,7 @@ def get_box3d_dim_statistics(idx_filename,
         median_box3d = np.median(box3d_list, 0)
         print("\'%s\': np.array([%f,%f,%f])," % \
               (class_type, median_box3d[0] * 2, median_box3d[1] * 2, median_box3d[2] * 2))
-
+    return classes
 
 if __name__ == '__main__':
 
@@ -364,23 +370,19 @@ if __name__ == '__main__':
                         help='Compute median 3D bounding box sizes for each class.')
     parser.add_argument('--gen_v1_data', action='store_true', help='Generate V1 dataset.')
     parser.add_argument('--gen_v2_data', action='store_true', help='Generate V2 dataset.')
-    parser.add_argument('--common', default=False, action='store_true', help='use common class or not.')
+    parser.add_argument('--common', default=True, action='store_true', help='use common class or not.')
     args = parser.parse_args()
     common_whitelist = ['bed', 'table', 'sofa', 'chair', 'toilet', 'desk', 'dresser', 'night_stand', 'bookshelf',
                         'bathtub']
-    uncommon_whitelist = ['wall', 'floor', 'cabinet', 'door', 'window', 'picture', 'counter', 'blinds', 'shelves', 'curtain', 'pillow',
-                          'mirror', 'floor_mat', 'clothes', 'ceiling', 'books', 'fridge', 'tv', 'paper', 'towel',
-                          'shower_curtain', 'box', 'whiteboard', 'person', 'sink', 'lamp', 'bag']
     if args.common:
         whitelist = common_whitelist
     else:
-        whitelist = uncommon_whitelist
+        whitelist = get_box3d_dim_statistics(os.path.join(BASE_DIR, 'sunrgbd_trainval/train_data_idx.txt'),
+                                 type_whitelist=None)
+    print(whitelist)
+
     if args.viz:
         data_viz(os.path.join(BASE_DIR, 'sunrgbd_trainval'))
-        exit()
-    if args.compute_median_size:
-        get_box3d_dim_statistics(os.path.join(BASE_DIR, 'sunrgbd_trainval/train_data_idx.txt'),
-                                 type_whitelist=whitelist)
         exit()
     if args.gen_v1_data:
         fname = '_common' if args.common else '_uncommon'
