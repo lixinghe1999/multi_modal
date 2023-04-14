@@ -354,7 +354,7 @@ def extract_sunrgbd_data(idx_filename, split, output_folder, num_point=20000,
 
 def get_box3d_dim_statistics(idx_filename,
                              type_whitelist=DEFAULT_TYPE_WHITELIST,
-                             save_path=None):
+                             ):
     """ Collect 3D bounding box statistics.
     Used for computing mean box sizes. """
     dataset = sunrgbd_object('./sunrgbd_trainval')
@@ -374,13 +374,7 @@ def get_box3d_dim_statistics(idx_filename,
             dimension_list.append(np.array([obj.l, obj.w, obj.h]))
             type_list.append(obj.classname)
             ry_list.append(heading_angle)
-
-    if save_path is not None:
-        with open(save_path, 'wb') as fp:
-            pickle.dump(type_list, fp)
-            pickle.dump(dimension_list, fp)
-            pickle.dump(ry_list, fp)
-
+    print(set(type_list), len(set(type_list)))
     # Get average box size for different catgories
     box3d_pts = np.vstack(dimension_list)
     for class_type in sorted(set(type_list)):
@@ -420,7 +414,7 @@ if __name__ == '__main__':
         exit()
     if args.compute_median_size:
         get_box3d_dim_statistics(os.path.join(BASE_DIR, 'sunrgbd_trainval/train_data_idx.txt'),
-                                 type_whitelist=whitelist, save_path='stat.txt')
+                                 type_whitelist=whitelist)
         exit()
     if args.gen_v1_data:
         fname = '_common' if args.common else '_uncommon'
