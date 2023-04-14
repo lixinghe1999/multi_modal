@@ -174,7 +174,7 @@ def data_viz(data_dir, dump_dir=os.path.join(BASE_DIR, 'data_viz_dump')):
 
 def extract_sunrgbd_data(idx_filename, split, output_folder, num_point=20000,
                          type_whitelist=DEFAULT_TYPE_WHITELIST,
-                         save_votes=False, use_v1=False, skip_empty_scene=True):
+                         save_votes=False, use_v1=False, skip_empty_scene=True, type2class=None):
     """ Extract scene point clouds and 
     bounding boxes (centroids, box sizes, heading angles, semantic classes).
     Dumped point clouds and boxes are in upright depth coord.
@@ -378,7 +378,7 @@ if __name__ == '__main__':
         whitelist = get_box3d_dim_statistics(os.path.join(BASE_DIR, 'sunrgbd_trainval/train_data_idx.txt'),
                                  type_whitelist=None)
     print(whitelist)
-
+    type2class = {t: i for i, t in enumerate(whitelist)}
     if args.viz:
         data_viz(os.path.join(BASE_DIR, 'sunrgbd_trainval'))
         exit()
@@ -387,11 +387,11 @@ if __name__ == '__main__':
         extract_sunrgbd_data(os.path.join(BASE_DIR, 'sunrgbd_trainval/train_data_idx.txt'),
                              split='training', type_whitelist=whitelist,
                              output_folder=os.path.join(BASE_DIR, 'sunrgbd_pc_bbox_votes_50k_v1_train' + fname),
-                             save_votes=True, num_point=20000, use_v1=True, skip_empty_scene=False)
+                             save_votes=True, num_point=20000, use_v1=True, skip_empty_scene=False, type2class=type2class)
         extract_sunrgbd_data(os.path.join(BASE_DIR, 'sunrgbd_trainval/val_data_idx.txt'),
                              split='training', type_whitelist=whitelist,
                              output_folder=os.path.join(BASE_DIR, 'sunrgbd_pc_bbox_votes_50k_v1_val' + fname),
-                             save_votes=True, num_point=20000, use_v1=True, skip_empty_scene=False,)
+                             save_votes=True, num_point=20000, use_v1=True, skip_empty_scene=False, type2class=type2class)
 
     if args.gen_v2_data:
         extract_sunrgbd_data(os.path.join(BASE_DIR, 'sunrgbd_trainval/train_data_idx.txt'),
