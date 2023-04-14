@@ -239,14 +239,6 @@ def extract_sunrgbd_data(idx_filename, split, output_folder, num_point=20000,
                             pc=pc_upright_depth_subsampled)
         np.save(os.path.join(output_folder, '%06d_bbox.npy' % (data_idx)), obbs)
 
-        # pickle save
-        # with open(os.path.join(output_folder, '%06d_pc.pkl' % (data_idx)), 'wb') as f:
-        #     pickle.dump(pc_upright_depth_subsampled, f)
-        #     print(f"{os.path.join(output_folder, '%06d_pc.pkl' % (data_idx))} saved successfully !!")
-        # with open(os.path.join(output_folder, '%06d_bbox.pkl' % (data_idx)), 'wb') as f:
-        #     pickle.dump(obbs, f)
-        #     print(f"{os.path.join(output_folder, '%06d_bbox.pkl' % (data_idx))} saved successfully !!")
-        # add to collection
         all_pc_upright_depth_subsampled.append(pc_upright_depth_subsampled)
         all_obbs.append(obbs)
 
@@ -333,7 +325,7 @@ def get_box3d_dim_statistics(idx_filename,
                              ):
     """ Collect 3D bounding box statistics.
     Used for computing mean box sizes. """
-    dataset = sunrgbd_object('./sunrgbd_trainval')
+    dataset = sunrgbd_object('./sunrgbd_trainval', use_v1=True)
     dimension_list = []
     type_list = []
     ry_list = []
