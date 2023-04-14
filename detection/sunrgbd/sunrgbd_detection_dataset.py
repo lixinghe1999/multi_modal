@@ -62,21 +62,6 @@ class SunrgbdDetectionVotesDataset(Dataset):
             self.data_path = os.path.join(data_root, f'sunrgbd/sunrgbd_pc_bbox_votes_50k_v2_{split_set}')
         self.data = [line.rstrip().zfill(6) for line in open(f'sunrgbd/sunrgbd_trainval/{split_set}_data_idx.txt')]
 
-        # pickle_filename = os.path.join(self.data_path, 'all_obbs_modified_nearest_has_empty.pkl')
-        # with open(pickle_filename, 'rb') as f:
-        #     self.bboxes_list = pickle.load(f)
-        # print(f"{pickle_filename} loaded successfully !!!")
-        #
-        # pickle_filename = os.path.join(self.data_path, 'all_pc_modified_nearest_has_empty.pkl')
-        # with open(pickle_filename, 'rb') as f:
-        #     self.point_cloud_list = pickle.load(f)
-        # print(f"{pickle_filename} loaded successfully !!!")
-        #
-        # pickle_filename = os.path.join(self.data_path, 'all_point_labels_nearest_has_empty.pkl')
-        # with open(pickle_filename, 'rb') as f:
-        #     self.point_labels_list = pickle.load(f)
-        # print(f"{pickle_filename} loaded successfully !!!")
-
     def __len__(self):
         return len(self.data)
 

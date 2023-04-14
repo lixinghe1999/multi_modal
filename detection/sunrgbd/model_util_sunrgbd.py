@@ -93,23 +93,19 @@ class SunrgbdDatasetConfig_Uncommon(object):
         self.num_size_cluster = self.num_class
 
         self.type2class = {'bag': 0, 'blinds': 1,'books': 2, 'box': 3,
-                               'cabinet': 4, 'counter': 5, 'curtain': 6,
-                               'door': 7, 'fridge': 8, 'lamp': 9,
-                               'mirror': 10, 'paper': 11, 'person': 12,
-                               'picture': 13, 'pillow': 14, 'shower_curtain': 15,
-                               'sink': 16, 'towel': 17, 'tv': 18, 'whiteboard': 19, 'window': 20}
+                               'cabinet': 4, 'clothes': 5, 'counter': 6, 'curtain': 7,
+                               'door': 8, 'fridge': 9, 'lamp': 10,
+                               'mirror': 11, 'paper': 12, 'person': 13,
+                               'picture': 14, 'pillow': 15, 'shower_curtain': 16,
+                               'sink': 17, 'towel': 18, 'tv': 19, 'whiteboard': 20, 'window': 21}
         self.class2type = {self.type2class[t]: t for t in self.type2class}
-        self.type2onehotclass = {'bag': 0, 'blinds': 1,'books': 2, 'box': 3,
-                               'cabinet': 4, 'counter': 5, 'curtain': 6,
-                               'door': 7, 'fridge': 8, 'lamp': 9,
-                               'mirror': 10, 'paper': 11, 'person': 12,
-                               'picture': 13, 'pillow': 14, 'shower_curtain': 15,
-                               'sink': 16, 'towel': 17, 'tv': 18, 'whiteboard': 19, 'window': 20}
+        self.type2onehotclass = self.type2class
         self.type_mean_size = {'bag': np.array([0.355188, 0.378856, 0.346023]),
                                'blinds': np.array([0.151844, 0.967588, 1.358532]),
                                'books': np.array([0.287604, 0.295896, 0.205587]),
                                'box': np.array([0.351994, 0.364480, 0.309092]),
                                'cabinet': np.array([0.571631, 1.214407, 0.963636]),
+                               'clothes': np.array([0.378322, 0.453536, 0.345454]),
                                'counter': np.array([0.760644, 2.236330, 0.850000]),
                                'curtain': np.array([0.257625, 0.711000, 1.659091]),
                                'door': np.array([0.160932, 0.690090, 1.880588]),
