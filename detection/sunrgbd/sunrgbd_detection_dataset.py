@@ -33,9 +33,10 @@ sys.path.append(BASE_DIR)
 sys.path.append(os.path.join(ROOT_DIR, 'utils'))
 import pc_util
 import sunrgbd_utils
-from model_util_sunrgbd import SunrgbdDatasetConfig
+from model_util_sunrgbd import SunrgbdDatasetConfig, SunrgbdDatasetConfig_All
 
-DC = SunrgbdDatasetConfig()  # dataset specific config
+# DC = SunrgbdDatasetConfig()  # dataset specific config
+DC = SunrgbdDatasetConfig_All()
 MAX_NUM_OBJ = 64  # maximum number of objects allowed per scene
 MEAN_COLOR_RGB = np.array([0.5, 0.5, 0.5])  # sunrgbd color is in 0~1
 
