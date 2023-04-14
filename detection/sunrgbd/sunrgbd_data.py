@@ -362,15 +362,13 @@ def get_box3d_dim_statistics(idx_filename,
     return classes
 
 if __name__ == '__main__':
-
-
     parser = argparse.ArgumentParser()
     parser.add_argument('--viz', action='store_true', help='Run data visualization.')
     parser.add_argument('--compute_median_size', action='store_true',
                         help='Compute median 3D bounding box sizes for each class.')
     parser.add_argument('--gen_v1_data', action='store_true', help='Generate V1 dataset.')
     parser.add_argument('--gen_v2_data', action='store_true', help='Generate V2 dataset.')
-    parser.add_argument('--common', default=True, action='store_true', help='use common class or not.')
+    parser.add_argument('--common', default=False, action='store_true', help='use common class or not.')
     args = parser.parse_args()
     common_whitelist = ['bed', 'table', 'sofa', 'chair', 'toilet', 'desk', 'dresser', 'night_stand', 'bookshelf',
                         'bathtub']
