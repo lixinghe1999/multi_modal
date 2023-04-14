@@ -420,7 +420,7 @@ if __name__ == '__main__':
         exit()
     if args.compute_median_size:
         get_box3d_dim_statistics(os.path.join(BASE_DIR, 'sunrgbd_trainval/train_data_idx.txt'),
-                                 type_whitelist=whitelist, save_path='.')
+                                 type_whitelist=whitelist, save_path='stat.txt')
         exit()
     if args.gen_v1_data:
         fname = '_common' if args.common else '_uncommon'
