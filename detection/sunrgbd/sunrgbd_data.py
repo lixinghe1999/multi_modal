@@ -345,7 +345,7 @@ def get_box3d_dim_statistics(idx_filename,
     from collections import Counter
     counter = Counter(type_list)
     # box3d_pts = np.vstack(dimension_list)
-    print(counter.keys())
+    print(counter)
     if type_whitelist is None:
         classes = list(counter.keys())[:20]
     else:
