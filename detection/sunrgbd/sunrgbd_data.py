@@ -342,12 +342,11 @@ def get_box3d_dim_statistics(idx_filename,
             type_list.append(obj.classname)
             ry_list.append(heading_angle)
     # Get average box size for different catgories
-    from collections import Counter
-    counter = Counter(type_list)
-    # box3d_pts = np.vstack(dimension_list)
-    print(counter.most_common(20))
+
     if type_whitelist is None:
-        classes = list(counter.keys())[:20]
+        from collections import Counter
+        counter = Counter(type_list)
+        classes = [k for k, v in counter.most_common(20)]
     else:
         classes = sorted(set(type_list))
     for class_type in classes:
