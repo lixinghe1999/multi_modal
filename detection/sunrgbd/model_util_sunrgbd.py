@@ -86,42 +86,37 @@ class SunrgbdDatasetConfig(object):
         obb[6] = heading_angle * -1
         return obb
 
-class SunrgbdDatasetConfig_Uncommon(object):
+class SunrgbdDatasetConfig_All(object):
     def __init__(self):
-        self.num_class = 21
+        self.num_class = 20
         self.num_heading_bin = 12
         self.num_size_cluster = self.num_class
 
-        self.type2class = {'bag': 0, 'blinds': 1,'books': 2, 'box': 3,
-                               'cabinet': 4, 'clothes': 5, 'counter': 6, 'curtain': 7,
-                               'door': 8, 'fridge': 9, 'lamp': 10,
-                               'mirror': 11, 'paper': 12, 'person': 13,
-                               'picture': 14, 'pillow': 15, 'shower_curtain': 16,
-                               'sink': 17, 'towel': 18, 'tv': 19, 'whiteboard': 20, 'window': 21}
+        self.type2class = ['chair', 'table', 'pillow', 'sofa_chair', 'desk', 'bed', 'sofa', 'computer', 'lamp', 'box', 'garbage_bin', 'cabinet', 'shelf', 'drawer', 'night_stand', 'endtable', 'sink', 'picture', 'stool', 'coffee_table']
+        self.type2class = {t: i for i, t in enumerate(self.type2class)}
         self.class2type = {self.type2class[t]: t for t in self.type2class}
         self.type2onehotclass = self.type2class
-        self.type_mean_size = {'bag': np.array([0.355188, 0.378856, 0.346023]),
-                               'blinds': np.array([0.151844, 0.967588, 1.358532]),
-                               'books': np.array([0.287604, 0.295896, 0.205587]),
-                               'box': np.array([0.351994, 0.364480, 0.309092]),
-                               'cabinet': np.array([0.571631, 1.214407, 0.963636]),
-                               'clothes': np.array([0.378322, 0.453536, 0.345454]),
-                               'counter': np.array([0.760644, 2.236330, 0.850000]),
-                               'curtain': np.array([0.257625, 0.711000, 1.659091]),
-                               'door': np.array([0.160932, 0.690090, 1.880588]),
-                               'fridge': np.array([0.732086, 0.754600, 1.650000]),
-                               'lamp': np.array([0.367022, 0.379614, 0.690910]),
-                               'mirror': np.array([0.140872, 0.706094, 0.990909]),
-                               'paper': np.array([0.238536, 0.245622, 0.090910]),
-                               'person': np.array([0.551934, 0.630834, 1.218182]),
-                               'picture': np.array([0.118182, 0.455344, 0.472728]),
-                               'pillow': np.array([0.355497, 0.560770, 0.318182]),
-                               'shower_curtain': np.array([0.243048, 0.415382, 1.154546]),
-                               'sink': np.array([0.502248, 0.599351, 0.457344]),
-                               'towel': np.array([0.197596, 0.313472, 0.350000]),
-                               'tv': np.array([0.248484, 0.800022, 0.608334]),
-                               'whiteboard': np.array([0.140555, 1.654753, 1.045454]),
-                               'window': np.array([0.138318, 1.854300, 1.009090])}
+        self.type_mean_size = { 'chair': np.array([0.592329, 0.552978,0.827272]),
+                                'table': np.array([0.792666, 1.285808,0.718182]),
+                                'pillow': np.array([0.355497, 0.560770,0.318182]),
+                                'sofa_chair': np.array([0.799942,0.821809,0.817198]),
+                                'desk': np.array([0.688260, 1.337694,0.737500]),
+                                'bed': np.array([2.115816,1.621716,0.936364]),
+                                'sofa': np.array([0.924369,1.875018,0.847046]),
+                                'computer': np.array([0.238767,0.550631,0.454546]),
+                                'lamp': np.array([0.367022,0.379614,0.690910]),
+                                'box': np.array([0.351994,0.364480,0.309092]),
+                                'garbage_bin': np.array([0.355302,0.384932,0.550000]),
+                                'cabinet': np.array([0.571631,1.214407,0.963636]),
+                                'shelf': np.array([0.400202,1.099678,0.995455]),
+                                'drawer': np.array([0.545454,0.641438,0.718182]),
+                                'night_stand': np.array([0.500408,0.630492,0.687500]),
+                                'endtable': np.array([0.578185,0.583308,0.563636]),
+                                'sink': np.array([0.502248,0.599351,0.457344]),
+                                'picture': np.array([0.118182,0.455344,0.472728]),
+                                'stool': np.array([0.409797,0.411632,0.681818]),
+                                'coffee_table': np.array([0.658711,1.129151,0.459379]),
+                                                        }
         self.mean_size_arr = np.zeros((self.num_size_cluster, 3))
         for i in range(self.num_size_cluster):
             self.mean_size_arr[i, :] = self.type_mean_size[self.class2type[i]]

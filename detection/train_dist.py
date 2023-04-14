@@ -153,16 +153,17 @@ def get_loader(args):
     # Create Dataset and Dataloader
     if args.dataset == 'sunrgbd':
         from sunrgbd.sunrgbd_detection_dataset import SunrgbdDetectionVotesDataset
-        from sunrgbd.model_util_sunrgbd import SunrgbdDatasetConfig
+        from sunrgbd.model_util_sunrgbd import SunrgbdDatasetConfig, SunrgbdDatasetConfig_All
 
-        DATASET_CONFIG = SunrgbdDatasetConfig()
-        TRAIN_DATASET = SunrgbdDetectionVotesDataset('train', num_points=args.num_point,
+        # DATASET_CONFIG = SunrgbdDatasetConfig()
+        DATASET_CONFIG = SunrgbdDatasetConfig_All()
+        TRAIN_DATASET = SunrgbdDetectionVotesDataset('train_all', num_points=args.num_point,
                                                      augment=True,
                                                      use_color=True if args.use_color else False,
                                                      use_height=True if args.use_height else False,
                                                      use_v1=(not args.use_sunrgbd_v2),
                                                      data_root=args.data_root)
-        TEST_DATASET = SunrgbdDetectionVotesDataset('val', num_points=args.num_point,
+        TEST_DATASET = SunrgbdDetectionVotesDataset('val_all', num_points=args.num_point,
                                                     augment=False,
                                                     use_color=True if args.use_color else False,
                                                     use_height=True if args.use_height else False,

@@ -383,7 +383,7 @@ if __name__ == '__main__':
         data_viz(os.path.join(BASE_DIR, 'sunrgbd_trainval'))
         exit()
     if args.gen_v1_data:
-        fname = '_common' if args.common else '_uncommon'
+        fname = '_common' if args.common else '_all'
         extract_sunrgbd_data(os.path.join(BASE_DIR, 'sunrgbd_trainval/train_data_idx.txt'),
                              split='training', type_whitelist=whitelist,
                              output_folder=os.path.join(BASE_DIR, 'sunrgbd_pc_bbox_votes_50k_v1_train' + fname),
