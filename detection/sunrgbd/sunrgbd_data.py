@@ -205,7 +205,7 @@ def extract_sunrgbd_data(idx_filename, split, output_folder, num_point=20000,
     all_pc_upright_depth_subsampled = []
     all_point_votes = []
     for data_idx in data_idx_list:
-        print('------------- ', data_idx)
+        # print('------------- ', data_idx)
         objects = dataset.get_label_objects(data_idx)
 
         # Skip scenes with 0 object
@@ -420,7 +420,7 @@ if __name__ == '__main__':
         exit()
     if args.compute_median_size:
         get_box3d_dim_statistics(os.path.join(BASE_DIR, 'sunrgbd_trainval/train_data_idx.txt'),
-                                 type_whitelist=whitelist,)
+                                 type_whitelist=whitelist, save_path='.')
         exit()
     if args.gen_v1_data:
         fname = '_common' if args.common else '_uncommon'
