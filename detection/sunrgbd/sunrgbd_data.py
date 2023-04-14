@@ -323,7 +323,7 @@ def get_box3d_dim_statistics(idx_filename,
                              ):
     """ Collect 3D bounding box statistics.
     Used for computing mean box sizes. """
-    dataset = sunrgbd_object('./sunrgbd_trainval', use_v1=True)
+    dataset = sunrgbd_object('./sunrgbd_trainval', use_v1=False)
     dimension_list = []
     type_list = []
     ry_list = []
