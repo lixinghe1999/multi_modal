@@ -60,6 +60,7 @@ class SunrgbdDetectionVotesDataset(Dataset):
             self.data_path = os.path.join(data_root, f'sunrgbd/sunrgbd_pc_bbox_votes_50k_v1_{split_set}')
         else:
             self.data_path = os.path.join(data_root, f'sunrgbd/sunrgbd_pc_bbox_votes_50k_v2_{split_set}')
+        split_set = split_set.split('_')[0]
         self.data = [line.rstrip().zfill(6) for line in open(f'sunrgbd/sunrgbd_trainval/{split_set}_data_idx.txt')]
 
     def __len__(self):
