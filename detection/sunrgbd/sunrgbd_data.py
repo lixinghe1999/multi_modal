@@ -336,8 +336,6 @@ def get_box3d_dim_statistics(idx_filename,
         objects = dataset.get_label_objects(data_idx)
         for obj_idx in range(len(objects)):
             obj = objects[obj_idx]
-            if obj.classname == 'clothes':
-                print('get one')
             if obj.classname not in type_whitelist: continue
             heading_angle = -1 * np.arctan2(obj.orientation[1], obj.orientation[0])
             dimension_list.append(np.array([obj.l, obj.w, obj.h]))
