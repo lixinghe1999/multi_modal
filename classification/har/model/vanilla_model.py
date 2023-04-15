@@ -60,6 +60,7 @@ class HARnet(nn.Module):
     def forward(self, depth, radar, imu):
         feat = []
         for x, branch in zip((depth, radar, imu), self.branch):
+            print(x.shape)
             x = branch.preproces(x)
             x, mask, decisions = self.main_stage(x)
             x, featmap = self.final(x, mask)
