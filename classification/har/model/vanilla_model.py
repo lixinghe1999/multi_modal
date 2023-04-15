@@ -66,5 +66,5 @@ class HARnet(nn.Module):
             x, featmap = branch.final(x, mask)
             print(x.shape)
             feat.append(x)
-        output = self.head(torch.cat(feat))
+        output = self.head(torch.cat(feat, dim=-1))
         return output
