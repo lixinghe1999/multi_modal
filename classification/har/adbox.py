@@ -18,7 +18,6 @@ class ADBox(td.Dataset):
         imu = pd.read_csv(self.data_root + '/imu/' + file + '.csv').to_numpy()[:, :-1]
         label = self.label[index]
         print(depth.shape, radar.shape, imu.shape)
-        print(type(depth), type(radar), type(imu))
         return depth, radar, imu, label
 
     def __len__(self) -> int:

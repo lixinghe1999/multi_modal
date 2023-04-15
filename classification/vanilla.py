@@ -54,14 +54,17 @@ def train(model, train_dataset, test_dataset):
         acc = []
         with torch.no_grad():
             for batch in tqdm(test_loader):
-                audio, image, text, _ = batch
-                if args.task == 'AV' or args.task == 'early':
-                    predict = model(audio.to(device), image.to(device))
-                elif args.task == 'A':
-                    predict = model(audio.to(device))
+                if args.task == 'vggsound':
+                    if args.modal == 'AV':
+                        input_data = (batch[0].to(device), batch[1].to(device))
+                    elif args.modal == 'A':
+                        input_data = (batch[0].to(device))
+                    else:
+                        input_data = (batch[1].to(device))
                 else:
-                    predict = model(image.to(device))
-                acc.append((torch.argmax(predict, dim=-1).cpu() == text).sum() / len(text))
+                    input_data = (batch[0].to(device), batch[1].to(device), batch[2].to(device))
+                predict = model(*input_data)
+                acc.append((torch.argmax(predict, dim=-1).cpu() == batch[-1]).sum() / len(batch[-1]))
         print('epoch', epoch, np.mean(acc))
         if np.mean(acc) > best_acc:
             best_acc = np.mean(acc)
@@ -72,7 +75,7 @@ if __name__ == "__main__":
     parser.add_argument('-t', '--task', default='vggsound')
     parser.add_argument('-m', '--modal', default='AV')
     parser.add_argument('-w', '--worker', default=4, type=int)
-    parser.add_argument('-b', '--batch', default=32, type=int)
+    parser.add_argument('-b', '--batch', default=4, type=int)
     args = parser.parse_args()
     workers = args.worker
     batch_size = args.batch
