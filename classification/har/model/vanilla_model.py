@@ -55,15 +55,12 @@ class HARnet(nn.Module):
     def fusion_parameter(self):
         parameter = [{'params': self.head.parameters()},]
         return parameter
-
     def forward(self, depth, radar, imu):
         feat = []
         for x, branch in zip((depth, radar, imu), self.branch):
-            print(x.shape)
             x = branch.preproces(x)
             x, mask, decisions = branch.main_stage(x)
             x, featmap = branch.final(x, mask)
-            print(x.shape)
             feat.append(x)
         output = self.head(torch.cat(feat, dim=-1))
         return output
