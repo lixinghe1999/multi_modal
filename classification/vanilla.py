@@ -111,9 +111,9 @@ if __name__ == "__main__":
     if args.task == 'adbox':
         if args.modal == 'D':
             model = AdaConvNeXt(in_chans=16, pruning_loc=[0], num_classes=14, depths=[3, 3, 27, 3]).to(device)
-            weight = torch.load('assets/convnext-s-0.7.pth')['model']
-            weight = {k: v for k, v in weight.items() if 'downsample_layers' not in k and 'head' not in k}
-            model.load_state_dict(weight, strict=False)
+            # weight = torch.load('assets/convnext-s-0.7.pth')['model']
+            # weight = {k: v for k, v in weight.items() if 'downsample_layers' not in k and 'head' not in k}
+            # model.load_state_dict(weight, strict=False)
         else:
             model = HARnet(pretrained=True).to(device)
 
