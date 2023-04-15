@@ -45,7 +45,7 @@ class HARnet(nn.Module):
         embed_dim = 768
         # image, imu, radar
         self.branch = nn.ModuleList()
-        self.branch.append(AdaConvNeXt(sparse_ratio=[0.8, 0.6, 0.4], pruning_loc=[3,6,9], num_classes=10, depths=[3, 3, 27, 3]))
+        self.branch.append(AdaConvNeXt(in_chans=16, sparse_ratio=[0.8, 0.6, 0.4], pruning_loc=[3,6,9], num_classes=10, depths=[3, 3, 27, 3]))
         self.branch.append(AdaConvNeXt(sparse_ratio=[0.8, 0.6, 0.4], pruning_loc=[3,6,9], num_classes=10, depths=[3, 3, 27, 3]))
         self.branch.append(AdaConvNeXt(sparse_ratio=[0.8, 0.6, 0.4], pruning_loc=[3,6,9], num_classes=10, depths=[3, 3, 27, 3]))
 
@@ -64,6 +64,7 @@ class HARnet(nn.Module):
             x = branch.preproces(x)
             x, mask, decisions = self.main_stage(x)
             x, featmap = self.final(x, mask)
+            print(x.shape)
             feat.append(x)
         output = self.head(torch.cat(feat))
         return output
