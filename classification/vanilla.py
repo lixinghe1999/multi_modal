@@ -47,7 +47,7 @@ def train(model, train_dataset, test_dataset):
                     input_data = (batch[1].to(device))
             else:
                 input_data = (batch[0].to(device), batch[1].to(device), batch[2].to(device))
-            step(model, input_data=(audio.to(device), image.to(device)), optimizer=optimizer,
+            step(model, input_data=input_data, optimizer=optimizer,
                         criteria=criteria, label=batch[-1].to(device))
         scheduler.step()
         model.eval()
