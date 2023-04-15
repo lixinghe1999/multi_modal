@@ -1,1 +1,1 @@
-from vanilla_model import AVnet
+from .vanilla_model import AVnet
