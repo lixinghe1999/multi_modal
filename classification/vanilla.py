@@ -101,7 +101,7 @@ if __name__ == "__main__":
         train(model, train_dataset, test_dataset)
 
     if args.task == 'adbox':
-        model = HARnet().to(device)
+        model = HARnet(pretrained=True).to(device)
         train_dataset1 = ADBox('../dataset/adbox', split='train1')
         train_dataset2 = ADBox('../dataset/adbox', split='train2')
         train_dataset = torch.utils.data.ConcatDataset([train_dataset1, train_dataset2])

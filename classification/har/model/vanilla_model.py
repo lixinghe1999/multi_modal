@@ -44,13 +44,14 @@ class HARnet(nn.Module):
         super(HARnet, self).__init__()
         # image, imu, radar
         self.branch = nn.ModuleList()
-        self.branch.append(AdaConvNeXt(in_chans=16, pruning_loc=[0], num_classes=10, depths=[3, 3, 27, 3]))
-        self.branch.append(AdaConvNeXt(in_chans=320, pruning_loc=[0],
-                                       num_classes=10, depths=[3, 3, 27, 3], down_sample=False))
-        self.branch.append(AdaConvNeXt(in_chans=15, pruning_loc=[0],
-                                       num_classes=10, depths=[3, 3, 27, 3], down_sample=False))
+        self.branch.append(AdaConvNeXt(in_chans=16, pruning_loc=[0], depths=[3, 3, 27, 3]))
+        self.branch.append(AdaConvNeXt(in_chans=320, pruning_loc=[0], depths=[3, 3, 27, 3], down_sample=False))
+        self.branch.append(AdaConvNeXt(in_chans=15, pruning_loc=[0], depths=[3, 3, 27, 3], down_sample=False))
         if pretrained:
-            pass
+            weight = torch.load('assets/convnext-s-0.7.pth')
+            weight = {k: v for k, v in weight.items() if k not in ['downsample_layers']}
+            for branch in self.branch:
+                branch.load_state_dict(weight)
         self.head = nn.Sequential(nn.Linear(768 * 3, 14))
     def fusion_parameter(self):
         parameter = [{'params': self.head.parameters()},]
