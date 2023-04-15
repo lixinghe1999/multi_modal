@@ -62,8 +62,8 @@ class HARnet(nn.Module):
         for x, branch in zip((depth, radar, imu), self.branch):
             print(x.shape)
             x = branch.preproces(x)
-            x, mask, decisions = self.main_stage(x)
-            x, featmap = self.final(x, mask)
+            x, mask, decisions = branch.main_stage(x)
+            x, featmap = branch.final(x, mask)
             print(x.shape)
             feat.append(x)
         output = self.head(torch.cat(feat))
