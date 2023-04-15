@@ -1,8 +1,8 @@
-import time
+
 import torch.nn as nn
 import torch
 from torch.cuda.amp import autocast
-from convnext_model import AdaConvNeXt
+from .convnext_model import AdaConvNeXt
 class MMTM(nn.Module):
       def __init__(self, dim_visual, dim_skeleton, ratio):
         super(MMTM, self).__init__()
