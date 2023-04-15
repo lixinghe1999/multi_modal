@@ -51,7 +51,7 @@ class HARnet(nn.Module):
             weight = torch.load('assets/convnext-s-0.7.pth')
             weight = {k: v for k, v in weight.items() if k not in ['downsample_layers']}
             for branch in self.branch:
-                branch.load_state_dict(weight)
+                branch.load_state_dict(weight, strict=False)
         self.head = nn.Sequential(nn.Linear(768 * 3, 14))
     def fusion_parameter(self):
         parameter = [{'params': self.head.parameters()},]
