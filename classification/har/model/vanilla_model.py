@@ -57,9 +57,9 @@ class HARnet(nn.Module):
         return parameter
 
     @autocast()
-    def forward(self, inputs):
+    def forward(self, depth, radar, imu):
         feat = []
-        for x, branch in zip(inputs, self.branch):
+        for x, branch in zip((depth, radar, imu), self.branch):
             x = branch.preproces(x)
             x, mask, decisions = self.main_stage(x)
             x, featmap = self.final(x, mask)
