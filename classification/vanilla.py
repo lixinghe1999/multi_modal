@@ -16,6 +16,8 @@ def step(model, input_data, optimizer, criteria, label):
     output = model(*input_data)
     # Backward
     optimizer.zero_grad()
+    if isinstance(output, tuple):
+        output = output[0]
     loss = criteria(output, label)
     loss.backward()
     optimizer.step()
