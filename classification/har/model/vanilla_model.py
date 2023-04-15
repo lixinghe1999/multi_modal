@@ -49,7 +49,7 @@ class HARnet(nn.Module):
         self.branch.append(AdaConvNeXt(in_chans=15, pruning_loc=[0], depths=[3, 3, 27, 3], down_sample=False))
         if pretrained:
             weight = torch.load('assets/convnext-s-0.7.pth')['model']
-            weight = {k: v for k, v in weight.items() if k not in ['downsample_layers']}
+            weight = {k: v for k, v in weight.items() if 'downsample_layers' not in k}
             for branch in self.branch:
                 branch.load_state_dict(weight, strict=False)
         self.head = nn.Sequential(nn.Linear(768 * 3, 14))
