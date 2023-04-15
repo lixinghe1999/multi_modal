@@ -2,8 +2,8 @@ from audio_visual.vggsound import VGGSound
 from har.adbox import ADBox
 import numpy as np
 import torch
-from audio_visual.model.vanilla_model import AVnet
-from audio_visual.model.vit_model import AudioTransformerDiffPruning, VisionTransformerDiffPruning
+from audio_visual.model import AVnet
+from audio_visual.model import AudioTransformerDiffPruning, VisionTransformerDiffPruning
 from har.model.vanilla_model import HARnet
 from har.model.convnext_model import AdaConvNeXt
 
