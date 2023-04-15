@@ -4,8 +4,8 @@ import numpy as np
 import torch
 from audio_visual.model import AVnet
 from audio_visual.model import AudioTransformerDiffPruning, VisionTransformerDiffPruning
-from har.model.vanilla_model import HARnet
-from har.model.convnext_model import AdaConvNeXt
+from har.model import HARnet
+from har.model import AdaConvNeXt
 
 import argparse
 import warnings
