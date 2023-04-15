@@ -103,10 +103,7 @@ if __name__ == "__main__":
 
     if args.task == 'adbox':
         model = HARnet().to(device)
-        dataset = ADBox('../dataset/adbox')
-        len_train = int(len(dataset) * 0.8)
-        len_test = len(dataset) - len_train
-        train_dataset, test_dataset = torch.utils.data.random_split(dataset, [len_train, len_test],
-                                                                    generator=torch.Generator().manual_seed(42))
+        train_dataset = ADBox('../dataset/adbox', split='train1')
+        test_dataset = ADBox('../dataset/adbox', split='test')
         train(model, train_dataset, test_dataset)
 
