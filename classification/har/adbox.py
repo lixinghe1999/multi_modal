@@ -9,8 +9,8 @@ class ADBox(td.Dataset):
         self.data_root = root + '/' + split
         self.files = os.listdir(self.data_root + '/depth_feature')
         self.files = [f.split('.')[0] for f in self.files]
-        self.label = [int(f[4:6]) - 1 for f in self.files]
-
+        self.label = [int(f[4:6])for f in self.files]
+        self.labelmap = {6: 0, 7:1, 12:2, 13:3, 14:4, 15:5, 17:6, 18:7, 19:8, 20:9,21:10, 22:11, 29:12, 30:13}
     def __getitem__(self, index: int):
         file = self.files[index]
         depth = np.load(self.data_root + '/depth_feature/' + file + '.npy').astype(np.float32)
@@ -18,7 +18,7 @@ class ADBox(td.Dataset):
         radar = radar[::3, ...].transpose((0, 1, 4, 2, 3)).reshape((-1, 16, 32))
         imu = pd.read_csv(self.data_root + '/imu/' + file + '.csv').to_numpy()[:, :-1].astype(np.float32)
         imu = np.abs(scipy.signal.stft(imu.transpose(1, 0), fs=100, nperseg=32, noverlap=28)[-1])
-        label = self.label[index]
+        label = self.labelmap[self.label[index]]
         return depth, radar, imu, label
 
     def __len__(self) -> int:

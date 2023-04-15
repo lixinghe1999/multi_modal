@@ -42,7 +42,6 @@ class MMTM(nn.Module):
 class HARnet(nn.Module):
     def __init__(self, pretrained=False):
         super(HARnet, self).__init__()
-        embed_dim = 768
         # image, imu, radar
         self.branch = nn.ModuleList()
         self.branch.append(AdaConvNeXt(in_chans=16, sparse_ratio=[0.8, 0.6, 0.4], pruning_loc=[3,6,9], num_classes=10, depths=[3, 3, 27, 3]))
@@ -50,10 +49,9 @@ class HARnet(nn.Module):
                                        num_classes=10, depths=[3, 3, 27, 3], down_sample=False))
         self.branch.append(AdaConvNeXt(in_chans=15, sparse_ratio=[0.8, 0.6, 0.4], pruning_loc=[3,6,9],
                                        num_classes=10, depths=[3, 3, 27, 3], down_sample=False))
-
         if pretrained:
             pass
-        self.head = nn.Sequential(nn.Linear(embed_dim * 2, 309))
+        self.head = nn.Sequential(nn.Linear(768 * 3, 14))
     def fusion_parameter(self):
         parameter = [{'params': self.head.parameters()},]
         return parameter
