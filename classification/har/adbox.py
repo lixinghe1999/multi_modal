@@ -2,7 +2,7 @@ import os
 import numpy as np
 import pandas as pd
 import torch.utils.data as td
-
+import scipy
 class ADBox(td.Dataset):
     def __init__(self, root, split='train1'):
         super(ADBox, self).__init__()
@@ -17,6 +17,7 @@ class ADBox(td.Dataset):
         radar = np.load(self.data_root + '/radar/' + file + '.npy').astype(np.float32)
         radar = radar[::3, ...].transpose((0, 1, 4, 2, 3)).reshape((-1, 16, 32))
         imu = pd.read_csv(self.data_root + '/imu/' + file + '.csv').to_numpy()[:, :-1].astype(np.float32)
+        imu = scipy.signal.stft(imu.transpose(1, 0), fs=100, nperseg=16, noverlap=8)
         label = self.label[index]
         return depth, radar, imu, label
 
