@@ -15,7 +15,7 @@ class ADBox(td.Dataset):
         file = self.files[index]
         depth = np.load(self.data_root + '/depth_feature/' + file + '.npy').astype(np.float32)
         radar = np.load(self.data_root + '/radar/' + file + '.npy').astype(np.float32)
-        radar = radar.transpose((0, 1, 4, 2, 3)).reshape((-1, 16, 32))
+        radar = radar.transpose((0, 1, 4, 2, 3)).reshape((30, -1, 16, 32))[::3, ...]
         imu = pd.read_csv(self.data_root + '/imu/' + file + '.csv').to_numpy()[:, :-1].astype(np.float32)
         label = self.label[index]
         return depth, radar, imu, label
