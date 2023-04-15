@@ -2,7 +2,7 @@ import time
 import torch.nn as nn
 import torch
 from torch.cuda.amp import autocast
-from vit_model import AudioTransformerDiffPruning, VisionTransformerDiffPruning
+from .vit_model import AudioTransformerDiffPruning, VisionTransformerDiffPruning
 class MMTM(nn.Module):
       def __init__(self, dim_visual, dim_skeleton, ratio):
         super(MMTM, self).__init__()
