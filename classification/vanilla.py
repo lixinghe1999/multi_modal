@@ -40,16 +40,16 @@ def train(model, train_dataset, test_dataset):
         for idx, batch in enumerate(tqdm(train_loader)):
             if args.task == 'vggsound':
                 if args.modal == 'AV':
-                    input_data = (batch[0].to(device), batch[1].to(device))
+                    input_data = [batch[0].to(device), batch[1].to(device)]
                 elif args.modal == 'A':
-                    input_data = (batch[0].to(device))
+                    input_data = [batch[0].to(device)]
                 else:
-                    input_data = (batch[1].to(device))
+                    input_data = [batch[1].to(device)]
             else:
                 if args.modal == 'D':
-                    input_data = (batch[0].to(device))
+                    input_data = [batch[0].to(device)]
                 else:
-                    input_data = (batch[0].to(device), batch[1].to(device), batch[2].to(device))
+                    input_data = [batch[0].to(device), batch[1].to(device), batch[2].to(device)]
             step(model, input_data=input_data, optimizer=optimizer,
                         criteria=criteria, label=batch[-1].to(device))
         scheduler.step()
@@ -59,16 +59,16 @@ def train(model, train_dataset, test_dataset):
             for batch in tqdm(test_loader):
                 if args.task == 'vggsound':
                     if args.modal == 'AV':
-                        input_data = (batch[0].to(device), batch[1].to(device))
+                        input_data = [batch[0].to(device), batch[1].to(device)]
                     elif args.modal == 'A':
-                        input_data = (batch[0].to(device))
+                        input_data = [batch[0].to(device)]
                     else:
-                        input_data = (batch[1].to(device))
+                        input_data = [batch[1].to(device)]
                 else:
                     if args.modal == 'D':
-                        input_data = (batch[0].to(device))
+                        input_data = [batch[0].to(device)]
                     else:
-                        input_data = (batch[0].to(device), batch[1].to(device), batch[2].to(device))
+                        input_data = [batch[0].to(device), batch[1].to(device), batch[2].to(device)]
                 predict = model(*input_data)
                 acc.append((torch.argmax(predict, dim=-1).cpu() == batch[-1]).sum() / len(batch[-1]))
         print('epoch', epoch, np.mean(acc))
