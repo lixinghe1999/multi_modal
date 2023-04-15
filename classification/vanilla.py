@@ -46,7 +46,10 @@ def train(model, train_dataset, test_dataset):
                 else:
                     input_data = (batch[1].to(device))
             else:
-                input_data = (batch[0].to(device), batch[1].to(device), batch[2].to(device))
+                if args.modal == 'D':
+                    input_data = (batch[0].to(device))
+                else:
+                    input_data = (batch[0].to(device), batch[1].to(device), batch[2].to(device))
             step(model, input_data=input_data, optimizer=optimizer,
                         criteria=criteria, label=batch[-1].to(device))
         scheduler.step()
@@ -62,7 +65,10 @@ def train(model, train_dataset, test_dataset):
                     else:
                         input_data = (batch[1].to(device))
                 else:
-                    input_data = (batch[0].to(device), batch[1].to(device), batch[2].to(device))
+                    if args.modal == 'D':
+                        input_data = (batch[0].to(device))
+                    else:
+                        input_data = (batch[0].to(device), batch[1].to(device), batch[2].to(device))
                 predict = model(*input_data)
                 acc.append((torch.argmax(predict, dim=-1).cpu() == batch[-1]).sum() / len(batch[-1]))
         print('epoch', epoch, np.mean(acc))
@@ -101,7 +107,11 @@ if __name__ == "__main__":
         train(model, train_dataset, test_dataset)
 
     if args.task == 'adbox':
-        model = HARnet(pretrained=True).to(device)
+        if args.modal == 'D':
+            model = AdaConvNeXt(in_chans=16, pruning_loc=[0], num_classes=14, depths=[3, 3, 27, 3])
+        else:
+            model = HARnet(pretrained=True).to(device)
+
         train_dataset1 = ADBox('../dataset/adbox', split='train1')
         train_dataset2 = ADBox('../dataset/adbox', split='train2')
         train_dataset = torch.utils.data.ConcatDataset([train_dataset1, train_dataset2])
