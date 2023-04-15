@@ -56,7 +56,6 @@ class HARnet(nn.Module):
         parameter = [{'params': self.head.parameters()},]
         return parameter
 
-    @autocast()
     def forward(self, depth, radar, imu):
         feat = []
         for x, branch in zip((depth, radar, imu), self.branch):
