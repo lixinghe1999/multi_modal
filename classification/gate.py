@@ -1,5 +1,5 @@
 import time
-from utils.datasets.vggsound import VGGSound
+from audio_visual.vggsound import VGGSound
 import numpy as np
 import torch
 from model.gate_model import AVnet_Gate, Gate_MM, Gate_SM

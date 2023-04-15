@@ -41,16 +41,6 @@ class VGGSound(td.Dataset):
                 self.class_idx_to_label[count] = row['category']
                 self.label_to_class_idx[row['category']] = count
                 count += 1
-        #     if row['category'] not in self.class_count:
-        #         self.class_count[row['category']] = [idx]
-        #     else:
-        #         self.class_count[row['category']].append(idx)
-        # self.train_class = []; self.test_class = []
-        # for i, key in enumerate(self.class_count.keys()):
-        #     if i < 250:
-        #         self.train_class += [self.data[index] for index in self.class_count[key]]
-        #     else:
-        #         self.test_class += [self.data[index] for index in self.class_count[key]]
     def preprocessing_audio(self, audio):
         fbank = ta.compliance.kaldi.fbank(audio, htk_compat=True, sample_frequency=16000, use_energy=False,
                                                   window_type='hanning', num_mel_bins=128, dither=0.0,

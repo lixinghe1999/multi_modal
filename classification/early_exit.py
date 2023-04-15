@@ -1,7 +1,7 @@
-from utils.datasets.vggsound import VGGSound
+from audio_visual.vggsound import VGGSound
 import numpy as np
 import torch
-from transformer.model.exit_model import AVnet_Exit
+from model.exit_model import AVnet_Exit
 import warnings
 from tqdm import tqdm
 import argparse

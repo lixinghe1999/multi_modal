@@ -1,9 +1,12 @@
-from utils.datasets.vggsound import VGGSound
+from audio_visual.vggsound import VGGSound
+from har.adbox import ADBox
 import numpy as np
 import torch
-from transformer.model.vanilla_model import AVnet
-from transformer.model.early_model import AVnet_Early
-from transformer.model.vit_model import AudioTransformerDiffPruning, VisionTransformerDiffPruning
+from audio_visual.model.vanilla_model import AVnet
+from audio_visual.model.vit_model import AudioTransformerDiffPruning, VisionTransformerDiffPruning
+from har.model.vanilla_model import HARnet
+from har.model.convnext_model import AdaConvNeXt
+
 import argparse
 import warnings
 from tqdm import tqdm
@@ -65,7 +68,8 @@ def train(model, train_dataset, test_dataset):
                        str(epoch) + '_' + str(np.mean(acc)) + '.pth')
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-t', '--task', default='train')
+    parser.add_argument('-t', '--task', default='vggsound')
+    parser.add_argument('-m', '--modal', default='AV')
     parser.add_argument('-w', '--worker', default=4, type=int)
     parser.add_argument('-b', '--batch', default=32, type=int)
     args = parser.parse_args()
@@ -73,23 +77,32 @@ if __name__ == "__main__":
     batch_size = args.batch
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     torch.cuda.set_device(0)
+    if args.task == 'vggsound':
+        config = dict(patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True,
+                      pruning_loc=())
+        embed_dim = 768
+        if args.modal == 'AV':
+            model = AVnet().to(device)
+            model.audio.load_state_dict(torch.load('vanilla_A_6_0.5303089942924621.pth'))
+            model.image.load_state_dict(torch.load('vanilla_V_7_0.5041330446762449.pth'))
+        elif args.modal == 'A':
+            model = AudioTransformerDiffPruning(config, imagenet_pretrain=True).to(device)
+        else:
+            model = VisionTransformerDiffPruning(**config).to(device)
+            model.load_state_dict(torch.load('assets/deit_base_patch16_224.pth')['model'], strict=False)
 
-    config = dict(patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True,
-                  pruning_loc=())
-    embed_dim = 768
-    if args.task == 'AV':
-        model = AVnet(model='vit').to(device)
-        model.audio.load_state_dict(torch.load('vanilla_A_6_0.5303089942924621.pth'))
-        model.image.load_state_dict(torch.load('vanilla_V_7_0.5041330446762449.pth'))
-    elif args.task == 'A':
-        model = AudioTransformerDiffPruning(config, imagenet_pretrain=True).to(device)
-    else:
-        model = VisionTransformerDiffPruning(**config).to(device)
-        model.load_state_dict(torch.load('assets/deit_base_patch16_224.pth')['model'], strict=False)
+        dataset = VGGSound()
+        len_train = int(len(dataset) * 0.8)
+        len_test = len(dataset) - len_train
+        train_dataset, test_dataset = torch.utils.data.random_split(dataset, [len_train, len_test], generator=torch.Generator().manual_seed(42))
+        train(model, train_dataset, test_dataset)
 
-    dataset = VGGSound()
-    len_train = int(len(dataset) * 0.8)
-    len_test = len(dataset) - len_train
-    train_dataset, test_dataset = torch.utils.data.random_split(dataset, [len_train, len_test], generator=torch.Generator().manual_seed(42))
-    train(model, train_dataset, test_dataset)
+    if args.task == 'adbox':
+        model = HARnet().to(device)
+        dataset = ADBox('../dataset/adbox')
+        len_train = int(len(dataset) * 0.8)
+        len_test = len(dataset) - len_train
+        train_dataset, test_dataset = torch.utils.data.random_split(dataset, [len_train, len_test],
+                                                                    generator=torch.Generator().manual_seed(42))
+        train(model, train_dataset, test_dataset)
 
