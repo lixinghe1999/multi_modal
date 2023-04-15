@@ -13,14 +13,7 @@ from tqdm import tqdm
 warnings.filterwarnings("ignore")
 # remove annoying librosa warning
 def step(model, input_data, optimizer, criteria, label):
-    audio, image = input_data
-    # Track history only in training
-    if args.task == 'AV' or args.task == 'early':
-        output = model(audio, image)
-    elif args.task == 'A':
-        output = model(audio)
-    else:
-        output = model(image)
+    output = model(*input_data)
     # Backward
     optimizer.zero_grad()
     loss = criteria(output, label)
@@ -45,9 +38,17 @@ def train(model, train_dataset, test_dataset):
     for epoch in range(20):
         model.train()
         for idx, batch in enumerate(tqdm(train_loader)):
-            audio, image, text, _ = batch
+            if args.task == 'vggsound':
+                if args.modal == 'AV':
+                    input_data = (batch[0].to(device), batch[1].to(device))
+                elif args.modal == 'A':
+                    input_data = (batch[0].to(device))
+                else:
+                    input_data = (batch[1].to(device))
+            else:
+                input_data = (batch[0].to(device), batch[1].to(device), batch[2].to(device))
             step(model, input_data=(audio.to(device), image.to(device)), optimizer=optimizer,
-                        criteria=criteria, label=text.to(device))
+                        criteria=criteria, label=batch[-1].to(device))
         scheduler.step()
         model.eval()
         acc = []
