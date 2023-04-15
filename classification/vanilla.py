@@ -68,8 +68,7 @@ def train(model, train_dataset, test_dataset):
         print('epoch', epoch, np.mean(acc))
         if np.mean(acc) > best_acc:
             best_acc = np.mean(acc)
-            torch.save(model.state_dict(), 'vanilla_' + args.task + '_' +
-                       str(epoch) + '_' + str(np.mean(acc)) + '.pth')
+    torch.save(model.state_dict(), 'vanilla_' + args.task + '_' + str(epoch) + '_' + str(np.mean(acc)) + '.pth')
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-t', '--task', default='vggsound')
@@ -103,7 +102,9 @@ if __name__ == "__main__":
 
     if args.task == 'adbox':
         model = HARnet().to(device)
-        train_dataset = ADBox('../dataset/adbox', split='train1')
+        train_dataset1 = ADBox('../dataset/adbox', split='train1')
+        train_dataset2 = ADBox('../dataset/adbox', split='train2')
+        train_dataset = torch.utils.data.ConcatDataset([train_dataset1, train_dataset2])
         test_dataset = ADBox('../dataset/adbox', split='test')
         train(model, train_dataset, test_dataset)
 
