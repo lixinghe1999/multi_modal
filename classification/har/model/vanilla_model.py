@@ -65,6 +65,7 @@ class HARnet(nn.Module):
             print(x.shape)
             x = branch.preproces(x)
             x, mask, decisions = branch.main_stage(x)
+            print(x.shape)
             x, featmap = branch.final(x, mask)
             print(x.shape)
             feat.append(x)
