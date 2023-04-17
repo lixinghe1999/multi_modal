@@ -103,7 +103,7 @@ if __name__ == '__main__':
                 print(f'\r{i + 1}/{len(data_loader)}', end='')
 
         # miou, _ = confusion_matrices[camera].compute_miou()
-        miou = miou_pytorch(confusion_matrices[camera].compute().data.numpy())
+        miou = miou_pytorch(confusion_matrices[camera]).compute().data.numpy()
         print(f'\rCamera: {camera} mIoU: {100*miou:0.2f}')
 
     confusion_matrices['all'] = ConfusionMatrixPytorch(n_classes)
