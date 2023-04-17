@@ -100,8 +100,9 @@ if __name__ == '__main__':
 
                     # confusion_matrices[camera].update_conf_matrix(label, pred)
                     confusion_matrices[camera].update(torch.from_numpy(label), torch.from_numpy(pred))
-                    print(confusion_matrices[camera]._num_examples)
-                print(f'\r{i + 1}/{len(data_loader)}', end='')
+
+                print(f'\r{i + 1}/{len(data_loader)}')
+                print(confusion_matrices[camera]._num_examples)
         print(confusion_matrices[camera]._num_examples)
         # miou, _ = confusion_matrices[camera].compute_miou()
         miou = miou_pytorch(confusion_matrices[camera]).compute().data.numpy()
