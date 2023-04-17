@@ -94,7 +94,7 @@ def build_model(args, n_classes):
 
     print('Device:', device)
     model.to(device)
-    print(model)
+    # print(model)
 
     if args.he_init:
         module_list = []
