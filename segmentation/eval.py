@@ -10,7 +10,7 @@ import torch.nn.functional as F
 
 from src.args import ArgumentParserRGBDSegmentation
 from src.build_model import build_model
-from src.confusion_matrix import ConfusionMatrixTensorflow
+from src.confusion_matrix import ConfusionMatrixPytorch
 from src.prepare_data import prepare_data
 
 
@@ -52,7 +52,7 @@ if __name__ == '__main__':
 
     for camera in cameras:
         confusion_matrices[camera] = dict()
-        confusion_matrices[camera] = ConfusionMatrixTensorflow(n_classes)
+        confusion_matrices[camera] = ConfusionMatrixPytorch(n_classes)
         n_samples_total = len(data_loader.dataset)
         with data_loader.dataset.filter_camera(camera):
             for i, sample in enumerate(data_loader):
@@ -104,7 +104,7 @@ if __name__ == '__main__':
         miou, _ = confusion_matrices[camera].compute_miou()
         print(f'\rCamera: {camera} mIoU: {100*miou:0.2f}')
 
-    confusion_matrices['all'] = ConfusionMatrixTensorflow(n_classes)
+    confusion_matrices['all'] = ConfusionMatrixPytorch(n_classes)
 
     # sum confusion matrices of all cameras
     for camera in cameras:
