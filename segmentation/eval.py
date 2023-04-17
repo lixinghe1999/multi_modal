@@ -118,6 +118,5 @@ if __name__ == '__main__':
             confusion_matrices[camera].confusion_matrix.numpy()
 
     # miou, _ = confusion_matrices['all'].compute_miou()
-    # miou.compute().data.numpy()
     miou = miou_pytorch(confusion_matrices['all']).compute().data.numpy()
     print(f'All Cameras, mIoU: {100*miou:0.2f}')
