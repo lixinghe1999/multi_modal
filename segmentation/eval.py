@@ -116,7 +116,7 @@ if __name__ == '__main__':
         #     confusion_matrices[camera].overall_confusion_matrix
         confusion_matrices['all'].confusion_matrix += \
             confusion_matrices[camera].confusion_matrix.numpy()
-
+        confusion_matrices['all']._num_examples += confusion_matrices[camera]._num_examples
     # miou, _ = confusion_matrices['all'].compute_miou()
     miou = torch_miou.compute().data.numpy()
     print(f'All Cameras, mIoU: {100*miou:0.2f}')
