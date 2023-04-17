@@ -108,8 +108,11 @@ if __name__ == '__main__':
 
     # sum confusion matrices of all cameras
     for camera in cameras:
-        confusion_matrices['all'].overall_confusion_matrix += \
-            confusion_matrices[camera].overall_confusion_matrix
+        # confusion_matrices['all'].overall_confusion_matrix += \
+        #     confusion_matrices[camera].overall_confusion_matrix
+        confusion_matrices['all'].confusion_matrix += \
+            confusion_matrices[camera].confusion_matrix.numpy()
+
     # miou, _ = confusion_matrices['all'].compute_miou()
     # miou.compute().data.numpy()
     miou = miou_pytorch(confusion_matrices['all'].compute().data.numpy())
