@@ -9,9 +9,9 @@ import pickle
 from torch.utils.data import DataLoader
 
 from src import preprocessing
-from src.datasets import Cityscapes
-from src.datasets import NYUv2
-from src.datasets import SceneNetRGBD
+# from src.datasets import Cityscapes
+# from src.datasets import NYUv2
+# from src.datasets import SceneNetRGBD
 from src.datasets import SUNRGBD
 
 
