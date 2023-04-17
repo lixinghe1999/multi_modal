@@ -1,19 +1,26 @@
-# syntax = docker/dockerfile:experimental
+ARG PYTORCH="1.9.0"
+ARG CUDA="11.1"
+ARG CUDNN="8"
+FROM pytorch/pytorch:${PYTORCH}-cuda${CUDA}-cudnn${CUDNN}-devel
 
-# Arguments modify
-ARG PYTORCH="1.6.0"
-ARG CUDA="10.1"
-ARG CUDNN="7"
-ARG BASE_IMAGE=pytorch/pytorch:${PYTORCH}-cuda${CUDA}-cudnn${CUDNN}-devel
-FROM ${BASE_IMAGE} AS compile-image
-
-ARG MMCV="1.2.7"
-ARG MMDET="2.10.0"
+ARG MMCV="2.0.0rc4"
+ARG MMDET="3.0.0"
 
 ENV PYTHONUNBUFFERED TRUE
 
-RUN --mount=type=cache,id=apt-dev,target=/var/cache/apt \
-    apt-get update && \
+# Avoid Public GPG key error
+# https://github.com/NVIDIA/nvidia-docker/issues/1631
+RUN rm /etc/apt/sources.list.d/cuda.list \
+    && rm /etc/apt/sources.list.d/nvidia-ml.list \
+    && apt-key del 7fa2af80 \
+    && apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/3bf863cc.pub \
+    && apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1804/x86_64/7fa2af80.pub
+
+# (Optional, use Mirror to speed up downloads)
+# RUN sed -i 's/http:\/\/archive.ubuntu.com\/ubuntu\//http:\/\/mirrors.aliyun.com\/ubuntu\//g' /etc/apt/sources.list
+
+# Install the required packages
+RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
     ca-certificates \
     g++ \
@@ -22,36 +29,18 @@ RUN --mount=type=cache,id=apt-dev,target=/var/cache/apt \
     ffmpeg libsm6 libxext6 git ninja-build libglib2.0-0 libsm6 libxrender-dev libxext6 \
     && rm -rf /var/lib/apt/lists/*
 
-ENV PATH="/opt/conda/bin:$PATH"
-
-# This is only useful for cuda env
-RUN export FORCE_CUDA=1
+ENV PATH="/opt/conda/bin:$PATH" \
+    FORCE_CUDA="1"
 
 # TORCHSEVER
 RUN pip install torchserve torch-model-archiver
 
 # MMLAB
-RUN pip install mmcv-full==${MMCV} -f https://download.openmmlab.com/mmcv/dist/cu101/torch1.6.0/index.html
+ARG PYTORCH
+ARG CUDA
+RUN pip install mmengine
+RUN ["/bin/bash", "-c", "pip install mmcv==${MMCV} -f https://download.openmmlab.com/mmcv/dist/cu${CUDA//./}/torch${PYTORCH}/index.html"]
 RUN pip install mmdet==${MMDET}
-
-# Final image for production
-FROM ${BASE_IMAGE} AS runtime-image
-
-ENV PYTHONUNBUFFERED TRUE
-RUN export FORCE_CUDA=1
-
-RUN --mount=type=cache,target=/var/cache/apt \
-    apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
-    openjdk-11-jre-headless \
-    build-essential \
-    ffmpeg libsm6 libxext6 git ninja-build libglib2.0-0 libsm6 libxrender-dev libxext6 \
-    && rm -rf /var/lib/apt/lists/* \
-    && cd /tmp
-
-COPY --from=compile-image /opt/conda /opt/conda
-
-ENV PATH="/opt/conda/bin:$PATH"
 
 RUN useradd -m model-server \
     && mkdir -p /home/model-server/tmp
