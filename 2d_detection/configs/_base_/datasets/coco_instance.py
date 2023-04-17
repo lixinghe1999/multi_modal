@@ -1,6 +1,6 @@
 # dataset settings
 dataset_type = 'CocoDataset'
-data_root = '../dataset/coco/'
+data_root = '../../dataset/coco/'
 
 # Example to use different file client
 # Method 1: simply set the data root and let the file I/O module
