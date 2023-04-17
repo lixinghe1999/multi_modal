@@ -10,7 +10,7 @@ import torch.nn.functional as F
 
 from src.args import ArgumentParserRGBDSegmentation
 from src.build_model import build_model
-from src.confusion_matrix import ConfusionMatrixPytorch
+from src.confusion_matrix import ConfusionMatrixPytorch, miou_pytorch
 from src.prepare_data import prepare_data
 
 
@@ -110,5 +110,7 @@ if __name__ == '__main__':
     for camera in cameras:
         confusion_matrices['all'].overall_confusion_matrix += \
             confusion_matrices[camera].overall_confusion_matrix
-    miou, _ = confusion_matrices['all'].compute_miou()
+    # miou, _ = confusion_matrices['all'].compute_miou()
+    # miou.compute().data.numpy()
+    miou = miou_pytorch(confusion_matrices['all'].compute().data.numpy())
     print(f'All Cameras, mIoU: {100*miou:0.2f}')
