@@ -54,6 +54,8 @@ if __name__ == '__main__':
         print('working on', camera)
         confusion_matrices[camera] = dict()
         confusion_matrices[camera] = ConfusionMatrixPytorch(n_classes)
+        torch_miou = miou_pytorch(confusion_matrices[camera])
+
         n_samples_total = len(data_loader.dataset)
         with data_loader.dataset.filter_camera(camera):
             for i, sample in enumerate(data_loader):
@@ -102,10 +104,8 @@ if __name__ == '__main__':
                     confusion_matrices[camera].update(torch.from_numpy(label), torch.from_numpy(pred))
 
                 print(f'\r{i + 1}/{len(data_loader)}')
-                print(confusion_matrices[camera]._num_examples)
-        print(confusion_matrices[camera]._num_examples)
         # miou, _ = confusion_matrices[camera].compute_miou()
-        miou = miou_pytorch(confusion_matrices[camera]).compute().data.numpy()
+        miou = torch_miou.compute().data.numpy()
         print(f'\rCamera: {camera} mIoU: {100*miou:0.2f}')
 
     confusion_matrices['all'] = ConfusionMatrixPytorch(n_classes)
