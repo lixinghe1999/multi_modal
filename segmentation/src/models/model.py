@@ -187,6 +187,7 @@ class ESANet(nn.Module):
             upsampling_mode=upsampling,
             num_classes=num_classes
         )
+        self.modality_weight = []
 
     def forward(self, rgb, depth):
         rgb = self.encoder_rgb.forward_first_conv(rgb)
@@ -194,7 +195,10 @@ class ESANet(nn.Module):
 
         if self.fuse_depth_in_rgb_encoder == 'SE-add':
             rgb, depth_t = self.se_layer0(rgb, depth)
-        fuse = rgb + depth_t
+            fuse = rgb + depth_t
+            self.modality_weight.append(rgb.mean().item() / depth_t.mean().item())
+        else:
+            fuse = rgb + depth
 
         rgb = F.max_pool2d(fuse, kernel_size=3, stride=2, padding=1)
         depth = F.max_pool2d(depth, kernel_size=3, stride=2, padding=1)
@@ -204,7 +208,10 @@ class ESANet(nn.Module):
         depth = self.encoder_depth.forward_layer1(depth)
         if self.fuse_depth_in_rgb_encoder == 'SE-add':
             rgb, depth_t = self.se_layer1(rgb, depth)
-        fuse = rgb + depth_t
+            fuse = rgb + depth_t
+            self.modality_weight.append(rgb.mean().item() / depth_t.mean().item())
+        else:
+            fuse = rgb + depth
         skip1 = self.skip_layer1(fuse)
 
         # block 2
@@ -212,7 +219,10 @@ class ESANet(nn.Module):
         depth = self.encoder_depth.forward_layer2(depth)
         if self.fuse_depth_in_rgb_encoder == 'SE-add':
             rgb, depth_t = self.se_layer2(rgb, depth)
-        fuse = rgb + depth_t
+            fuse = rgb + depth_t
+            self.modality_weight.append(rgb.mean().item() / depth_t.mean().item())
+        else:
+            fuse = rgb + depth
         skip2 = self.skip_layer2(fuse)
 
         # block 3
@@ -220,7 +230,10 @@ class ESANet(nn.Module):
         depth = self.encoder_depth.forward_layer3(depth)
         if self.fuse_depth_in_rgb_encoder == 'SE-add':
             rgb, depth_t = self.se_layer3(rgb, depth)
-        fuse = rgb + depth_t
+            fuse = rgb + depth_t
+            self.modality_weight.append(rgb.mean().item() / depth_t.mean().item())
+        else:
+            fuse = rgb + depth
         skip3 = self.skip_layer3(fuse)
 
         # block 4
@@ -228,7 +241,10 @@ class ESANet(nn.Module):
         depth = self.encoder_depth.forward_layer4(depth)
         if self.fuse_depth_in_rgb_encoder == 'SE-add':
             rgb, depth_t = self.se_layer4(rgb, depth)
-        fuse = rgb + depth_t
+            fuse = rgb + depth_t
+            self.modality_weight.append(rgb.mean().item() / depth_t.mean().item())
+        else:
+            fuse = rgb + depth
 
         out = self.context_module(fuse)
         out = self.decoder(enc_outs=[out, skip3, skip2, skip1])

@@ -21,5 +21,3 @@ class SqueezeAndExciteFusionAdd(nn.Module):
         rgb = self.se_rgb(rgb)
         depth = self.se_depth(depth)
         return rgb, depth
-        #out = rgb + depth
-        # return out
