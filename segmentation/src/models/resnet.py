@@ -98,8 +98,8 @@ class NonBottleneck1D(nn.Module):
                  base_width=None, dilation=1, norm_layer=None,
                  activation=nn.ReLU(inplace=True), residual_only=False):
         super().__init__()
-        warnings.warn('parameters groups, base_width and norm_layer are '
-                      'ignored in NonBottleneck1D')
+        # warnings.warn('parameters groups, base_width and norm_layer are '
+        #               'ignored in NonBottleneck1D')
         dropprob = 0
         self.conv3x1_1 = nn.Conv2d(inplanes, planes, (3, 1),
                                    stride=(stride, 1), padding=(1, 0),

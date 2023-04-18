@@ -29,7 +29,7 @@ from src.utils import load_ckpt
 from src.utils import print_log
 
 from src.logger import CSVLogger
-from src.confusion_matrix import ConfusionMatrixTensorflow
+from src.confusion_matrix import ConfusionMatrixPytorch
 
 
 def parse_args():
@@ -186,9 +186,9 @@ def train_main():
     confusion_matrices = dict()
     for camera in cameras:
         confusion_matrices[camera] = \
-            ConfusionMatrixTensorflow(n_classes_without_void)
+            ConfusionMatrixPytorch(n_classes_without_void)
         confusion_matrices['all'] = \
-            ConfusionMatrixTensorflow(n_classes_without_void)
+            ConfusionMatrixPytorch(n_classes_without_void)
 
     # start training -----------------------------------------------------------
     for epoch in range(int(start_epoch), args.epochs):

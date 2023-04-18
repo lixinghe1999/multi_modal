@@ -8,7 +8,8 @@ import warnings
 import torch
 from torch import nn
 
-from src.models.model import ESANet
+# from src.models.model import ESANet
+from src.models.vanilla_model import ESANet
 from src.models.model_one_modality import ESANetOneModality
 from src.models.resnet import ResNet
 

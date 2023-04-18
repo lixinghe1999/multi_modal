@@ -319,14 +319,18 @@ class AdaConvNeXt(nn.Module):
              'fix_step': 5}
         ]
 
-    def forward(self, x):
+    def forward_layer1(self, x):
+        x = self.downsample_layers[0](x)
+        for _, layer in enumerate(self.stages[0]):
+            x = layer(x)
+        return x
 
-        # stage 1, 2
-        for i in range(2):
-            x = self.downsample_layers[i](x)
-            for _, layer in enumerate(self.stages[i]):
-                x = layer(x)
-
+    def forward_layer2(self, x):
+        x = self.downsample_layers[1](x)
+        for _, layer in enumerate(self.stages[1]):
+            x = layer(x)
+        return x
+    def forward_layer3(self, x):
         # stage 3
         x = self.downsample_layers[2](x)
         pruning_loc = 0
@@ -342,7 +346,8 @@ class AdaConvNeXt(nn.Module):
                 x = layer(x)
             else:
                 x = layer(x, mask)
-
+        return x, mask, decisions
+    def forward_layer4(self, x, mask):
         # stage 4
         if self.training:
             x1, x2 = x
@@ -351,17 +356,24 @@ class AdaConvNeXt(nn.Module):
 
         for i, layer in enumerate(self.stages[3]):
             x = layer(x)
+        return x
 
-        if self.training:
-            featmap = self.norm(x.permute(0, 2, 3, 1))  # (N, C, H, W) -> (N, H, W, C)
 
+    def forward(self, x):
+
+        x = self.forward_layer1(x)
+        x = self.forward_layer2(x)
+        x, mask, decisions = self.forward_layer3(x)
+        x = self.forward_layer4(x, mask)
         x = self.norm(x.mean([-2, -1]))
         x = self.head(x)
 
         if self.training:
+            featmap = self.norm(x.permute(0, 2, 3, 1))  # (N, C, H, W) -> (N, H, W, C)
             return x, featmap, decisions
         else:
             return x
+
 
 
 class ConvNeXt_Teacher(nn.Module):

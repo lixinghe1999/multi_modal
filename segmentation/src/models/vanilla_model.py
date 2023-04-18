@@ -23,7 +23,6 @@ class ESANet(nn.Module):
                  num_classes=37,
                  encoder_rgb='resnet18',
                  encoder_depth='resnet18',
-                 encoder_block='BasicBlock',
                  channels_decoder=None,  # default: [128, 128, 128]
                  pretrained_on_imagenet=True,
                  pretrained_dir='./trained_models/imagenet',
@@ -59,94 +58,57 @@ class ESANet(nn.Module):
             warnings.warn('Parameter encoder_block is ignored for ResNet50. '
                           'ResNet50 always uses Bottleneck')
 
-        # rgb encoder
-        if encoder_rgb == 'resnet18':
-            self.encoder_rgb = ResNet18(
-                block=encoder_block,
-                pretrained_on_imagenet=pretrained_on_imagenet,
-                pretrained_dir=pretrained_dir,
-                activation=self.activation)
-        elif encoder_rgb == 'resnet34':
-            self.encoder_rgb = ResNet34(
-                block=encoder_block,
-                pretrained_on_imagenet=pretrained_on_imagenet,
-                pretrained_dir=pretrained_dir,
-                activation=self.activation)
-        elif encoder_rgb == 'resnet50':
-            self.encoder_rgb = ResNet50(
-                pretrained_on_imagenet=pretrained_on_imagenet,
-                activation=self.activation)
-        else:
-            raise NotImplementedError(
-                'Only ResNets are supported for '
-                'encoder_rgb. Got {}'.format(encoder_rgb))
-
-        # depth encoder
-        if encoder_depth == 'resnet18':
-            self.encoder_depth = ResNet18(
-                block=encoder_block,
-                pretrained_on_imagenet=pretrained_on_imagenet,
-                pretrained_dir=pretrained_dir,
-                activation=self.activation,
-                input_channels=1)
-        elif encoder_depth == 'resnet34':
-            self.encoder_depth = ResNet34(
-                block=encoder_block,
-                pretrained_on_imagenet=pretrained_on_imagenet,
-                pretrained_dir=pretrained_dir,
-                activation=self.activation,
-                input_channels=1)
-        elif encoder_depth == 'resnet50':
-            self.encoder_depth = ResNet50(
-                pretrained_on_imagenet=pretrained_on_imagenet,
-                activation=self.activation,
-                input_channels=1)
-        else:
-            raise NotImplementedError(
-                'Only ResNets are supported for '
-                'encoder_depth. Got {}'.format(encoder_rgb))
-
-        self.channels_decoder_in = self.encoder_rgb.down_32_channels_out
+        dims = [96, 192, 384, 768]
+        self.encoder_rgb = AdaConvNeXt(sparse_ratio=[0.7, 0.5, 0.3], dims=dims,
+                                       pruning_loc=[3,6,9], depths=[3, 3, 27, 3])
+        weight = torch.load('../assets/convnext-s-0.7.pth')['model']
+        if pretrained_on_imagenet:
+            self.encoder_rgb.load_state_dict(weight)
+        self.encoder_depth = AdaConvNeXt(sparse_ratio=[0.7, 0.5, 0.3], dims=dims,
+                                         pruning_loc=[3, 6, 9], depths=[3, 3, 27, 3])
+        if pretrained_on_imagenet:
+            self.encoder_depth.load_state_dict(weight)
+        self.channels_decoder_in = dims[-1]
 
         if fuse_depth_in_rgb_encoder == 'SE-add':
             self.se_layer0 = SqueezeAndExciteFusionAdd(
                 64, activation=self.activation)
             self.se_layer1 = SqueezeAndExciteFusionAdd(
-                self.encoder_rgb.down_4_channels_out,
+                dims[0],
                 activation=self.activation)
             self.se_layer2 = SqueezeAndExciteFusionAdd(
-                self.encoder_rgb.down_8_channels_out,
+                dims[1],
                 activation=self.activation)
             self.se_layer3 = SqueezeAndExciteFusionAdd(
-                self.encoder_rgb.down_16_channels_out,
+                dims[2],
                 activation=self.activation)
             self.se_layer4 = SqueezeAndExciteFusionAdd(
-                self.encoder_rgb.down_32_channels_out,
+                dims[3],
                 activation=self.activation)
 
         if encoder_decoder_fusion == 'add':
             layers_skip1 = list()
-            if self.encoder_rgb.down_4_channels_out != channels_decoder[2]:
+            if dims[0] != channels_decoder[2]:
                 layers_skip1.append(ConvBNAct(
-                    self.encoder_rgb.down_4_channels_out,
+                    dims[0],
                     channels_decoder[2],
                     kernel_size=1,
                     activation=self.activation))
             self.skip_layer1 = nn.Sequential(*layers_skip1)
 
             layers_skip2 = list()
-            if self.encoder_rgb.down_8_channels_out != channels_decoder[1]:
+            if dims[1] != channels_decoder[1]:
                 layers_skip2.append(ConvBNAct(
-                    self.encoder_rgb.down_8_channels_out,
+                    dims[1],
                     channels_decoder[1],
                     kernel_size=1,
                     activation=self.activation))
             self.skip_layer2 = nn.Sequential(*layers_skip2)
 
             layers_skip3 = list()
-            if self.encoder_rgb.down_16_channels_out != channels_decoder[0]:
+            if dims[2] != channels_decoder[0]:
                 layers_skip3.append(ConvBNAct(
-                    self.encoder_rgb.down_16_channels_out,
+                    dims[2],
                     channels_decoder[0],
                     kernel_size=1,
                     activation=self.activation))
@@ -189,20 +151,11 @@ class ESANet(nn.Module):
         )
 
     def forward(self, rgb, depth):
-        rgb = self.encoder_rgb.forward_first_conv(rgb)
-        depth = self.encoder_depth.forward_first_conv(depth)
-
-        if self.fuse_depth_in_rgb_encoder == 'add':
-            fuse = rgb + depth
-        else:
-            fuse = self.se_layer0(rgb, depth)
-
-        rgb = F.max_pool2d(fuse, kernel_size=3, stride=2, padding=1)
-        depth = F.max_pool2d(depth, kernel_size=3, stride=2, padding=1)
-
+        print(rgb.shape, depth.shape)
         # block 1
         rgb = self.encoder_rgb.forward_layer1(rgb)
-        depth = self.encoder_depth.forward_layer1(depth)
+        depth = self.encoder_depth.forward_layer1(depth.repeat(1, 3, 1, 1))
+        print(rgb.shape, depth.shape)
         if self.fuse_depth_in_rgb_encoder == 'add':
             fuse = rgb + depth
         else:
@@ -212,6 +165,7 @@ class ESANet(nn.Module):
         # block 2
         rgb = self.encoder_rgb.forward_layer2(fuse)
         depth = self.encoder_depth.forward_layer2(depth)
+        print(rgb.shape, depth.shape)
         if self.fuse_depth_in_rgb_encoder == 'add':
             fuse = rgb + depth
         else:
@@ -219,8 +173,9 @@ class ESANet(nn.Module):
         skip2 = self.skip_layer2(fuse)
 
         # block 3
-        rgb = self.encoder_rgb.forward_layer3(fuse)
-        depth = self.encoder_depth.forward_layer3(depth)
+        rgb, mask_r, _ = self.encoder_rgb.forward_layer3(fuse)
+        depth, mask_d, _ = self.encoder_depth.forward_layer3(depth)
+        print(rgb.shape, depth.shape)
         if self.fuse_depth_in_rgb_encoder == 'add':
             fuse = rgb + depth
         else:
@@ -228,8 +183,9 @@ class ESANet(nn.Module):
         skip3 = self.skip_layer3(fuse)
 
         # block 4
-        rgb = self.encoder_rgb.forward_layer4(fuse)
-        depth = self.encoder_depth.forward_layer4(depth)
+        rgb = self.encoder_rgb.forward_layer4(fuse, mask_r)
+        depth = self.encoder_depth.forward_layer4(depth, mask_d)
+        print(rgb.shape, depth.shape)
         if self.fuse_depth_in_rgb_encoder == 'add':
             fuse = rgb + depth
         else:
@@ -418,7 +374,7 @@ def main():
         height=height,
         width=width)
 
-    print(model)
+    # print(model)
 
     model.eval()
     rgb_image = torch.randn(1, 3, height, width)
