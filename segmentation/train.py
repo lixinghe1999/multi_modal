@@ -200,7 +200,7 @@ def train_main():
         logs = train_one_epoch(
             model, train_loader, device, optimizer, loss_function_train, epoch,
             lr_scheduler, args.modality,
-            label_downsampling_rates, debug_mode=args.debug)
+            label_downsampling_rates, debug_mode=True)
 
         # validation after every epoch -----------------------------------------
         miou, logs = validate(
