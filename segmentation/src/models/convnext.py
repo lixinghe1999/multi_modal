@@ -349,9 +349,7 @@ class AdaConvNeXt(nn.Module):
         return x, mask, decisions
     def forward_layer4(self, x, mask):
         # stage 4
-        if self.training:
-            x1, x2 = x
-            x = x1 * mask + x2 * (1 - mask)
+
         x = self.downsample_layers[3](x)
 
         for i, layer in enumerate(self.stages[3]):
@@ -364,6 +362,9 @@ class AdaConvNeXt(nn.Module):
         x = self.forward_layer1(x)
         x = self.forward_layer2(x)
         x, mask, decisions = self.forward_layer3(x)
+        if self.training:
+            x1, x2 = x
+            x = x1 * mask + x2 * (1 - mask)
         x = self.forward_layer4(x, mask)
         x = self.norm(x.mean([-2, -1]))
         x = self.head(x)
