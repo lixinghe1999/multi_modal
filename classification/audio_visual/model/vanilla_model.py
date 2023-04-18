@@ -71,10 +71,10 @@ class AVnet(nn.Module):
         x = torch.flatten(x, start_dim=1)
         print(x.shape)
         print(self.head[0].weight.shape)
-        self.modality_weight = [nn.functional.linear(x[:, :self.embed_dim], self.head[0].weight[:self.embed_dim],
-                                                     self.head[0].bias[:self.embed_dim]),
-                                nn.functional.linear(x[:, self.embed_dim:], self.head[0].weight[self.embed_dim:],
-                                                     self.head[0].bias[self.embed_dim:])]
+        self.modality_weight = [nn.functional.linear(x[:, :self.embed_dim], self.head[0].weight[:, :self.embed_dim],
+                                                     self.head[0].bias[:, :self.embed_dim]),
+                                nn.functional.linear(x[:, self.embed_dim:], self.head[0].weight[:, self.embed_dim:],
+                                                     self.head[0].bias[:, self.embed_dim:])]
         x = self.head(x)
         return x
 if __name__ == "__main__":
