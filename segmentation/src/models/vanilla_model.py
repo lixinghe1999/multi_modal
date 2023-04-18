@@ -170,7 +170,7 @@ class ESANet(nn.Module):
         # block 3
         rgb, mask_r, _ = self.encoder_rgb.forward_layer3(fuse)
         depth, mask_d, _ = self.encoder_depth.forward_layer3(depth)
-        print(rgb.shape, depth.shape)
+        # print(rgb.shape, depth.shape)
         if self.fuse_depth_in_rgb_encoder == 'add':
             fuse = rgb + depth
         else:
