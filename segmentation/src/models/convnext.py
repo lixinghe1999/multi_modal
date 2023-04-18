@@ -217,7 +217,7 @@ class PredictorLG(nn.Module):
             B, H, W = score.shape
             N = H * W
             num_keep_node = int(N * ratio)
-            idx = torch.argsort(score.reshape(B, N), dim=1, descending=True)
+            idx = torch.argsort(score.reshape(B, N), dim=1, descending=True).float()
             idx1 = idx[:, :num_keep_node]
             idx2 = idx[:, num_keep_node:]
             return input_x, [idx1, idx2]
