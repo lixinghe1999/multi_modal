@@ -457,8 +457,9 @@ def validate(model, valid_loader, device, cameras, confusion_matrices,
 
                     # finally compute the confusion matrix
                     cm_start_time = time.time()
-                    confusion_matrices[camera].update_conf_matrix(label,
-                                                                  prediction)
+                    # confusion_matrices[camera].update_conf_matrix(label,
+                    #                                               prediction)
+                    confusion_matrices[camera].update(torch.from_numpy(label), torch.from_numpy(prediction))
                     cm_time += time.time() - cm_start_time
 
                     if debug_mode:
