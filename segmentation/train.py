@@ -472,17 +472,23 @@ def validate(model, valid_loader, device, cameras, confusion_matrices,
             miou[camera] = torch_miou.compute().data.numpy()
             cm_time += time.time() - cm_start_time
             print(f'mIoU {valid_split} {camera}: {miou[camera]}')
+        break
 
     # confusion matrix for the whole split
     # (sum up the confusion matrices of all cameras)
     cm_start_time = time.time()
     confusion_matrices['all'].reset_conf_matrix()
+    torch_miou = miou_pytorch(confusion_matrices['all'])
     for camera in cameras:
-        confusion_matrices['all'].overall_confusion_matrix += \
-            confusion_matrices[camera].overall_confusion_matrix
+        # confusion_matrices['all'].overall_confusion_matrix += \
+        #     confusion_matrices[camera].overall_confusion_matrix
+        confusion_matrices['all'].confusion_matrix += \
+            confusion_matrices[camera].confusion_matrix.numpy()
+        confusion_matrices['all']._num_examples += confusion_matrices[camera]._num_examples
 
     # miou and iou for all cameras
-    miou['all'], ious['all'] = confusion_matrices['all'].compute_miou()
+    # miou['all'], ious['all'] = confusion_matrices['all'].compute_miou()
+    miou = torch_miou.compute().data.numpy()
     cm_time += time.time() - cm_start_time
     print(f"mIoU {valid_split}: {miou['all']}")
 
