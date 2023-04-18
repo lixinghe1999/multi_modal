@@ -9,7 +9,7 @@ import torch
 from torch import nn
 
 from src.models.model import ESANet
-# from src.models.vanilla_model import ESANet
+from src.models.vanilla_model import ConvNextRGBD
 from src.models.model_one_modality import ESANetOneModality
 from src.models.resnet import ResNet
 
@@ -55,6 +55,21 @@ def build_model(args, n_classes):
             encoder_rgb=args.encoder,
             encoder_depth=args.encoder_depth,
             encoder_block=args.encoder_block,
+            activation=args.activation,
+            encoder_decoder_fusion=args.encoder_decoder_fusion,
+            context_module=args.context_module,
+            nr_decoder_blocks=nr_decoder_blocks,
+            channels_decoder=channels_decoder,
+            fuse_depth_in_rgb_encoder=args.fuse_depth_in_rgb_encoder,
+            upsampling=args.upsampling
+        )
+    elif args.modality == 'convnext':
+        model = ConvNextRGBD(
+            height=args.height,
+            width=args.width,
+            num_classes=n_classes,
+            pretrained_on_imagenet=pretrained_on_imagenet,
+            pretrained_dir=args.pretrained_dir,
             activation=args.activation,
             encoder_decoder_fusion=args.encoder_decoder_fusion,
             context_module=args.context_module,

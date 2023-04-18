@@ -16,14 +16,13 @@ from src.models.resnet import BasicBlock, NonBottleneck1D
 from src.models.model_utils import ConvBNAct, Swish, Hswish
 
 
-class ESANet(nn.Module):
+class ConvNextRGBD(nn.Module):
     def __init__(self,
                  height=480,
                  width=640,
                  num_classes=37,
                  channels_decoder=None,  # default: [128, 128, 128]
                  pretrained_on_imagenet=True,
-                 pretrained_dir='./trained_models/imagenet',
                  activation='relu',
                  encoder_decoder_fusion='add',
                  context_module='ppm',
@@ -31,7 +30,7 @@ class ESANet(nn.Module):
                  fuse_depth_in_rgb_encoder='SE-add',
                  upsampling='bilinear'):
 
-        super(ESANet, self).__init__()
+        super(ConvNextRGBD, self).__init__()
 
         if channels_decoder is None:
             channels_decoder = [128, 128, 128]
