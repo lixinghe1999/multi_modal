@@ -152,6 +152,8 @@ class ConvNextRGBD(nn.Module):
             fuse = rgb + depth
         else:
             fuse = self.se_layer1(rgb, depth)
+        print(rgb.shape, depth.shape)
+        print(fuse.shape)
         skip1 = self.skip_layer1(fuse)
 
         # block 2
