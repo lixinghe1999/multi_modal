@@ -76,7 +76,7 @@ def train(model, train_dataset, test_dataset):
                 predict = model(*input_data)
                 acc.append((torch.argmax(predict, dim=-1).cpu() == batch[-1]).sum() / len(batch[-1]))
 
-                one_hot_label = torch.nn.functional.one_hot(batch[-1], num_classes=309)
+                one_hot_label = torch.nn.functional.one_hot(batch[-1].to(device), num_classes=309)
                 r = ((model.modality_weight[0] * one_hot_label).sum(dim=-1) / (
                             model.modality_weight[1] * one_hot_label).sum(dim=-1)).mean()
                 ratio.append(r)
