@@ -465,14 +465,12 @@ def validate(model, valid_loader, device, cameras, confusion_matrices,
                     if debug_mode:
                         # only one batch while debugging
                         break
-
             # After all examples of camera are passed through the model,
             # we can compute miou and ious.
             cm_start_time = time.time()
             miou[camera] = torch_miou.compute().data.numpy()
             cm_time += time.time() - cm_start_time
             print(f'mIoU {valid_split} {camera}: {miou[camera]}')
-        break
 
     # confusion matrix for the whole split
     # (sum up the confusion matrices of all cameras)
