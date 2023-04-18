@@ -331,6 +331,7 @@ def train_one_epoch(model, train_loader, device, optimizer, loss_function_train,
                       learning_rates)
 
         if debug_mode:
+            print('get out')
             # only one batch while debugging
             break
 
