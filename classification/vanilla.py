@@ -81,8 +81,8 @@ def train(model, train_dataset, test_dataset):
                 split_prediction = [(model.modality_weight[0] * one_hot_label).sum(dim=-1).abs(),
                                     (model.modality_weight[1] * one_hot_label).sum(dim=-1).abs()]
                 # print(((predict == (model.modality_weight[0] + model.modality_weight[1])) * one_hot_label).sum(dim=-1))
-                print(split_prediction)
-                # ratio.append(r)
+                r = (split_prediction[0] / split_prediction[1]).mean().item()
+                ratio.append(r)
         import pickle
         file = open(r"modality_weight.pkl", "wb")
         pickle.dump(ratio, file)  # 保存list到文件
