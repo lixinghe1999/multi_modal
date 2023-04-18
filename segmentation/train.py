@@ -294,7 +294,7 @@ def train_one_epoch(model, train_loader, device, optimizer, loss_function_train,
             param.grad = None
 
         # forward pass
-        if modality == 'rgbd' or modality == 'convnext':
+        if modality == 'rgbd':
             pred_scales = model(image, depth)
         elif modality == 'rgb':
             pred_scales = model(image)

@@ -45,39 +45,38 @@ def build_model(args, n_classes):
         # specific depth encoder is provided
         if args.encoder_depth in [None, 'None']:
             args.encoder_depth = args.encoder
-
-        model = ESANet(
-            height=args.height,
-            width=args.width,
-            num_classes=n_classes,
-            pretrained_on_imagenet=pretrained_on_imagenet,
-            pretrained_dir=args.pretrained_dir,
-            encoder_rgb=args.encoder,
-            encoder_depth=args.encoder_depth,
-            encoder_block=args.encoder_block,
-            activation=args.activation,
-            encoder_decoder_fusion=args.encoder_decoder_fusion,
-            context_module=args.context_module,
-            nr_decoder_blocks=nr_decoder_blocks,
-            channels_decoder=channels_decoder,
-            fuse_depth_in_rgb_encoder=args.fuse_depth_in_rgb_encoder,
-            upsampling=args.upsampling
-        )
-    elif args.modality == 'convnext':
-        model = ConvNextRGBD(
-            height=args.height,
-            width=args.width,
-            num_classes=n_classes,
-            pretrained_on_imagenet=pretrained_on_imagenet,
-            activation=args.activation,
-            encoder_decoder_fusion=args.encoder_decoder_fusion,
-            context_module=args.context_module,
-            nr_decoder_blocks=nr_decoder_blocks,
-            channels_decoder=channels_decoder,
-            fuse_depth_in_rgb_encoder=args.fuse_depth_in_rgb_encoder,
-            upsampling=args.upsampling
-        )
-
+        if args.network == 'resnet':
+            model = ESANet(
+                height=args.height,
+                width=args.width,
+                num_classes=n_classes,
+                pretrained_on_imagenet=pretrained_on_imagenet,
+                pretrained_dir=args.pretrained_dir,
+                encoder_rgb=args.encoder,
+                encoder_depth=args.encoder_depth,
+                encoder_block=args.encoder_block,
+                activation=args.activation,
+                encoder_decoder_fusion=args.encoder_decoder_fusion,
+                context_module=args.context_module,
+                nr_decoder_blocks=nr_decoder_blocks,
+                channels_decoder=channels_decoder,
+                fuse_depth_in_rgb_encoder=args.fuse_depth_in_rgb_encoder,
+                upsampling=args.upsampling
+            )
+        elif args.network == 'convnext':
+            model = ConvNextRGBD(
+                height=args.height,
+                width=args.width,
+                num_classes=n_classes,
+                pretrained_on_imagenet=pretrained_on_imagenet,
+                activation=args.activation,
+                encoder_decoder_fusion=args.encoder_decoder_fusion,
+                context_module=args.context_module,
+                nr_decoder_blocks=nr_decoder_blocks,
+                channels_decoder=channels_decoder,
+                fuse_depth_in_rgb_encoder=args.fuse_depth_in_rgb_encoder,
+                upsampling=args.upsampling
+            )
     else:  # just one modality
         if args.modality == 'rgb':
             input_channels = 3

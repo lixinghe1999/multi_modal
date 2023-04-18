@@ -123,6 +123,9 @@ class ArgumentParserRGBDSegmentation(argparse.ArgumentParser):
                                'consists of one rgb encoder and two decoders '
                                'for the segmentation and the depth prediction'
                                ' respectively.')
+        self.add_argument('--network', type=str, default='resnet',
+                          choices=['resnet', 'convnext'],
+                          )
         self.add_argument('--encoder_decoder_fusion', type=str,
                           default='add',
                           choices=['add', 'None'],
