@@ -38,6 +38,7 @@ class CrossEntropyLoss2d(nn.Module):
             targets_m = targets.clone()
             targets_m -= 1
             # loss_all = self.ce_loss(inputs, targets_m.long())
+            print(inputs.shape, targets_m.shape)
             loss_all = self.ce_loss(inputs, targets_m)
             number_of_pixels_per_class = \
                 torch.bincount(targets.flatten().type(self.dtype),
