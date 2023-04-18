@@ -14,10 +14,9 @@ warnings.filterwarnings("ignore")
 # remove annoying librosa warning
 def step(model, input_data, optimizer, criteria, label):
     output = model(*input_data)
-    print(model.modality_weight[0].shape, model.modality_weight[1].shape)
+    # print(model.modality_weight[0].shape, model.modality_weight[1].shape)
     one_hot_label = torch.nn.functional.one_hot(label, num_classes=309)
-    print((model.modality_weight[0] * one_hot_label).sum(dim=-1))
-    print((model.modality_weight[1] * one_hot_label).sum(dim=-1))
+    ratio = ((model.modality_weight[0] * one_hot_label).sum(dim=-1) / (model.modality_weight[1] * one_hot_label).sum(dim=-1)).mean()
     # Backward
     optimizer.zero_grad()
     if isinstance(output, tuple):
@@ -25,7 +24,7 @@ def step(model, input_data, optimizer, criteria, label):
     loss = criteria(output, label)
     loss.backward()
     optimizer.step()
-    return loss
+    return loss.item(), ratio.item()
 def train(model, train_dataset, test_dataset):
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset, num_workers=workers, batch_size=batch_size, shuffle=True,
                                                drop_last=True, pin_memory=False)
@@ -56,8 +55,9 @@ def train(model, train_dataset, test_dataset):
                     input_data = [batch[0].to(device)]
                 else:
                     input_data = [batch[0].to(device), batch[1].to(device), batch[2].to(device)]
-            step(model, input_data=input_data, optimizer=optimizer,
+            l, r = step(model, input_data=input_data, optimizer=optimizer,
                         criteria=criteria, label=batch[-1].to(device))
+            print(l,r )
         scheduler.step()
         model.eval()
         acc = []
