@@ -191,7 +191,7 @@ class ESANet(nn.Module):
     def forward(self, rgb, depth):
         rgb = self.encoder_rgb.forward_first_conv(rgb)
         depth = self.encoder_depth.forward_first_conv(depth)
-
+        print(self.fuse_depth_in_rgb_encoder)
         if self.fuse_depth_in_rgb_encoder == 'SE-add':
             rgb, depth = self.se_layer0(rgb, depth)
         fuse = rgb + depth
