@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from timm.models.layers import trunc_normal_, DropPath
 from functools import partial
+from torch.cuda.amp import autocast
 def batch_index_select(x, idx):
     if len(x.size()) == 3:
         B, N, C = x.size()
@@ -118,6 +119,7 @@ class AdaBlock(nn.Module):
             x = self.gamma * x
         return x
 
+    @autocast()
     def forward(self, x, mask=None):
         input_x = x
         if mask is None:  # compatible with the original implementation
