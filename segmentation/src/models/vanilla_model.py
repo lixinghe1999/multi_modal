@@ -65,8 +65,6 @@ class ConvNextRGBD(nn.Module):
         self.channels_decoder_in = dims[-1]
 
         if fuse_depth_in_rgb_encoder == 'SE-add':
-            self.se_layer0 = SqueezeAndExciteFusionAdd(
-                64, activation=self.activation)
             self.se_layer1 = SqueezeAndExciteFusionAdd(
                 dims[0],
                 activation=self.activation)
@@ -148,10 +146,11 @@ class ConvNextRGBD(nn.Module):
         # block 1
         rgb = self.encoder_rgb.forward_layer1(rgb)
         depth = self.encoder_depth.forward_layer1(depth.repeat(1, 3, 1, 1))
-        if self.fuse_depth_in_rgb_encoder == 'add':
-            fuse = rgb + depth
+        if self.fuse_depth_in_rgb_encoder == 'SE-add':
+            rgb, depth_t = self.se_layer1(rgb, depth)
+            fuse = rgb + depth_t
         else:
-            fuse = self.se_layer1(rgb, depth)
+            fuse = rgb + depth
         print(rgb.shape, depth.shape)
         print(fuse.shape)
         skip1 = self.skip_layer1(fuse)
@@ -159,29 +158,32 @@ class ConvNextRGBD(nn.Module):
         # block 2
         rgb = self.encoder_rgb.forward_layer2(fuse)
         depth = self.encoder_depth.forward_layer2(depth)
-        if self.fuse_depth_in_rgb_encoder == 'add':
-            fuse = rgb + depth
+        if self.fuse_depth_in_rgb_encoder == 'SE-add':
+            rgb, depth_t = self.se_layer2(rgb, depth)
+            fuse = rgb + depth_t
         else:
-            fuse = self.se_layer2(rgb, depth)
+            fuse = rgb + depth
         skip2 = self.skip_layer2(fuse)
 
         # block 3
         rgb, mask_r, _ = self.encoder_rgb.forward_layer3(fuse)
         depth, mask_d, _ = self.encoder_depth.forward_layer3(depth)
         # print(rgb.shape, depth.shape)
-        if self.fuse_depth_in_rgb_encoder == 'add':
-            fuse = rgb + depth
+        if self.fuse_depth_in_rgb_encoder == 'SE-add':
+            rgb, depth_t = self.se_layer3(rgb, depth)
+            fuse = rgb + depth_t
         else:
-            fuse = self.se_layer3(rgb[0], depth[1])
+            fuse = rgb + depth
         skip3 = self.skip_layer3(fuse)
 
         # block 4
         rgb = self.encoder_rgb.forward_layer4(fuse, mask_r)
         depth = self.encoder_depth.forward_layer4(depth, mask_d)
-        if self.fuse_depth_in_rgb_encoder == 'add':
-            fuse = rgb + depth
+        if self.fuse_depth_in_rgb_encoder == 'SE-add':
+            rgb, depth_t = self.se_layer4(rgb, depth)
+            fuse = rgb + depth_t
         else:
-            fuse = self.se_layer4(rgb, depth)
+            fuse = rgb + depth
 
         out = self.context_module(fuse)
         out = self.decoder(enc_outs=[out, skip3, skip2, skip1])
