@@ -168,7 +168,6 @@ class AdaBlock(nn.Module):
                 x2 = x2.half()
 
                 x = torch.zeros_like(x)
-                print(x.dtype, x1.dtype, x2.dtype)
                 x = batch_index_fill(x, x1, x2, idx1, idx2)
 
                 x = x.reshape(N, H, W, C).permute(0, 3, 1, 2)  # (N, H, W, C) -> (N, C, H, W)

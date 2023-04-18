@@ -66,7 +66,7 @@ class CrossEntropyLoss2dForValidData:
     def add_loss_of_batch(self, inputs, targets):
         targets_m = targets.clone()
         targets_m -= 1
-        loss = self.ce_loss(inputs, targets_m.long())
+        loss = self.ce_loss(inputs.float(), targets_m.long())
         self.total_loss += loss
 
     def compute_whole_loss(self):
