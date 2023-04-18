@@ -74,7 +74,9 @@ class AVnet(nn.Module):
                                 nn.functional.linear(x[:, self.embed_dim:], self.head[0].weight[:, self.embed_dim:],
                                                      self.head[0].bias)]
         x = self.head(x)
-        print(x == (self.modality_weight[0] + self.modality_weight[1]))
+        pesudo_x = nn.functional.linear(x, self.head[0].weight, self.head[0].bias)
+        print(pesudo_x == x)
+        # print(x == (self.modality_weight[0] + self.modality_weight[1]))
         return x
 if __name__ == "__main__":
     device = 'cuda'
