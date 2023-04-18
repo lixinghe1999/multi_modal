@@ -193,7 +193,7 @@ def train_main():
     for epoch in range(int(start_epoch), args.epochs):
         # unfreeze
         if args.freeze == epoch and args.finetune is None:
-            print('Unfreezing')
+            # print('Unfreezing')
             for param in model.parameters():
                 param.requires_grad = True
 
