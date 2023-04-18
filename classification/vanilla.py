@@ -14,7 +14,7 @@ warnings.filterwarnings("ignore")
 # remove annoying librosa warning
 def step(model, input_data, optimizer, criteria, label):
     output = model(*input_data)
-    print(model.modality_weight)
+    print(model.modality_weight[0].shape, model.modality_weight[1].shape)
     # Backward
     optimizer.zero_grad()
     if isinstance(output, tuple):

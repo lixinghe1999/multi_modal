@@ -69,8 +69,6 @@ class AVnet(nn.Module):
         image = self.image.norm(image)
         x = torch.cat([audio[:, 0], image[:, 0]], dim=1)
         x = torch.flatten(x, start_dim=1)
-        print(x.shape)
-        print(self.head[0].weight.shape)
         self.modality_weight = [nn.functional.linear(x[:, :self.embed_dim], self.head[0].weight[:, :self.embed_dim],
                                                      self.head[0].bias),
                                 nn.functional.linear(x[:, self.embed_dim:], self.head[0].weight[:, self.embed_dim:],
