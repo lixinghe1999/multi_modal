@@ -64,6 +64,7 @@ def build_model(args, n_classes):
                 upsampling=args.upsampling
             )
         elif args.network == 'convnext':
+            print('get convnext')
             model = ConvNextRGBD(
                 height=args.height,
                 width=args.width,
