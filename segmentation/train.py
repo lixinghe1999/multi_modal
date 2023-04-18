@@ -29,7 +29,7 @@ from src.utils import load_ckpt
 from src.utils import print_log
 
 from src.logger import CSVLogger
-from src.confusion_matrix import ConfusionMatrixPytorch
+from src.confusion_matrix import ConfusionMatrixPytorch, miou_pytorch
 
 
 def parse_args():
@@ -381,6 +381,7 @@ def validate(model, valid_loader, device, cameras, confusion_matrices,
     for camera in cameras:
         with valid_loader.dataset.filter_camera(camera):
             confusion_matrices[camera].reset_conf_matrix()
+            torch_miou = miou_pytorch(confusion_matrices[camera])
             print(f'{camera}: {len(valid_loader.dataset)} samples')
 
             for i, sample in enumerate(valid_loader):
@@ -467,8 +468,7 @@ def validate(model, valid_loader, device, cameras, confusion_matrices,
             # After all examples of camera are passed through the model,
             # we can compute miou and ious.
             cm_start_time = time.time()
-            miou[camera], ious[camera] = \
-                confusion_matrices[camera].compute_miou()
+            miou[camera] = torch_miou.compute().data.numpy()
             cm_time += time.time() - cm_start_time
             print(f'mIoU {valid_split} {camera}: {miou[camera]}')
 
