@@ -103,6 +103,7 @@ if __name__ == '__main__':
                     # confusion_matrices[camera].update_conf_matrix(label, pred)
                     confusion_matrices[camera].update(torch.from_numpy(label), torch.from_numpy(pred))
 
+                print(model.weight)
                 print(f'\r{i + 1}/{len(data_loader)}', end='')
         # miou, _ = confusion_matrices[camera].compute_miou()
         miou = torch_miou.compute().data.numpy()
