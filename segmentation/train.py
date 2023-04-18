@@ -197,10 +197,10 @@ def train_main():
             for param in model.parameters():
                 param.requires_grad = True
 
-        logs = train_one_epoch(
-            model, train_loader, device, optimizer, loss_function_train, epoch,
-            lr_scheduler, args.modality,
-            label_downsampling_rates, debug_mode=args.debug)
+        # logs = train_one_epoch(
+        #     model, train_loader, device, optimizer, loss_function_train, epoch,
+        #     lr_scheduler, args.modality,
+        #     label_downsampling_rates, debug_mode=args.debug)
 
         # validation after every epoch -----------------------------------------
         miou, logs = validate(
