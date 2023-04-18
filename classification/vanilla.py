@@ -96,7 +96,7 @@ if __name__ == "__main__":
         embed_dim = 768
         if args.modal == 'AV':
             model = AVnet().to(device)
-            model.load_state_dict(torch.load('dynamic_distill_9_0.6833300531391459.pth'))
+            model.load_state_dict(torch.load('vanilla_vit_AV_8_0.6951769.pth'))
             # model.audio.load_state_dict(torch.load('vanilla_A_6_0.5303089942924621.pth'))
             # model.image.load_state_dict(torch.load('vanilla_V_7_0.5041330446762449.pth'))
         elif args.modal == 'A':
