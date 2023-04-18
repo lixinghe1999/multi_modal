@@ -292,7 +292,6 @@ def train_one_epoch(model, train_loader, device, optimizer, loss_function_train,
         # this is more efficient than optimizer.zero_grad()
         for param in model.parameters():
             param.grad = None
-        print(image.shape, depth.shape)
         # forward pass
         if modality == 'rgbd':
             pred_scales = model(image, depth)
@@ -331,7 +330,6 @@ def train_one_epoch(model, train_loader, device, optimizer, loss_function_train,
                       learning_rates)
 
         if debug_mode:
-            print('get out')
             # only one batch while debugging
             break
 
