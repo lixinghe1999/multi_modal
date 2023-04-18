@@ -162,9 +162,10 @@ class AdaBlock(nn.Module):
                 x1 = batch_index_select(x, idx1)
                 x2 = batch_index_select(x, idx2)
                 x1 = self.forward_ffn(x1).half()
-                x2 = self.fast_path(x2).half()
+                x2 = self.fast_path(x2)
                 if self.fast_path_gamma is not None:
                     x2 = self.fast_path_gamma * x2
+                x2 = x2.half()
 
                 x = torch.zeros_like(x)
                 print(x.dtype, x1.dtype, x2.dtype)
