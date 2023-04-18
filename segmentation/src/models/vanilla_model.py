@@ -21,8 +21,6 @@ class ESANet(nn.Module):
                  height=480,
                  width=640,
                  num_classes=37,
-                 encoder_rgb='resnet18',
-                 encoder_depth='resnet18',
                  channels_decoder=None,  # default: [128, 128, 128]
                  pretrained_on_imagenet=True,
                  pretrained_dir='./trained_models/imagenet',
@@ -54,9 +52,6 @@ class ESANet(nn.Module):
                 'Only relu, swish and hswish as activation function are '
                 'supported so far. Got {}'.format(activation))
 
-        if encoder_rgb == 'resnet50' or encoder_depth == 'resnet50':
-            warnings.warn('Parameter encoder_block is ignored for ResNet50. '
-                          'ResNet50 always uses Bottleneck')
 
         dims = [96, 192, 384, 768]
         self.encoder_rgb = AdaConvNeXt(sparse_ratio=[0.7, 0.5, 0.3], dims=dims,
