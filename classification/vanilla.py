@@ -16,7 +16,8 @@ def step(model, input_data, optimizer, criteria, label):
     output = model(*input_data)
     print(model.modality_weight[0].shape, model.modality_weight[1].shape)
     one_hot_label = torch.nn.functional.one_hot(label, num_classes=309)
-    print((model.modality_weight[0] * one_hot_label).shape)
+    print((model.modality_weight[0] * one_hot_label).sum(dim=-1))
+    print((model.modality_weight[1] * one_hot_label).sum(dim=-1))
     # Backward
     optimizer.zero_grad()
     if isinstance(output, tuple):
