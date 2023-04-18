@@ -169,20 +169,15 @@ class ConvNextRGBD(nn.Module):
         rgb, mask_r, _ = self.encoder_rgb.forward_layer3(fuse)
         depth, mask_d, _ = self.encoder_depth.forward_layer3(depth)
         if self.training:
-            fuse = []
-            for r, d in zip(rgb, depth):
-                if self.fuse_depth_in_rgb_encoder == 'SE-add':
-                    r, d = self.se_layer3(r, d)
-                    fuse.append(r + d)
-                else:
-                    fuse.append(r + d)
+            x1, x2 = rgb
+            rgb = x1 * mask_r + x2 * (1 - mask_r)
+            x1, x2 = depth
+            depth = x1 * mask_d + x2 * (1 - mask_d)
+        if self.fuse_depth_in_rgb_encoder == 'SE-add':
+            rgb, depth_t = self.se_layer3(rgb, depth)
+            fuse = rgb + depth_t
         else:
-            if self.fuse_depth_in_rgb_encoder == 'SE-add':
-                rgb, depth_t = self.se_layer3(rgb, depth)
-                fuse = rgb + depth_t
-            else:
-                fuse = rgb + depth
-
+            fuse = rgb + depth
         skip3 = self.skip_layer3(fuse)
 
         # block 4
