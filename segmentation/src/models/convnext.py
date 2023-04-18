@@ -155,22 +155,19 @@ class AdaBlock(nn.Module):
                 return x
             else:  # inference mode
                 idx1, idx2 = mask
-                print(idx1.dtype, x.dtype)
                 N, C, H, W = x.shape
                 x = self.dwconv(x)
                 x = x.permute(0, 2, 3, 1).reshape(N, H * W, C)  # (N, C, H, W) -> (N, H, W, C)
 
                 x1 = batch_index_select(x, idx1)
-                print(x.dtype, x1.dtype)
                 x2 = batch_index_select(x, idx2)
                 x1 = self.forward_ffn(x1).half()
-                print(x.dtype, x1.dtype)
                 x2 = self.fast_path(x2).half()
                 if self.fast_path_gamma is not None:
                     x2 = self.fast_path_gamma * x2
 
                 x = torch.zeros_like(x)
-                print(x.dtype, x1.dtype)
+                print(x.dtype, x1.dtype, x2.dtype)
                 x = batch_index_fill(x, x1, x2, idx1, idx2)
 
                 x = x.reshape(N, H, W, C).permute(0, 3, 1, 2)  # (N, H, W, C) -> (N, C, H, W)
