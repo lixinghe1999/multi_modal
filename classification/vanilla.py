@@ -78,7 +78,7 @@ def train(model, train_dataset, test_dataset):
 
                 one_hot_label = torch.nn.functional.one_hot(batch[-1].to(device), num_classes=309)
                 r = ((model.modality_weight[0] * one_hot_label).sum(dim=-1) / (
-                            model.modality_weight[1] * one_hot_label).sum(dim=-1)).mean()
+                            model.modality_weight[1] * one_hot_label).sum(dim=-1)).mean().item()
                 ratio.append(r)
         import pickle
         file = open(r"modality_weight.pkl", "wb")
