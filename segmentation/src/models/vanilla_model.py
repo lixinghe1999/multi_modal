@@ -167,14 +167,13 @@ class ConvNextRGBD(nn.Module):
 
         # block 3
         rgb, mask_r, _ = self.encoder_rgb.forward_layer3(fuse)
-        print(rgb[0].shape, rgb[1].shape, mask_r.shape)
         depth, mask_d, _ = self.encoder_depth.forward_layer3(depth)
         # print(rgb.shape, depth.shape)
         if self.fuse_depth_in_rgb_encoder == 'SE-add':
-            rgb, depth_t = self.se_layer3(rgb, depth)
+            rgb, depth_t = self.se_layer3(rgb[0], depth[0])
             fuse = rgb + depth_t
         else:
-            fuse = rgb + depth
+            fuse = rgb[0] + depth[0]
         skip3 = self.skip_layer3(fuse)
 
         # block 4
