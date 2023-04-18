@@ -78,8 +78,8 @@ def train(model, train_dataset, test_dataset):
 
                 one_hot_label = torch.nn.functional.one_hot(batch[-1].to(device), num_classes=309)
 
-                split_prediction = [(model.modality_weight[0] * one_hot_label).sum(dim=-1).abs(),
-                                    (model.modality_weight[1] * one_hot_label).sum(dim=-1).abs()]
+                split_prediction = [(torch.nn.functional.sigmoid(model.modality_weight[0]) * one_hot_label).sum(dim=-1).abs(),
+                                    (torch.nn.functional.sigmoid(model.modality_weight[1]) * one_hot_label).sum(dim=-1).abs()]
                 # print(((predict == (model.modality_weight[0] + model.modality_weight[1])) * one_hot_label).sum(dim=-1))
                 r = (split_prediction[0] / split_prediction[1]).mean().item()
                 ratio.append(r)
