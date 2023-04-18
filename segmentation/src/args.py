@@ -113,7 +113,7 @@ class ArgumentParserRGBDSegmentation(argparse.ArgumentParser):
                                'features than for the rgb features. Parameter '
                                'will only be used when modality is rgbd.')
         self.add_argument('--modality', type=str, default='rgbd',
-                          choices=['rgbd', 'rgb', 'depth', 'convnext'],
+                          choices=['rgbd', 'rgb', 'depth',],
                           help='If modality is rgb or depth the model '
                                'consists of one encoder and one decoder. If '
                                'modality is rgbd the model consists of two '
