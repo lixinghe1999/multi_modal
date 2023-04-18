@@ -105,7 +105,6 @@ if __name__ == '__main__':
                 modality_weight.append(model.modality_weight)
                 print(f'\r{i + 1}/{len(data_loader)}', end='')
 
-
         miou = torch_miou.compute().data.numpy()
         print(f'\rCamera: {camera} mIoU: {100*miou:0.2f}')
     import pickle

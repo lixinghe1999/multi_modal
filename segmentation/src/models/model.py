@@ -190,6 +190,7 @@ class ESANet(nn.Module):
         self.modality_weight = []
 
     def forward(self, rgb, depth):
+        self.modality_weight = []
         rgb = self.encoder_rgb.forward_first_conv(rgb)
         depth = self.encoder_depth.forward_first_conv(depth)
 
