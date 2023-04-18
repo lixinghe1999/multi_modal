@@ -45,12 +45,13 @@ class AVnet(nn.Module):
         self.model = model
         config = dict(patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True,
                       pruning_loc=())
-        embed_dim = 768
+        self.embed_dim = 768
         self.audio = AudioTransformerDiffPruning(config, imagenet_pretrain=pretrained)
         self.image = VisionTransformerDiffPruning(**config)
         if pretrained:
             self.image.load_state_dict(torch.load('assets/deit_base_patch16_224.pth')['model'], strict=False)
-        self.head = nn.Sequential(nn.Linear(embed_dim * 2, 309))
+        self.head = nn.Sequential(nn.Linear(self.embed_dim * 2, 309))
+        self.modality_weight = []
     def fusion_parameter(self):
         parameter = [{'params': self.head.parameters()},
         ]
@@ -58,6 +59,7 @@ class AVnet(nn.Module):
 
     @autocast()
     def forward(self, audio, image):
+        self.modality_weight = []
         B, audio = self.audio.preprocess(audio.unsqueeze(1))
         B, image = self.image.preprocess(image)
 
@@ -68,6 +70,8 @@ class AVnet(nn.Module):
         image = self.image.norm(image)
         x = torch.cat([audio[:, 0], image[:, 0]], dim=1)
         x = torch.flatten(x, start_dim=1)
+        self.modality_weight.append(x[:, :self.embed_dim].abs().mean().item() /
+                                    x[:, self.embed_dim:].abs().mean().item())
         x = self.head(x)
         return x
 if __name__ == "__main__":

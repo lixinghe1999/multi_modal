@@ -512,8 +512,8 @@ def validate(model, valid_loader, device, cameras, confusion_matrices,
     logs['time_copy_to_gpu'] = copy_to_gpu_time
 
     # write iou value of every class to logs
-    for i, iou_value in enumerate(ious['all']):
-        logs[f'IoU_{valid_split}_class_{i}'] = iou_value
+    # for i, iou_value in enumerate(ious['all']):
+    #     logs[f'IoU_{valid_split}_class_{i}'] = iou_value
 
     return miou, logs
 
