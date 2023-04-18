@@ -111,13 +111,9 @@ class AdaBlock(nn.Module):
                                             requires_grad=True) if layer_scale_init_value > 0 else None
 
     def forward_ffn(self, x):
-        print(x.dtype)
         x = self.norm(x)
-        print(x.dtype)
         x = self.pwconv1(x)
-        print(x.dtype)
         x = self.act(x)
-        print(x.dtype)
         x = self.pwconv2(x)
         if self.gamma is not None:
             x = self.gamma * x
@@ -167,9 +163,9 @@ class AdaBlock(nn.Module):
                 x1 = batch_index_select(x, idx1)
                 print(x.dtype, x1.dtype)
                 x2 = batch_index_select(x, idx2)
-                x1 = self.forward_ffn(x1)
+                x1 = self.forward_ffn(x1).half()
                 print(x.dtype, x1.dtype)
-                x2 = self.fast_path(x2)
+                x2 = self.fast_path(x2).half()
                 if self.fast_path_gamma is not None:
                     x2 = self.fast_path_gamma * x2
 
