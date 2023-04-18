@@ -174,7 +174,7 @@ class ESANet(nn.Module):
         if self.fuse_depth_in_rgb_encoder == 'add':
             fuse = rgb + depth
         else:
-            fuse = self.se_layer3(rgb, depth)
+            fuse = self.se_layer3(rgb[0], depth[1])
         skip3 = self.skip_layer3(fuse)
 
         # block 4
