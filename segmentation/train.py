@@ -273,6 +273,7 @@ def train_one_epoch(model, train_loader, device, optimizer, loss_function_train,
     total_loss_list = []
 
     for i, sample in enumerate(train_loader):
+
         start_time_for_one_step = time.time()
 
         # load the data and send them to gpu
@@ -291,7 +292,7 @@ def train_one_epoch(model, train_loader, device, optimizer, loss_function_train,
         # this is more efficient than optimizer.zero_grad()
         for param in model.parameters():
             param.grad = None
-
+        print(image.shape, depth.shape)
         # forward pass
         if modality == 'rgbd':
             pred_scales = model(image, depth)
