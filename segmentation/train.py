@@ -261,7 +261,7 @@ def train_one_epoch(model, train_loader, device, optimizer, loss_function_train,
                     epoch, lr_scheduler, modality,
                     label_downsampling_rates, debug_mode=False):
     training_start_time = time.time()
-    lr_scheduler.step(epoch)
+    lr_scheduler.step()
     samples_of_epoch = 0
 
     # set model to train mode
