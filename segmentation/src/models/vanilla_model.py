@@ -7,8 +7,7 @@ import warnings
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-
+from torch.cuda.amp import autocast
 from src.models.convnext import AdaConvNeXt
 from src.models.rgb_depth_fusion import SqueezeAndExciteFusionAdd
 from src.models.context_modules import get_context_module
@@ -142,6 +141,7 @@ class ConvNextRGBD(nn.Module):
             num_classes=num_classes
         )
 
+    @autocast
     def forward(self, rgb, depth):
         # block 1
         rgb = self.encoder_rgb.forward_layer1(rgb)

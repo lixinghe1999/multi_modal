@@ -90,7 +90,6 @@ def train_main():
 
     # model building -----------------------------------------------------------
     model, device = build_model(args, n_classes=n_classes_without_void)
-
     if args.freeze > 0:
         print('Freeze everything but the output layer(s).')
         for name, param in model.named_parameters():
