@@ -14,9 +14,6 @@ warnings.filterwarnings("ignore")
 # remove annoying librosa warning
 def step(model, input_data, optimizer, criteria, label):
     output = model(*input_data)
-    # print(model.modality_weight[0].shape, model.modality_weight[1].shape)
-    one_hot_label = torch.nn.functional.one_hot(label, num_classes=309)
-    ratio = ((model.modality_weight[0] * one_hot_label).sum(dim=-1) / (model.modality_weight[1] * one_hot_label).sum(dim=-1)).mean()
     # Backward
     optimizer.zero_grad()
     if isinstance(output, tuple):
@@ -24,7 +21,7 @@ def step(model, input_data, optimizer, criteria, label):
     loss = criteria(output, label)
     loss.backward()
     optimizer.step()
-    return loss.item(), ratio.item()
+    return loss.item()
 def train(model, train_dataset, test_dataset):
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset, num_workers=workers, batch_size=batch_size, shuffle=True,
                                                drop_last=True, pin_memory=False)
@@ -43,6 +40,7 @@ def train(model, train_dataset, test_dataset):
     for epoch in range(20):
         model.train()
         for idx, batch in enumerate(tqdm(train_loader)):
+            break
             if args.task == 'vggsound':
                 if args.modal == 'AV':
                     input_data = [batch[0].to(device), batch[1].to(device)]
@@ -55,12 +53,12 @@ def train(model, train_dataset, test_dataset):
                     input_data = [batch[0].to(device)]
                 else:
                     input_data = [batch[0].to(device), batch[1].to(device), batch[2].to(device)]
-            l, r = step(model, input_data=input_data, optimizer=optimizer,
+            step(model, input_data=input_data, optimizer=optimizer,
                         criteria=criteria, label=batch[-1].to(device))
-            print(l,r )
         scheduler.step()
         model.eval()
         acc = []
+        ratio = []
         with torch.no_grad():
             for batch in tqdm(test_loader):
                 if args.task == 'vggsound':
@@ -77,6 +75,16 @@ def train(model, train_dataset, test_dataset):
                         input_data = [batch[0].to(device), batch[1].to(device), batch[2].to(device)]
                 predict = model(*input_data)
                 acc.append((torch.argmax(predict, dim=-1).cpu() == batch[-1]).sum() / len(batch[-1]))
+
+                one_hot_label = torch.nn.functional.one_hot(batch[-1], num_classes=309)
+                r = ((model.modality_weight[0] * one_hot_label).sum(dim=-1) / (
+                            model.modality_weight[1] * one_hot_label).sum(dim=-1)).mean()
+                ratio.append(r)
+        import pickle
+        file = open(r"modality_weight.pkl", "wb")
+        pickle.dump(ratio, file)  # 保存list到文件
+        file.close()
+
         print('epoch', epoch, np.mean(acc))
         if np.mean(acc) > best_acc:
             best_acc = np.mean(acc)
