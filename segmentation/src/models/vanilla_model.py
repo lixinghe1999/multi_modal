@@ -141,7 +141,7 @@ class ConvNextRGBD(nn.Module):
             num_classes=num_classes
         )
 
-    @autocast
+    # @autocast
     def forward(self, rgb, depth):
         # block 1
         rgb = self.encoder_rgb.forward_layer1(rgb)
