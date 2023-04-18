@@ -159,6 +159,7 @@ class AdaBlock(nn.Module):
                 x = x.permute(0, 2, 3, 1).reshape(N, H * W, C)  # (N, C, H, W) -> (N, H, W, C)
 
                 x1 = batch_index_select(x, idx1)
+                print(x.dtype, x1.dtype)
                 x2 = batch_index_select(x, idx2)
                 x1 = self.forward_ffn(x1)
                 x2 = self.fast_path(x2)
@@ -545,23 +546,3 @@ class ConvNeXt(nn.Module):
         x = self.forward_features(x)
         x = self.head(x)
         return x
-
-if __name__ == '__main__':
-    with torch.no_grad():
-        data = torch.rand(1, 3, 224, 224)
-        ckpt = torch.load('cascade_mask_rcnn_convnext_base_22k_3x.pth')['state_dict']
-        pretrained_dict = {'.'.join(k.split('.')[1:]): v for k, v in ckpt.items() if k.split('.')[0] == 'backbone' }
-        model = ConvNeXt(depths=[3, 3, 27, 3], dims=[128, 256, 512, 1024])
-        output = model(data)
-        print(output.shape)
-        # model.load_state_dict(pretrained_dict, strict=True)
-
-        base_rate = 0.7
-        SPARSE_RATIO = [base_rate, base_rate - 0.2, base_rate - 0.4]
-        dynamic_model = AdaConvNeXt(sparse_ratio=SPARSE_RATIO,
-                                pruning_loc=[3,6,9],
-                                depths=[3, 3, 27, 3],
-                                dims=[128, 256, 512, 1024])
-        output = dynamic_model(data)
-        print(output[0].shape)
-        dynamic_model.load_state_dict(pretrained_dict, strict=False)
