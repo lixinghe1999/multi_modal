@@ -494,13 +494,6 @@ def validate(model, valid_loader, device, cameras, confusion_matrices,
 
     validation_time = time.time() - validation_start_time
 
-    # save the confusion matrices of this epoch.
-    # This helps if we want to compute other metrics later.
-    with open(os.path.join(ckpt_dir, 'confusion_matrices',
-                           f'cm_epoch_{epoch}.pickle'), 'wb') as f:
-        pickle.dump({k: cm.overall_confusion_matrix
-                     for k, cm in confusion_matrices.items()}, f,
-                    protocol=pickle.HIGHEST_PROTOCOL)
 
     # logs for the csv logger and the web logger
     logs[f'loss_{valid_split}'] = \
