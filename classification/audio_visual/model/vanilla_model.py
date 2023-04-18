@@ -73,8 +73,8 @@ class AVnet(nn.Module):
                                                      self.head[0].bias),
                                 nn.functional.linear(x[:, self.embed_dim:], self.head[0].weight[:, self.embed_dim:],
                                                      self.head[0].bias)]
-        x = self.head(x)
         pesudo_x = nn.functional.linear(x, self.head[0].weight, self.head[0].bias)
+        x = self.head(x)
         print(pesudo_x == x)
         # print(x == (self.modality_weight[0] + self.modality_weight[1]))
         return x
