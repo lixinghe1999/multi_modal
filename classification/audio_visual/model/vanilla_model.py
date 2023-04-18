@@ -72,9 +72,9 @@ class AVnet(nn.Module):
         print(x.shape)
         print(self.head[0].weight.shape)
         self.modality_weight = [nn.functional.linear(x[:, :self.embed_dim], self.head[0].weight[:, :self.embed_dim],
-                                                     self.head[0].bias[:, :self.embed_dim]),
+                                                     self.head[0].bias),
                                 nn.functional.linear(x[:, self.embed_dim:], self.head[0].weight[:, self.embed_dim:],
-                                                     self.head[0].bias[:, self.embed_dim:])]
+                                                     self.head[0].bias)]
         x = self.head(x)
         return x
 if __name__ == "__main__":
