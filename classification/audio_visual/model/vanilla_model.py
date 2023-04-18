@@ -42,7 +42,6 @@ class MMTM(nn.Module):
 class AVnet(nn.Module):
     def __init__(self, pretrained=False):
         super(AVnet, self).__init__()
-        self.model = model
         config = dict(patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True,
                       pruning_loc=())
         self.embed_dim = 768
