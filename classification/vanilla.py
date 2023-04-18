@@ -77,10 +77,12 @@ def train(model, train_dataset, test_dataset):
                 acc.append((torch.argmax(predict, dim=-1).cpu() == batch[-1]).sum() / len(batch[-1]))
 
                 one_hot_label = torch.nn.functional.one_hot(batch[-1].to(device), num_classes=309)
+
                 split_prediction = [(model.modality_weight[0] * one_hot_label).sum(dim=-1).abs(),
                                     (model.modality_weight[1] * one_hot_label).sum(dim=-1).abs()]
+                print(predict == (split_prediction[0] + split_prediction[1]))
                 print(split_prediction)
-                ratio.append(r)
+                # ratio.append(r)
         import pickle
         file = open(r"modality_weight.pkl", "wb")
         pickle.dump(ratio, file)  # 保存list到文件
