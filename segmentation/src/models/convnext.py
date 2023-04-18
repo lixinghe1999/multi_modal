@@ -153,6 +153,7 @@ class AdaBlock(nn.Module):
                 return x
             else:  # inference mode
                 idx1, idx2 = mask
+                print(idx1.dtype, x.dtype)
                 N, C, H, W = x.shape
                 x = self.dwconv(x)
                 x = x.permute(0, 2, 3, 1).reshape(N, H * W, C)  # (N, C, H, W) -> (N, H, W, C)
