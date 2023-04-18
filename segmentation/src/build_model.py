@@ -27,8 +27,8 @@ def build_model(args, n_classes):
         if args.decoder_channels_mode == 'decreasing':
             channels_decoder = [512, 256, 128]
 
-        warnings.warn('Argument --channels_decoder is ignored when '
-                      '--decoder_chanels_mode decreasing is set.')
+        # warnings.warn('Argument --channels_decoder is ignored when '
+        #               '--decoder_chanels_mode decreasing is set.')
     else:
         channels_decoder = [args.channels_decoder] * 3
 

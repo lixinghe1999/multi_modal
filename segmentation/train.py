@@ -261,7 +261,7 @@ def train_one_epoch(model, train_loader, device, optimizer, loss_function_train,
                     epoch, lr_scheduler, modality,
                     label_downsampling_rates, debug_mode=False):
     training_start_time = time.time()
-    lr_scheduler.step()
+
     samples_of_epoch = 0
 
     # set model to train mode
@@ -309,6 +309,7 @@ def train_one_epoch(model, train_loader, device, optimizer, loss_function_train,
 
         total_loss.backward()
         optimizer.step()
+        lr_scheduler.step()
 
         # append loss values to the lists. Later we can calculate the
         # mean training loss of this epoch
@@ -323,11 +324,11 @@ def train_one_epoch(model, train_loader, device, optimizer, loss_function_train,
         samples_of_epoch += batch_size
         time_inter = time.time() - start_time_for_one_step
 
-        learning_rates = lr_scheduler.get_lr()
-
-        print_log(epoch, samples_of_epoch, batch_size,
-                  len(train_loader.dataset), total_loss, time_inter,
-                  learning_rates)
+        learning_rates = lr_scheduler.get_last_lr()
+        if i % 50 == 0:
+            print_log(epoch, samples_of_epoch, batch_size,
+                      len(train_loader.dataset), total_loss, time_inter,
+                      learning_rates)
 
         if debug_mode:
             # only one batch while debugging
