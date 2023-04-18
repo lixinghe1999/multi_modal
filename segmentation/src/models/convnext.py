@@ -162,6 +162,7 @@ class AdaBlock(nn.Module):
                 print(x.dtype, x1.dtype)
                 x2 = batch_index_select(x, idx2)
                 x1 = self.forward_ffn(x1)
+                print(x.dtype, x1.dtype)
                 x2 = self.fast_path(x2)
                 if self.fast_path_gamma is not None:
                     x2 = self.fast_path_gamma * x2
