@@ -69,7 +69,6 @@ def build_model(args, n_classes):
             width=args.width,
             num_classes=n_classes,
             pretrained_on_imagenet=pretrained_on_imagenet,
-            pretrained_dir=args.pretrained_dir,
             activation=args.activation,
             encoder_decoder_fusion=args.encoder_decoder_fusion,
             context_module=args.context_module,
