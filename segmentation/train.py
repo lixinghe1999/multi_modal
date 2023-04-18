@@ -488,9 +488,9 @@ def validate(model, valid_loader, device, cameras, confusion_matrices,
 
     # miou and iou for all cameras
     # miou['all'], ious['all'] = confusion_matrices['all'].compute_miou()
-    miou = torch_miou.compute().data.numpy()
+    miou['all'] = torch_miou.compute().data.numpy()
     cm_time += time.time() - cm_start_time
-    print(f"mIoU {valid_split}: {miou}")
+    print(f"mIoU {valid_split}: {miou['all']}")
 
     validation_time = time.time() - validation_start_time
 
