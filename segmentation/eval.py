@@ -4,7 +4,7 @@
 .. codeauthor:: Daniel Seichter <daniel.seichter@tu-ilmenau.de>
 """
 import argparse
-
+import numpy as np
 import torch
 import torch.nn.functional as F
 
@@ -103,7 +103,7 @@ if __name__ == '__main__':
                     # confusion_matrices[camera].update_conf_matrix(label, pred)
                     confusion_matrices[camera].update(torch.from_numpy(label), torch.from_numpy(pred))
 
-                print(model.modality_weight)
+                print(np.mean(model.modality_weight, axis=1))
                 print(f'\r{i + 1}/{len(data_loader)}', end='')
         # miou, _ = confusion_matrices[camera].compute_miou()
         miou = torch_miou.compute().data.numpy()
