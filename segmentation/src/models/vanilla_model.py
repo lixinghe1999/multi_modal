@@ -146,11 +146,9 @@ class ESANet(nn.Module):
         )
 
     def forward(self, rgb, depth):
-        print(rgb.shape, depth.shape)
         # block 1
         rgb = self.encoder_rgb.forward_layer1(rgb)
         depth = self.encoder_depth.forward_layer1(depth.repeat(1, 3, 1, 1))
-        print(rgb.shape, depth.shape)
         if self.fuse_depth_in_rgb_encoder == 'add':
             fuse = rgb + depth
         else:
@@ -160,7 +158,6 @@ class ESANet(nn.Module):
         # block 2
         rgb = self.encoder_rgb.forward_layer2(fuse)
         depth = self.encoder_depth.forward_layer2(depth)
-        print(rgb.shape, depth.shape)
         if self.fuse_depth_in_rgb_encoder == 'add':
             fuse = rgb + depth
         else:
@@ -180,7 +177,6 @@ class ESANet(nn.Module):
         # block 4
         rgb = self.encoder_rgb.forward_layer4(fuse, mask_r)
         depth = self.encoder_depth.forward_layer4(depth, mask_d)
-        print(rgb.shape, depth.shape)
         if self.fuse_depth_in_rgb_encoder == 'add':
             fuse = rgb + depth
         else:
