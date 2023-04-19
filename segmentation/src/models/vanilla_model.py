@@ -8,7 +8,7 @@ import warnings
 import torch
 import torch.nn as nn
 from torch.cuda.amp import autocast
-from src.models.convnext import AdaConvNeXt
+from src.models.convnext import AdaConvNeXt, ConvNeXt
 from src.models.rgb_depth_fusion import SqueezeAndExciteFusionAdd
 from src.models.context_modules import get_context_module
 from src.models.resnet import BasicBlock, NonBottleneck1D
@@ -51,14 +51,15 @@ class ConvNextRGBD(nn.Module):
                 'supported so far. Got {}'.format(activation))
 
 
+        # self.encoder_rgb = AdaConvNeXt(sparse_ratio=[0.7, 0.5, 0.3], dims=dims,
+        #                                pruning_loc=[3,6,9], depths=[3, 3, 27, 3])
         dims = [96, 192, 384, 768]
-        self.encoder_rgb = AdaConvNeXt(sparse_ratio=[0.7, 0.5, 0.3], dims=dims,
-                                       pruning_loc=[3,6,9], depths=[3, 3, 27, 3])
-        weight = torch.load('../assets/convnext-s-0.7.pth')['model']
+        self.encoder_rgb = ConvNeXt(dims=dims, depths=[3, 3, 27, 3])
+        weight = torch.load('../assets/upernet_convnext_small_1k_512x512.pth')['state_dict']
+        weight = {k[9:]: v for k, v in weight.items() if k.split('.')[0] == 'backbone'}
         if pretrained_on_imagenet:
             self.encoder_rgb.load_state_dict(weight)
-        self.encoder_depth = AdaConvNeXt(sparse_ratio=[0.7, 0.5, 0.3], dims=dims,
-                                         pruning_loc=[3, 6, 9], depths=[3, 3, 27, 3])
+        self.encoder_depth = ConvNeXt(dims=dims, depths=[3, 3, 27, 3])
         if pretrained_on_imagenet:
             self.encoder_depth.load_state_dict(weight)
         self.channels_decoder_in = dims[-1]
@@ -141,7 +142,7 @@ class ConvNextRGBD(nn.Module):
             num_classes=num_classes
         )
 
-    @autocast()
+    # @autocast()
     def forward(self, rgb, depth):
         # block 1
         rgb = self.encoder_rgb.forward_layer1(rgb)
@@ -164,13 +165,8 @@ class ConvNextRGBD(nn.Module):
         skip2 = self.skip_layer2(fuse)
 
         # block 3
-        rgb, mask_r, _ = self.encoder_rgb.forward_layer3(fuse)
-        depth, mask_d, _ = self.encoder_depth.forward_layer3(depth)
-        if self.training:
-            x1, x2 = rgb
-            rgb = x1 * mask_r + x2 * (1 - mask_r)
-            x1, x2 = depth
-            depth = x1 * mask_d + x2 * (1 - mask_d)
+        rgb = self.encoder_rgb.forward_layer3(fuse)
+        depth = self.encoder_depth.forward_layer3(depth)
         if self.fuse_depth_in_rgb_encoder == 'SE-add':
             rgb, depth_t = self.se_layer3(rgb, depth)
             fuse = rgb + depth_t
@@ -179,8 +175,8 @@ class ConvNextRGBD(nn.Module):
         skip3 = self.skip_layer3(fuse)
 
         # block 4
-        rgb = self.encoder_rgb.forward_layer4(fuse, mask_r)
-        depth = self.encoder_depth.forward_layer4(depth, mask_d)
+        rgb = self.encoder_rgb.forward_layer4(fuse)
+        depth = self.encoder_depth.forward_layer4(depth)
         if self.fuse_depth_in_rgb_encoder == 'SE-add':
             rgb, depth_t = self.se_layer4(rgb, depth)
             fuse = rgb + depth_t
@@ -366,7 +362,7 @@ def main():
     height = 480
     width = 640
 
-    model = ESANet(
+    model = ConvNextRGBD(
         height=height,
         width=width)
 
