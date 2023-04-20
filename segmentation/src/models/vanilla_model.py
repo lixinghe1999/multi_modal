@@ -127,34 +127,34 @@ class ConvNextRGBD(nn.Module):
             self.skip_layer3 = nn.Identity()
 
         # context module
-        if 'learned-3x3' in upsampling:
-            warnings.warn('for the context module the learned upsampling is '
-                          'not possible as the feature maps are not upscaled '
-                          'by the factor 2. We will use nearest neighbor '
-                          'instead.')
-            upsampling_context_module = 'nearest'
-        else:
-            upsampling_context_module = upsampling
-        self.context_module, channels_after_context_module = \
-            get_context_module(
-                context_module,
-                self.channels_decoder_in,
-                channels_decoder[0],
-                input_size=(height // 32, width // 32),
-                activation=self.activation,
-                upsampling_mode=upsampling_context_module
-            )
-
-        # decoder
-        self.decoder = Decoder(
-            channels_in=channels_after_context_module,
-            channels_decoder=channels_decoder,
-            activation=self.activation,
-            nr_decoder_blocks=nr_decoder_blocks,
-            encoder_decoder_fusion=encoder_decoder_fusion,
-            upsampling_mode=upsampling,
-            num_classes=num_classes
-        )
+        # if 'learned-3x3' in upsampling:
+        #     warnings.warn('for the context module the learned upsampling is '
+        #                   'not possible as the feature maps are not upscaled '
+        #                   'by the factor 2. We will use nearest neighbor '
+        #                   'instead.')
+        #     upsampling_context_module = 'nearest'
+        # else:
+        #     upsampling_context_module = upsampling
+        # self.context_module, channels_after_context_module = \
+        #     get_context_module(
+        #         context_module,
+        #         self.channels_decoder_in,
+        #         channels_decoder[0],
+        #         input_size=(height // 32, width // 32),
+        #         activation=self.activation,
+        #         upsampling_mode=upsampling_context_module
+        #     )
+        #
+        # # decoder
+        # self.decoder = Decoder(
+        #     channels_in=channels_after_context_module,
+        #     channels_decoder=channels_decoder,
+        #     activation=self.activation,
+        #     nr_decoder_blocks=nr_decoder_blocks,
+        #     encoder_decoder_fusion=encoder_decoder_fusion,
+        #     upsampling_mode=upsampling,
+        #     num_classes=num_classes
+        # )
 
     def forward(self, rgb, depth):
         # block 1
@@ -165,6 +165,7 @@ class ConvNextRGBD(nn.Module):
             fuse = rgb + depth_t
         else:
             fuse = rgb + depth
+        print(rgb.shape, depth.shape)
         skip1 = self.skip_layer1(fuse)
 
         # block 2
@@ -175,6 +176,7 @@ class ConvNextRGBD(nn.Module):
             fuse = rgb + depth_t
         else:
             fuse = rgb + depth
+        print(rgb.shape, depth.shape)
         skip2 = self.skip_layer2(fuse)
 
         # block 3
@@ -185,6 +187,7 @@ class ConvNextRGBD(nn.Module):
             fuse = rgb + depth_t
         else:
             fuse = rgb + depth
+        print(rgb.shape, depth.shape)
         skip3 = self.skip_layer3(fuse)
 
         # block 4
