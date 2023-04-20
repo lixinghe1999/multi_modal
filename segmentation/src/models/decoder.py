@@ -36,8 +36,7 @@ class UPerHead(BaseDecodeHead):
             padding=1,
             conv_cfg=self.conv_cfg,
             norm_cfg=self.norm_cfg,
-            act_cfg=self.act_cfg,
-            inplace=False)
+            act_cfg=self.act_cfg,)
         # FPN Module
         self.lateral_convs = nn.ModuleList()
         self.fpn_convs = nn.ModuleList()
