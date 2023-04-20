@@ -49,7 +49,7 @@ class UPerHead(BaseDecodeHead):
                 conv_cfg=self.conv_cfg,
                 norm_cfg=self.norm_cfg,
                 act_cfg=self.act_cfg,
-                inplace=True)
+                inplace=False)
             fpn_conv = ConvModule(
                 self.channels,
                 self.channels,
