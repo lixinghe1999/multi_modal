@@ -165,8 +165,9 @@ class ConvNextRGBD(nn.Module):
             fuse = rgb + depth_t
         else:
             fuse = rgb + depth
-        print(rgb.shape, depth.shape)
+
         skip1 = self.skip_layer1(fuse)
+        print(rgb.shape, depth.shape, skip1.shape)
 
         # block 2
         rgb = self.encoder_rgb.forward_layer2(fuse)
@@ -176,8 +177,9 @@ class ConvNextRGBD(nn.Module):
             fuse = rgb + depth_t
         else:
             fuse = rgb + depth
-        print(rgb.shape, depth.shape)
+
         skip2 = self.skip_layer2(fuse)
+        print(rgb.shape, depth.shape, skip2.shape)
 
         # block 3
         rgb = self.encoder_rgb.forward_layer3(fuse)
