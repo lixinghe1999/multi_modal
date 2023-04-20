@@ -201,7 +201,8 @@ class ConvNextRGBD(nn.Module):
         # out = self.context_module(fuse)
         # out = self.decoder(enc_outs=[out, skip3, skip2, skip1])
         out = self.UPerHead([skip1, skip2, skip3, fuse])
-
+        for o in out:
+            print(o.shape)
         return out
 
 class UPerHead(BaseDecodeHead):
@@ -213,7 +214,7 @@ class UPerHead(BaseDecodeHead):
             Module applied on the last feature. Default: (1, 2, 3, 6).
     """
 
-    def __init__(self, pool_scales=(1, 2, 3, 6), upsampling_mode='bilinear', num_classes=37, **kwargs):
+    def __init__(self, pool_scales=(1, 2, 3, 6), upsampling_mode='bilinear', **kwargs):
         super(UPerHead, self).__init__(
             input_transform='multiple_select', **kwargs)
         # PSP Module
@@ -268,8 +269,8 @@ class UPerHead(BaseDecodeHead):
             conv_cfg=self.conv_cfg,
             norm_cfg=self.norm_cfg,
             act_cfg=self.act_cfg)
-        self.upsample1 = Upsample(mode=upsampling_mode, channels=num_classes)
-        self.upsample2 = Upsample(mode=upsampling_mode, channels=num_classes)
+        self.upsample1 = Upsample(mode=upsampling_mode, channels=self.num_classes)
+        self.upsample2 = Upsample(mode=upsampling_mode, channels=self.num_classes)
 
     def psp_forward(self, inputs):
         """Forward function of PSP module."""
