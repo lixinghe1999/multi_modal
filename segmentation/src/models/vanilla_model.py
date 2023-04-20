@@ -304,16 +304,18 @@ class UPerHead(BaseDecodeHead):
                 size=prev_shape,
                 mode='bilinear',
                 align_corners=self.align_corners)
+
+        other_outs = [
+            self.out_conv[i-1](laterals[i])
+            for i in range(1, len(laterals))
+        ]
         # build outputs
         fpn_outs = [
             self.fpn_convs[i](laterals[i])
             for i in range(used_backbone_levels - 1)
         ]
 
-        other_outs = [
-            self.out_conv[i](fpn_outs[i])
-            for i in range(used_backbone_levels - 1)
-        ]
+
 
         # append psp feature
         fpn_outs.append(laterals[-1])
