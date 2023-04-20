@@ -203,7 +203,10 @@ class ConvNextRGBD(nn.Module):
         out = self.UPerHead([skip1, skip2, skip3, fuse])
         out = self.upsample1(out)
         out = self.upsample2(out)
-        return [out]
+        if self.training:
+            return [out]
+        else:
+            return out
 
 class ConvNextOneModality(nn.Module):
     def __init__(self,
@@ -520,7 +523,7 @@ def main():
 
     with torch.no_grad():
         output = model(rgb_image, depth_image)
-    print(output.shape)
+    print(output[0].shape)
 
 
 if __name__ == '__main__':
