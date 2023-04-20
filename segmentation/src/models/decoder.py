@@ -28,7 +28,7 @@ class UPerHead(BaseDecodeHead):
             conv_cfg=self.conv_cfg,
             norm_cfg=self.norm_cfg,
             act_cfg=self.act_cfg,
-            align_corners=self.align_corners)
+            align_corners=self.align_corners,)
         self.bottleneck = ConvModule(
             self.in_channels[-1] + len(pool_scales) * self.channels,
             self.channels,
@@ -36,7 +36,8 @@ class UPerHead(BaseDecodeHead):
             padding=1,
             conv_cfg=self.conv_cfg,
             norm_cfg=self.norm_cfg,
-            act_cfg=self.act_cfg)
+            act_cfg=self.act_cfg,
+            inplace=False)
         # FPN Module
         self.lateral_convs = nn.ModuleList()
         self.fpn_convs = nn.ModuleList()
