@@ -201,8 +201,9 @@ class ConvNextRGBD(nn.Module):
         # out = self.context_module(fuse)
         # out = self.decoder(enc_outs=[out, skip3, skip2, skip1])
         out = self.UPerHead([skip1, skip2, skip3, fuse])
-        # out = self.upsample1(out)
-        # out = self.upsample2(out)
+        out = self.upsample1(out)
+        out = self.upsample2(out)
+        print(out.shape)
         if self.training:
             return [out]
         else:
