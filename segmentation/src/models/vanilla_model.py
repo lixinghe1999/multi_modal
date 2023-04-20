@@ -195,7 +195,7 @@ class ConvNextRGBD(nn.Module):
             fuse = rgb + depth_t
         else:
             fuse = rgb + depth
-
+        print(skip1.shape, skip2.shape)
         # out = self.context_module(fuse)
         # out = self.decoder(enc_outs=[out, skip3, skip2, skip1])
         out = self.UPerHead([skip1, skip2, skip3, fuse])
