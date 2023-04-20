@@ -56,14 +56,11 @@ class ConvNextRGBD(nn.Module):
         dims = [96, 192, 384, 768]
         self.encoder_rgb = ConvNeXt(dims=dims, depths=[3, 3, 27, 3])
         self.encoder_depth = ConvNeXt(dims=dims, depths=[3, 3, 27, 3])
-        self.UPerHead = UPerHead(
-                                 # in_channels=[128, 256, 512, 1024],
-                                 in_channels=[96, 192, 384, 768],
+        self.UPerHead = UPerHead(in_channels=[96, 192, 384, 768],
                                  in_index=[0, 1, 2, 3],
                                  pool_scales=(1, 2, 3, 6),
                                  channels=512,
                                  dropout_ratio=0.1,
-                                 num_classes=num_classes,
                                  norm_cfg=dict(type='BN', requires_grad=True),
                                  align_corners=False, )
 
