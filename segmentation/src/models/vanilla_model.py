@@ -24,7 +24,7 @@ class ConvNextRGBD(nn.Module):
                  channels_decoder=None,  # default: [128, 128, 128]
                  pretrained_on_imagenet=True,
                  activation='relu',
-                 encoder_decoder_fusion='add',
+                 encoder_decoder_fusion='None',
                  context_module='ppm',
                  nr_decoder_blocks=None,  # default: [1, 1, 1]
                  fuse_depth_in_rgb_encoder='SE-add',
@@ -54,14 +54,17 @@ class ConvNextRGBD(nn.Module):
         dims = [96, 192, 384, 768]
         self.encoder_rgb = ConvNeXt(dims=dims, depths=[3, 3, 27, 3])
         self.encoder_depth = ConvNeXt(dims=dims, depths=[3, 3, 27, 3])
-        self.UPerHead = UPerHead(in_channels=[128, 256, 512, 1024],
+        self.UPerHead = UPerHead(
+                                 # in_channels=[128, 256, 512, 1024],
+                                 in_channels=[96, 192, 384, 768],
                                  in_index=[0, 1, 2, 3],
                                  pool_scales=(1, 2, 3, 6),
                                  channels=512,
                                  dropout_ratio=0.1,
-                                 num_classes=19,
-                                 norm_cfg=dict(type='SyncBN', requires_grad=True),
+                                 num_classes=37,
+                                 norm_cfg=dict(type='BN', requires_grad=True),
                                  align_corners=False, )
+
         if pretrained_on_imagenet:
             # load imagenet pretrained or segmentation pretrained
             weight = torch.load('../assets/upernet_convnext_small_1k_512x512.pth')['state_dict']
@@ -70,8 +73,9 @@ class ConvNextRGBD(nn.Module):
             # weight = {k: v for k, v in weight.items() if k.split('.')[0] != 'head'}
             self.encoder_rgb.load_state_dict(weight_backbone)
             self.encoder_depth.load_state_dict(weight_backbone)
-            weight_uperhead = {k[9:]: v for k, v in weight.items() if k.split('.')[0] == 'uperhead'}
-            self.UPerHead.load_state_dict(weight_uperhead)
+            weight_uperhead = {k[12:]: v for k, v in weight.items() if k.split('.')[0] == 'decode_head'}
+            weight_uperhead = {k: v for k, v in weight_uperhead.items() if k.split('.')[0] != 'conv_seg'}
+            self.UPerHead.load_state_dict(weight_uperhead, strict=False)
         self.channels_decoder_in = dims[-1]
 
         if fuse_depth_in_rgb_encoder == 'SE-add':
@@ -192,9 +196,9 @@ class ConvNextRGBD(nn.Module):
         else:
             fuse = rgb + depth
 
-        out = self.context_module(fuse)
-        out = self.decoder(enc_outs=[out, skip3, skip2, skip1])
-
+        # out = self.context_module(fuse)
+        # out = self.decoder(enc_outs=[out, skip3, skip2, skip1])
+        out = self.UPerHead([skip1, skip2, skip3, fuse])
         return out
 
 class ConvNextOneModality(nn.Module):
@@ -501,7 +505,8 @@ def main():
 
     model = ConvNextRGBD(
         height=height,
-        width=width)
+        width=width,
+        pretrained_on_imagenet=True)
 
     # print(model)
 

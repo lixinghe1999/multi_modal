@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule
 
-from mmseg.ops import resize
+from mmseg.models.utils import resize
 from mmseg.models.decode_heads.decode_head import BaseDecodeHead
 from mmseg.models.decode_heads.psp_head import PPM
 
@@ -83,7 +83,6 @@ class UPerHead(BaseDecodeHead):
 
     def forward(self, inputs):
         """Forward function."""
-
         inputs = self._transform_inputs(inputs)
         # input 做个上采样，返回咋样
 
