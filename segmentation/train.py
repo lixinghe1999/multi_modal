@@ -16,7 +16,6 @@ import numpy as np
 
 import torch
 import torch.nn.functional as F
-from torch.utils.data import DataLoader
 import torch.optim
 from torch.optim.lr_scheduler import OneCycleLR
 
@@ -271,7 +270,7 @@ def train_one_epoch(model, train_loader, device, optimizer, loss_function_train,
 
     # summed loss of all resolutions
     total_loss_list = []
-
+    lr_scheduler.step()
     for i, sample in enumerate(train_loader):
 
         start_time_for_one_step = time.time()
@@ -334,7 +333,6 @@ def train_one_epoch(model, train_loader, device, optimizer, loss_function_train,
             # only one batch while debugging
             break
 
-    lr_scheduler.step()
     # fill the logs for csv log file and web logger
     logs = dict()
     logs['time_training'] = time.time() - training_start_time

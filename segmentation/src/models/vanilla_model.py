@@ -13,6 +13,7 @@ from src.models.rgb_depth_fusion import SqueezeAndExciteFusionAdd
 from src.models.context_modules import get_context_module
 from src.models.resnet import BasicBlock, NonBottleneck1D
 from src.models.model_utils import ConvBNAct, Swish, Hswish
+from src.models.decoder import UPerHead, FCNHead
 
 
 class ConvNextRGBD(nn.Module):
@@ -53,14 +54,24 @@ class ConvNextRGBD(nn.Module):
         dims = [96, 192, 384, 768]
         self.encoder_rgb = ConvNeXt(dims=dims, depths=[3, 3, 27, 3])
         self.encoder_depth = ConvNeXt(dims=dims, depths=[3, 3, 27, 3])
+        self.UPerHead = UPerHead(in_channels=[128, 256, 512, 1024],
+                                 in_index=[0, 1, 2, 3],
+                                 pool_scales=(1, 2, 3, 6),
+                                 channels=512,
+                                 dropout_ratio=0.1,
+                                 num_classes=19,
+                                 norm_cfg=dict(type='SyncBN', requires_grad=True),
+                                 align_corners=False, )
         if pretrained_on_imagenet:
             # load imagenet pretrained or segmentation pretrained
-            # weight = torch.load('../assets/upernet_convnext_small_1k_512x512.pth')['state_dict']
-            # weight = {k[9:]: v for k, v in weight.items() if k.split('.')[0] == 'backbone'}
-            weight = torch.load('../assets/convnext_small_1k_224.pth')['model']
-            weight = {k: v for k, v in weight.items() if k.split('.')[0] != 'head'}
-            self.encoder_rgb.load_state_dict(weight)
-            self.encoder_depth.load_state_dict(weight)
+            weight = torch.load('../assets/upernet_convnext_small_1k_512x512.pth')['state_dict']
+            weight_backbone = {k[9:]: v for k, v in weight.items() if k.split('.')[0] == 'backbone'}
+            # weight = torch.load('../assets/convnext_small_1k_224.pth')['model']
+            # weight = {k: v for k, v in weight.items() if k.split('.')[0] != 'head'}
+            self.encoder_rgb.load_state_dict(weight_backbone)
+            self.encoder_depth.load_state_dict(weight_backbone)
+            weight_uperhead = {k[9:]: v for k, v in weight.items() if k.split('.')[0] == 'uperhead'}
+            self.UPerHead.load_state_dict(weight_uperhead)
         self.channels_decoder_in = dims[-1]
 
         if fuse_depth_in_rgb_encoder == 'SE-add':
@@ -141,7 +152,6 @@ class ConvNextRGBD(nn.Module):
             num_classes=num_classes
         )
 
-    # @autocast()
     def forward(self, rgb, depth):
         # block 1
         rgb = self.encoder_rgb.forward_layer1(rgb)
@@ -187,6 +197,134 @@ class ConvNextRGBD(nn.Module):
 
         return out
 
+class ConvNextOneModality(nn.Module):
+    def __init__(self,
+                 height=480,
+                 width=640,
+                 num_classes=37,
+                 channels_decoder=None,  # default: [128, 128, 128]
+                 pretrained_on_imagenet=True,
+                 activation='relu',
+                 encoder_decoder_fusion='add',
+                 context_module='ppm',
+                 nr_decoder_blocks=None,  # default: [1, 1, 1]
+                 upsampling='bilinear'):
+
+        super(ConvNextOneModality, self).__init__()
+
+        if channels_decoder is None:
+            channels_decoder = [128, 128, 128]
+        if nr_decoder_blocks is None:
+            nr_decoder_blocks = [1, 1, 1]
+
+        # set activation function
+        if activation.lower() == 'relu':
+            self.activation = nn.ReLU(inplace=True)
+        elif activation.lower() in ['swish', 'silu']:
+            self.activation = Swish()
+        elif activation.lower() == 'hswish':
+            self.activation = Hswish()
+        else:
+            raise NotImplementedError(
+                'Only relu, swish and hswish as activation function are '
+                'supported so far. Got {}'.format(activation))
+
+        dims = [96, 192, 384, 768]
+        self.encoder = ConvNeXt(dims=dims, depths=[3, 3, 27, 3])
+        if pretrained_on_imagenet:
+            # load imagenet pretrained or segmentation pretrained
+            # weight = torch.load('../assets/upernet_convnext_small_1k_512x512.pth')['state_dict']
+            # weight = {k[9:]: v for k, v in weight.items() if k.split('.')[0] == 'backbone'}
+            weight = torch.load('../assets/convnext_small_1k_224.pth')['model']
+            weight = {k: v for k, v in weight.items() if k.split('.')[0] != 'head'}
+            self.encoder.load_state_dict(weight)
+        self.channels_decoder_in = dims[-1]
+
+        if encoder_decoder_fusion == 'add':
+            layers_skip1 = list()
+            if dims[0] != channels_decoder[2]:
+                layers_skip1.append(ConvBNAct(
+                    dims[0],
+                    channels_decoder[2],
+                    kernel_size=1,
+                    activation=self.activation))
+            self.skip_layer1 = nn.Sequential(*layers_skip1)
+
+            layers_skip2 = list()
+            if dims[1] != channels_decoder[1]:
+                layers_skip2.append(ConvBNAct(
+                    dims[1],
+                    channels_decoder[1],
+                    kernel_size=1,
+                    activation=self.activation))
+            self.skip_layer2 = nn.Sequential(*layers_skip2)
+
+            layers_skip3 = list()
+            if dims[2] != channels_decoder[0]:
+                layers_skip3.append(ConvBNAct(
+                    dims[2],
+                    channels_decoder[0],
+                    kernel_size=1,
+                    activation=self.activation))
+            self.skip_layer3 = nn.Sequential(*layers_skip3)
+
+        elif encoder_decoder_fusion == 'None':
+            self.skip_layer0 = nn.Identity()
+            self.skip_layer1 = nn.Identity()
+            self.skip_layer2 = nn.Identity()
+            self.skip_layer3 = nn.Identity()
+
+        # context module
+        if 'learned-3x3' in upsampling:
+            warnings.warn('for the context module the learned upsampling is '
+                          'not possible as the feature maps are not upscaled '
+                          'by the factor 2. We will use nearest neighbor '
+                          'instead.')
+            upsampling_context_module = 'nearest'
+        else:
+            upsampling_context_module = upsampling
+        self.context_module, channels_after_context_module = \
+            get_context_module(
+                context_module,
+                self.channels_decoder_in,
+                channels_decoder[0],
+                input_size=(height // 32, width // 32),
+                activation=self.activation,
+                upsampling_mode=upsampling_context_module
+            )
+
+        # decoder
+        self.decoder = Decoder(
+            channels_in=channels_after_context_module,
+            channels_decoder=channels_decoder,
+            activation=self.activation,
+            nr_decoder_blocks=nr_decoder_blocks,
+            encoder_decoder_fusion=encoder_decoder_fusion,
+            upsampling_mode=upsampling,
+            num_classes=num_classes
+        )
+
+    # @autocast()
+    def forward(self, x):
+        # block 1
+        x = self.encoder.forward_layer1(x)
+        skip1 = self.skip_layer1(x)
+
+        # block 2
+        x = self.encoder.forward_layer2(x)
+        skip2 = self.skip_layer2(x)
+
+        # block 3
+        x = self.encoder.forward_layer3(x)
+        skip3 = self.skip_layer3(x)
+
+        # block 4
+        x = self.encoder.forward_layer4(x)
+
+        out = self.context_module(x)
+        out = self.decoder(enc_outs=[out, skip3, skip2, skip1])
+
+        return out
 
 class Decoder(nn.Module):
     def __init__(self,

@@ -42,7 +42,7 @@ def throughput(model, images):
     print('finish warm-up')
     torch.cuda.synchronize()
     tic1 = time.time()
-    for i in tqdm(range(30)):
+    for i in tqdm(range(50)):
         model(*images)
     torch.cuda.synchronize()
     tic2 = time.time()

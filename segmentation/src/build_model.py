@@ -9,7 +9,7 @@ import torch
 from torch import nn
 
 from src.models.model import ESANet
-from src.models.vanilla_model import ConvNextRGBD
+from src.models.vanilla_model import ConvNextRGBD, ConvNextOneModality
 from src.models.model_one_modality import ESANetOneModality
 from src.models.resnet import ResNet
 
@@ -82,24 +82,37 @@ def build_model(args, n_classes):
             input_channels = 3
         else:  # depth only
             input_channels = 1
-
-        model = ESANetOneModality(
-            height=args.height,
-            width=args.width,
-            pretrained_on_imagenet=pretrained_on_imagenet,
-            encoder=args.encoder,
-            encoder_block=args.encoder_block,
-            activation=args.activation,
-            input_channels=input_channels,
-            encoder_decoder_fusion=args.encoder_decoder_fusion,
-            context_module=args.context_module,
-            num_classes=n_classes,
-            pretrained_dir=args.pretrained_dir,
-            nr_decoder_blocks=nr_decoder_blocks,
-            channels_decoder=channels_decoder,
-            weighting_in_encoder=args.fuse_depth_in_rgb_encoder,
-            upsampling=args.upsampling
-        )
+        if args.network == 'resnet':
+            model = ESANetOneModality(
+                height=args.height,
+                width=args.width,
+                pretrained_on_imagenet=pretrained_on_imagenet,
+                encoder=args.encoder,
+                encoder_block=args.encoder_block,
+                activation=args.activation,
+                input_channels=input_channels,
+                encoder_decoder_fusion=args.encoder_decoder_fusion,
+                context_module=args.context_module,
+                num_classes=n_classes,
+                pretrained_dir=args.pretrained_dir,
+                nr_decoder_blocks=nr_decoder_blocks,
+                channels_decoder=channels_decoder,
+                weighting_in_encoder=args.fuse_depth_in_rgb_encoder,
+                upsampling=args.upsampling
+            )
+        elif args.network == 'convnext':
+            model = ConvNextOneModality(
+                height=args.height,
+                width=args.width,
+                num_classes=n_classes,
+                pretrained_on_imagenet=pretrained_on_imagenet,
+                activation=args.activation,
+                encoder_decoder_fusion=args.encoder_decoder_fusion,
+                context_module=args.context_module,
+                nr_decoder_blocks=nr_decoder_blocks,
+                channels_decoder=channels_decoder,
+                upsampling=args.upsampling
+            )
 
     if torch.cuda.is_available():
         device = torch.device("cuda:0")
