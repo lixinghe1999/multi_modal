@@ -213,7 +213,7 @@ class UPerHead(BaseDecodeHead):
             Module applied on the last feature. Default: (1, 2, 3, 6).
     """
 
-    def __init__(self, pool_scales=(1, 2, 3, 6), upsampling_mode='bilinear', **kwargs):
+    def __init__(self, pool_scales=(1, 2, 3, 6), upsampling_mode='bilinear', num_classes=37, **kwargs):
         super(UPerHead, self).__init__(
             input_transform='multiple_select', **kwargs)
         # PSP Module
