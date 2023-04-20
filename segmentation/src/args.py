@@ -127,7 +127,7 @@ class ArgumentParserRGBDSegmentation(argparse.ArgumentParser):
                           choices=['resnet', 'convnext'],
                           )
         self.add_argument('--encoder_decoder_fusion', type=str,
-                          default='add',
+                          default='None',
                           choices=['add', 'None'],
                           help='How to fuse encoder feature maps into the '
                                'decoder. If None no encoder feature maps are '
