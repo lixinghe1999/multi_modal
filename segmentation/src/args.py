@@ -39,7 +39,7 @@ class ArgumentParserRGBDSegmentation(argparse.ArgumentParser):
         # input dimensions
         self.add_argument('--batch_size', type=int, default=8,
                           help='batch size for training')
-        self.add_argument('--batch_size_valid', type=int, default=None,
+        self.add_argument('--batch_size_valid', type=int, default=24,
                           help='batch size for validation. Can be typically '
                                '2-3 times as large as the batch size for '
                                'training. If None it will be the same as '
@@ -52,11 +52,11 @@ class ArgumentParserRGBDSegmentation(argparse.ArgumentParser):
                                'Images will be resized to this width.')
 
         # epochs
-        self.add_argument('--epochs', default=500, type=int, metavar='N',
+        self.add_argument('--epochs', default=100, type=int, metavar='N',
                           help='number of total epochs to run')
 
         # training hyper parameters
-        self.add_argument('--lr', '--learning-rate', default=0.01,
+        self.add_argument('--lr', '--learning-rate', default=0.001,
                           type=float,
                           help='maximum learning rate. When using one_cycle '
                                'as --lr_scheduler lr will first increase to '

@@ -50,17 +50,14 @@ class ConvNextRGBD(nn.Module):
                 'Only relu, swish and hswish as activation function are '
                 'supported so far. Got {}'.format(activation))
 
-
-        # self.encoder_rgb = AdaConvNeXt(sparse_ratio=[0.7, 0.5, 0.3], dims=dims,
-        #                                pruning_loc=[3,6,9], depths=[3, 3, 27, 3])
         dims = [96, 192, 384, 768]
         self.encoder_rgb = ConvNeXt(dims=dims, depths=[3, 3, 27, 3])
-        weight = torch.load('../assets/upernet_convnext_small_1k_512x512.pth')['state_dict']
-        weight = {k[9:]: v for k, v in weight.items() if k.split('.')[0] == 'backbone'}
-        if pretrained_on_imagenet:
-            self.encoder_rgb.load_state_dict(weight)
         self.encoder_depth = ConvNeXt(dims=dims, depths=[3, 3, 27, 3])
         if pretrained_on_imagenet:
+            # weight = torch.load('../assets/upernet_convnext_small_1k_512x512.pth')['state_dict']
+            weight = torch.load('../assets/convnext_small_1k_224.pth')['state_dict']
+            weight = {k[9:]: v for k, v in weight.items() if k.split('.')[0] == 'backbone'}
+            self.encoder_rgb.load_state_dict(weight)
             self.encoder_depth.load_state_dict(weight)
         self.channels_decoder_in = dims[-1]
 

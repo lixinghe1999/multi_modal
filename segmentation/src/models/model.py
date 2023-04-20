@@ -21,9 +21,9 @@ class ESANet(nn.Module):
                  height=480,
                  width=640,
                  num_classes=37,
-                 encoder_rgb='resnet18',
-                 encoder_depth='resnet18',
-                 encoder_block='BasicBlock',
+                 encoder_rgb='resnet34',
+                 encoder_depth='resnet34',
+                 encoder_block='NonBottleneck1D',
                  channels_decoder=None,  # default: [128, 128, 128]
                  pretrained_on_imagenet=True,
                  pretrained_dir='./trained_models/imagenet',
