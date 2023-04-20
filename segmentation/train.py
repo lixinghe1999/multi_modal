@@ -67,8 +67,7 @@ def train_main():
         f.write('\n')
 
     # when using multi scale supervision the label needs to be downsampled.
-    # label_downsampling_rates = [8, 16, 32]
-    label_downsampling_rates = []
+    label_downsampling_rates = [8, 16, 32]
 
     # data preparation ---------------------------------------------------------
     data_loaders = prepare_data(args, ckpt_dir)

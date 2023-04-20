@@ -40,7 +40,7 @@ class UPerHead(BaseDecodeHead):
         # FPN Module
         self.lateral_convs = nn.ModuleList()
         self.fpn_convs = nn.ModuleList()
-        print(self.act_cfg)
+        self.out_conv = nn.ModuleList()
         for in_channels in self.in_channels[:-1]:  # skip the top layer
             l_conv = ConvModule(
                 in_channels,
@@ -59,8 +59,10 @@ class UPerHead(BaseDecodeHead):
                 norm_cfg=self.norm_cfg,
                 act_cfg=self.act_cfg,
                 inplace=False)
+            conv_out = nn.Conv2d(self.channels, 37, kernel_size=3, padding=1)
             self.lateral_convs.append(l_conv)
             self.fpn_convs.append(fpn_conv)
+            self.out_conv.append(conv_out)
 
         self.fpn_bottleneck = ConvModule(
             len(self.in_channels) * self.channels,
@@ -108,6 +110,12 @@ class UPerHead(BaseDecodeHead):
             self.fpn_convs[i](laterals[i])
             for i in range(used_backbone_levels - 1)
         ]
+
+        other_outs = [
+            self.out_conv[i](fpn_outs[i])
+            for i in range(used_backbone_levels - 1)
+        ]
+
         # append psp feature
         fpn_outs.append(laterals[-1])
 
@@ -120,7 +128,10 @@ class UPerHead(BaseDecodeHead):
         fpn_outs = torch.cat(fpn_outs, dim=1)
         output = self.fpn_bottleneck(fpn_outs) # 2，512，128，128
         output = self.cls_seg(output)
-        return output
+        if self.training:
+            return [output] + other_outs
+        else:
+            return output
 
 class FCNHead(BaseDecodeHead):
     """Fully Convolution Networks for Semantic Segmentation.
