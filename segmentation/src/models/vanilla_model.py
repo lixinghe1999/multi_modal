@@ -201,8 +201,6 @@ class ConvNextRGBD(nn.Module):
         # out = self.context_module(fuse)
         # out = self.decoder(enc_outs=[out, skip3, skip2, skip1])
         out = self.UPerHead([skip1, skip2, skip3, fuse])
-        for o in out:
-            print(o.shape)
         return out
 
 class UPerHead(BaseDecodeHead):
