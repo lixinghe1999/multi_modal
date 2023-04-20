@@ -66,6 +66,7 @@ class ConvNextRGBD(nn.Module):
                                  align_corners=False, )
 
         if pretrained_on_imagenet:
+            print('load the pretrained model')
             # load imagenet pretrained or segmentation pretrained
             weight = torch.load('../assets/upernet_convnext_small_1k_512x512.pth')['state_dict']
             weight_backbone = {k[9:]: v for k, v in weight.items() if k.split('.')[0] == 'backbone'}
