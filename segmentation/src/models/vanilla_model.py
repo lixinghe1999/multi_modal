@@ -203,7 +203,7 @@ class ConvNextRGBD(nn.Module):
         out = self.UPerHead([skip1, skip2, skip3, fuse])
         out = self.upsample1(out)
         out = self.upsample2(out)
-        return out
+        return [out]
 
 class ConvNextOneModality(nn.Module):
     def __init__(self,

@@ -119,7 +119,7 @@ class UPerHead(BaseDecodeHead):
         fpn_outs = torch.cat(fpn_outs, dim=1)
         output = self.fpn_bottleneck(fpn_outs) # 2，512，128，128
         output = self.cls_seg(output)
-        return [output]
+        return output
 
 class FCNHead(BaseDecodeHead):
     """Fully Convolution Networks for Semantic Segmentation.
