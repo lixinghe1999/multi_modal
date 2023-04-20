@@ -287,27 +287,27 @@ def train_one_epoch(model, train_loader, device, optimizer, loss_function_train,
         if len(label_downsampling_rates) > 0:
             for rate in sample['label_down']:
                 target_scales.append(sample['label_down'][rate].to(device))
-
-        # optimizer.zero_grad()
-        # this is more efficient than optimizer.zero_grad()
-        for param in model.parameters():
-            param.grad = None
-        # forward pass
-        if modality == 'rgbd':
-            pred_scales = model(image, depth)
-        elif modality == 'rgb':
-            pred_scales = model(image)
-        else:
-            pred_scales = model(depth)
-
-        # loss computation
-        losses = loss_function_train(pred_scales, target_scales)
-        loss_segmentation = sum(losses)
-
-        total_loss = loss_segmentation
         with torch.autograd.set_detect_anomaly(True):
+            optimizer.zero_grad()
+            # # this is more efficient than optimizer.zero_grad()
+            # for param in model.parameters():
+            #     param.grad = None
+            # forward pass
+            if modality == 'rgbd':
+                pred_scales = model(image, depth)
+            elif modality == 'rgb':
+                pred_scales = model(image)
+            else:
+                pred_scales = model(depth)
+
+            # loss computation
+            losses = loss_function_train(pred_scales, target_scales)
+            loss_segmentation = sum(losses)
+
+            total_loss = loss_segmentation
+
             total_loss.backward()
-        optimizer.step()
+            optimizer.step()
 
 
 
