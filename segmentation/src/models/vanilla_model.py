@@ -61,7 +61,7 @@ class ConvNextRGBD(nn.Module):
                                  pool_scales=(1, 2, 3, 6),
                                  channels=512,
                                  dropout_ratio=0.1,
-                                 num_classes=37,
+                                 num_classes=num_classes,
                                  norm_cfg=dict(type='BN', requires_grad=True),
                                  align_corners=False, )
 
@@ -77,6 +77,9 @@ class ConvNextRGBD(nn.Module):
             weight_uperhead = {k: v for k, v in weight_uperhead.items() if k.split('.')[0] != 'conv_seg'}
             self.UPerHead.load_state_dict(weight_uperhead, strict=False)
         self.channels_decoder_in = dims[-1]
+
+        self.upsample1 = Upsample(mode=upsampling, channels=num_classes)
+        self.upsample2 = Upsample(mode=upsampling, channels=num_classes)
 
         if fuse_depth_in_rgb_encoder == 'SE-add':
             self.se_layer1 = SqueezeAndExciteFusionAdd(
@@ -197,9 +200,9 @@ class ConvNextRGBD(nn.Module):
             fuse = rgb + depth
         # out = self.context_module(fuse)
         # out = self.decoder(enc_outs=[out, skip3, skip2, skip1])
-        print(skip1.shape, skip2.shape, skip3.shape, fuse.shape)
         out = self.UPerHead([skip1, skip2, skip3, fuse])
-        print(out.shape)
+        out = self.upsample1(out)
+        out = self.upsample2(out)
         return out
 
 class ConvNextOneModality(nn.Module):
