@@ -93,7 +93,6 @@ class UPerHead(BaseDecodeHead):
         ]
 
         laterals.append(self.psp_forward(inputs))
-
         # build top-down path
         used_backbone_levels = len(laterals)
         for i in range(used_backbone_levels - 1, 0, -1):
@@ -103,7 +102,6 @@ class UPerHead(BaseDecodeHead):
                 size=prev_shape,
                 mode='bilinear',
                 align_corners=self.align_corners)
-
         # build outputs
         fpn_outs = [
             self.fpn_convs[i](laterals[i])
@@ -121,7 +119,7 @@ class UPerHead(BaseDecodeHead):
         fpn_outs = torch.cat(fpn_outs, dim=1)
         output = self.fpn_bottleneck(fpn_outs) # 2，512，128，128
         output = self.cls_seg(output)
-        return output
+        return [output]
 
 class FCNHead(BaseDecodeHead):
     """Fully Convolution Networks for Semantic Segmentation.
