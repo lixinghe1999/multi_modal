@@ -40,6 +40,7 @@ class UPerHead(BaseDecodeHead):
         # FPN Module
         self.lateral_convs = nn.ModuleList()
         self.fpn_convs = nn.ModuleList()
+        print(self.act_cfg)
         for in_channels in self.in_channels[:-1]:  # skip the top layer
             l_conv = ConvModule(
                 in_channels,
