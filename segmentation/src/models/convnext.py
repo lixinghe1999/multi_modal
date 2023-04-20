@@ -452,10 +452,11 @@ class ConvNeXt(nn.Module):
         self.out_indices = out_indices
 
         norm_layer = partial(LayerNorm, eps=1e-6, data_format="channels_first")
-        for i_layer in range(4):
-            layer = norm_layer(dims[i_layer])
-            layer_name = f'norm{i_layer}'
-            self.add_module(layer_name, layer)
+        self.norm = norm_layer(dims[-1])
+        # for i_layer in range(4):
+        #     layer = norm_layer(dims[i_layer])
+        #     layer_name = f'norm{i_layer}'
+        #     self.add_module(layer_name, layer)
     def forward_layer1(self, x):
         x = self.downsample_layers[0](x)
         x = self.stages[0](x)
@@ -481,4 +482,5 @@ class ConvNeXt(nn.Module):
         return x
     def forward(self, x):
         x = self.forward_features(x)
+        x = self.norm(x)
         return x
