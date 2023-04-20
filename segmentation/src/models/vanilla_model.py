@@ -62,6 +62,7 @@ class ConvNextRGBD(nn.Module):
                                  pool_scales=(1, 2, 3, 6),
                                  channels=512,
                                  dropout_ratio=0.1,
+                                 upsampling_mode=upsampling,
                                  norm_cfg=dict(type='BN', requires_grad=True),
                                  align_corners=False, )
 
@@ -212,13 +213,12 @@ class UPerHead(BaseDecodeHead):
             Module applied on the last feature. Default: (1, 2, 3, 6).
     """
 
-    def __init__(self, pool_scales=(1, 2, 3, 6), upsampling_mode='bilinear',
-                 num_classes=37, **kwargs):
+    def __init__(self, **kwargs):
         super(UPerHead, self).__init__(
             input_transform='multiple_select', **kwargs)
         # PSP Module
         self.psp_modules = PPM(
-            pool_scales,
+            self.pool_scales,
             self.in_channels[-1],
             self.channels,
             conv_cfg=self.conv_cfg,
@@ -226,7 +226,7 @@ class UPerHead(BaseDecodeHead):
             act_cfg=self.act_cfg,
             align_corners=self.align_corners,)
         self.bottleneck = ConvModule(
-            self.in_channels[-1] + len(pool_scales) * self.channels,
+            self.in_channels[-1] + len(self.pool_scales) * self.channels,
             self.channels,
             3,
             padding=1,
