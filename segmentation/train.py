@@ -305,8 +305,8 @@ def train_one_epoch(model, train_loader, device, optimizer, loss_function_train,
         loss_segmentation = sum(losses)
 
         total_loss = loss_segmentation
-
-        total_loss.backward()
+        with torch.autograd.set_detect_anomaly(True):
+            total_loss.backward()
         optimizer.step()
 
 

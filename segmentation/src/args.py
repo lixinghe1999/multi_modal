@@ -153,7 +153,7 @@ class ArgumentParserRGBDSegmentation(argparse.ArgumentParser):
                           help='Fuses the depth feature maps in the rgb '
                                'encoder maps over several layers in the '
                                'encoder.')
-        self.add_argument('--upsampling', default='bilinear',
+        self.add_argument('--upsampling', default='learned-3x3-zeropad',
                           choices=['nearest', 'bilinear', 'learned-3x3',
                                    'learned-3x3-zeropad'],
                           help='How to usample in the decoder. '
