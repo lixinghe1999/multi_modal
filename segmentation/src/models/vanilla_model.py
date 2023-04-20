@@ -203,7 +203,6 @@ class ConvNextRGBD(nn.Module):
         out = self.UPerHead([skip1, skip2, skip3, fuse])
         out = self.upsample1(out)
         out = self.upsample2(out)
-        print(out.shape)
         if self.training:
             return [out]
         else:
