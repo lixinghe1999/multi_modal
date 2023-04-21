@@ -1,4 +1,4 @@
-from src.models.mobilenet_model import main
+from src.models.fastseg_model import main
 from src.models.convnext import AdaConvNeXt, ConvNeXt
 from src.models.convnext_model import ConvNextRGBD
 from src.models.mobilenet_model import MobileRGBD

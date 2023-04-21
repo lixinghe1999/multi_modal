@@ -12,6 +12,7 @@ from src.models.model import ESANet
 from src.models.convnext_model import ConvNextRGBD, ConvNextOneModality
 from src.models.efficientformer_model import DynamicRGBD
 from src.models.mobilenet_model import MobileRGBD
+from src.models.fastseg import MobileV3Large
 from src.models.model_one_modality import ESANetOneModality
 from src.models.resnet import ResNet
 
@@ -81,8 +82,7 @@ def build_model(args, n_classes):
             )
         elif args.network == 'efficientformer':
             model = DynamicRGBD()
-        elif args.network == 'mobilenet':
-            model = MobileRGBD()
+
     else:  # just one modality
         if args.modality == 'rgb':
             input_channels = 3
@@ -119,6 +119,9 @@ def build_model(args, n_classes):
                 channels_decoder=channels_decoder,
                 upsampling=args.upsampling
             )
+        else:
+            model = MobileV3Large.from_pretrained()
+            model.last = nn.Conv2d(128, 37, kernel_size=1)
 
     if torch.cuda.is_available():
         device = torch.device("cuda:0")
