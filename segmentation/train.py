@@ -101,9 +101,9 @@ def train_main():
     # loss functions (only loss_function_train is really needed.
     # The other loss functions are just there to compare valid loss to
     # train loss)
-    loss_function_train = \
-        utils.CrossEntropyLoss2d(weight=class_weighting, device=device)
-
+    loss_function_train = torch.nn.CrossEntropyLoss(
+        torch.from_numpy(np.array(torch.tensor(class_weighting).to(device))).float(),
+        reduction='none')
     pixel_sum_valid_data = valid_loader.dataset.compute_class_weights(
         weight_mode='linear'
     )
@@ -283,10 +283,10 @@ def train_one_epoch(model, train_loader, device, optimizer, loss_function_train,
         if modality in ['rgbd', 'depth']:
             depth = sample['depth'].to(device)
             batch_size = depth.data.shape[0]
-        target_scales = [sample['label'].to(device)]
-        if len(label_downsampling_rates) > 0:
-            for rate in sample['label_down']:
-                target_scales.append(sample['label_down'][rate].to(device))
+        target_scales = sample['label'].to(device)
+        # if len(label_downsampling_rates) > 0:
+        #     for rate in sample['label_down']:
+        #         target_scales.append(sample['label_down'][rate].to(device))
         with torch.autograd.set_detect_anomaly(True):
             optimizer.zero_grad()
             if modality == 'rgbd':

@@ -112,7 +112,7 @@ class DynamicRGBD(nn.Module):
         out = self.head(out)
         out = self.upsample1(out)
         out = self.upsample2(out)
-        return [out]
+        return out
 def main():
     height = 480
     width = 640
