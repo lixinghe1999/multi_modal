@@ -100,7 +100,6 @@ if __name__ == '__main__':
                     pred = pred.numpy()
 
                     # confusion_matrices[camera].update_conf_matrix(label, pred)
-                    print(label.shape, pred.shape)
                     confusion_matrices[camera].update(torch.from_numpy(label), torch.from_numpy(pred))
 
                 # modality_weight.append(model.modality_weight)
