@@ -102,7 +102,7 @@ def train_main():
     # The other loss functions are just there to compare valid loss to
     # train loss)
     loss_function_train = torch.nn.CrossEntropyLoss(
-        torch.from_numpy(np.array(torch.tensor(class_weighting).to(device))).float(),
+        torch.tensor(class_weighting).to(device).float(),
         reduction='none')
     pixel_sum_valid_data = valid_loader.dataset.compute_class_weights(
         weight_mode='linear'
