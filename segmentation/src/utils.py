@@ -20,6 +20,7 @@ class CrossEntropyLoss2d(nn.Module):
         super(CrossEntropyLoss2d, self).__init__()
         self.weight = torch.tensor(weight).to(device)
         self.num_classes = len(self.weight) + 1  # +1 for void
+        print(self.num_classes)
         if self.num_classes < 2**8:
             self.dtype = torch.uint8
         else:
