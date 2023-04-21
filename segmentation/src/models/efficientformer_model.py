@@ -101,8 +101,8 @@ class DynamicRGBD(nn.Module):
             # weight_backbone = {k[9:]: v for k, v in weight.items() if k.split('.')[0] == 'backbone'}
             # weight = torch.load('../assets/convnext_small_1k_224.pth')['model']
             # weight = {k: v for k, v in weight.items() if k.split('.')[0] != 'head'}
-            self.encoder_rgb.network.load_state_dict(weight)
-            self.encoder_depth.network.load_state_dict(weight)
+            self.encoder_rgb.load_state_dict(weight)
+            self.encoder_depth.load_state_dict(weight)
 
     def forward(self, rgb, depth):
         rgb = self.encoder_rgb(rgb)
