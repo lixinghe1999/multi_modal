@@ -1,6 +1,7 @@
-from src.models.efficientformer_model import main
+from src.models.mobilenet_model import main
 from src.models.convnext import AdaConvNeXt, ConvNeXt
 from src.models.convnext_model import ConvNextRGBD
+from src.models.mobilenet_model import MobileRGBD
 import torch
 if __name__ == '__main__':
     main()

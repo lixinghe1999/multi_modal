@@ -1,6 +1,7 @@
 import torch
 from src.models.convnext_model import ConvNextRGBD
 from src.models.model import ESANet
+from src.models.mobilenet_model import MobileRGBD
 import time
 import argparse
 import numpy as np
@@ -37,12 +38,12 @@ def throughput(model, images):
     model.eval()
     batch_size = images[0].shape[0]
     print('start warm-up')
-    for i in tqdm(range(30)):
+    for i in range(30):
         model(*images)
     print('finish warm-up')
     torch.cuda.synchronize()
     tic1 = time.time()
-    for i in tqdm(range(50)):
+    for i in range(50):
         model(*images)
     torch.cuda.synchronize()
     tic2 = time.time()
@@ -69,13 +70,12 @@ if __name__ == "__main__":
     depth_image = torch.randn(1, 1, height, width).to(device)
     if args.task == 'convnext':
         model = ConvNextRGBD(pretrained_on_imagenet=False).to(device)
+    elif args.task == 'mobilenet':
+        model = MobileRGBD().to(device)
     else:
         model = ESANet(encoder_rgb='resnet50', encoder_depth='resnet50', pretrained_on_imagenet=False).to(device)
     model.eval()
     throughput(model, (rgb_image, depth_image))
 
     calc_flops(model, (rgb_image, depth_image), show_details=False)
-    # torch.save(model.state_dict(), 'dynamic_token.pth')
-    # torch.onnx.export(model, (audio, image), 'dynamic.onnx', input_names=['input_1', 'input_2'],
-    #                  output_names=['output'], export_params=True)
 

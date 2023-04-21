@@ -67,8 +67,8 @@ def train_main():
         f.write('\n')
 
     # when using multi scale supervision the label needs to be downsampled.
-    # label_downsampling_rates = [8, 16, 32]
-    label_downsampling_rates = []
+    label_downsampling_rates = [8, 16, 32]
+    # label_downsampling_rates = []
 
     # data preparation ---------------------------------------------------------
     data_loaders = prepare_data(args, ckpt_dir)
@@ -300,7 +300,6 @@ def train_one_epoch(model, train_loader, device, optimizer, loss_function_train,
 
             loss_segmentation = sum(losses)
             total_loss = loss_segmentation
-            # torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1e-5)
             total_loss.backward()
             optimizer.step()
 
