@@ -49,7 +49,7 @@ if __name__ == '__main__':
     confusion_matrices = dict()
 
     cameras = data_loader.dataset.cameras
-    modality_weight = []
+    # modality_weight = []
     for camera in cameras:
         confusion_matrices[camera] = dict()
         confusion_matrices[camera] = ConfusionMatrixPytorch(n_classes)
@@ -102,15 +102,15 @@ if __name__ == '__main__':
                     # confusion_matrices[camera].update_conf_matrix(label, pred)
                     confusion_matrices[camera].update(torch.from_numpy(label), torch.from_numpy(pred))
 
-                modality_weight.append(model.modality_weight)
+                # modality_weight.append(model.modality_weight)
                 print(f'\r{i + 1}/{len(data_loader)}', end='')
 
         miou = torch_miou.compute().data.numpy()
         print(f'\rCamera: {camera} mIoU: {100*miou:0.2f}')
-    import pickle
-    file = open(r"modality_weight.pkl", "wb")
-    pickle.dump(modality_weight, file)  # 保存list到文件
-    file.close()
+    # import pickle
+    # file = open(r"modality_weight.pkl", "wb")
+    # pickle.dump(modality_weight, file)  # 保存list到文件
+    # file.close()
 
     confusion_matrices['all'] = ConfusionMatrixPytorch(n_classes)
     torch_miou = miou_pytorch(confusion_matrices['all'])
