@@ -1,8 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-.. codeauthor:: Mona Koehler <mona.koehler@tu-ilmenau.de>
-.. codeauthor:: Daniel Seichter <daniel.seichter@tu-ilmenau.de>
-"""
 import warnings
 
 import torch
@@ -21,9 +16,9 @@ class ESANet(nn.Module):
                  height=480,
                  width=640,
                  num_classes=37,
-                 encoder_rgb='resnet34',
-                 encoder_depth='resnet34',
-                 encoder_block='NonBottleneck1D',
+                 encoder_rgb='resnet18',
+                 encoder_depth='resnet18',
+                 encoder_block='BasicBlock',
                  channels_decoder=None,  # default: [128, 128, 128]
                  pretrained_on_imagenet=True,
                  pretrained_dir='./trained_models/imagenet',
@@ -187,17 +182,15 @@ class ESANet(nn.Module):
             upsampling_mode=upsampling,
             num_classes=num_classes
         )
-        self.modality_weight = []
 
     def forward(self, rgb, depth):
-        self.modality_weight = []
         rgb = self.encoder_rgb.forward_first_conv(rgb)
         depth = self.encoder_depth.forward_first_conv(depth)
 
-        if self.fuse_depth_in_rgb_encoder == 'SE-add':
-            fuse = self.se_layer0(rgb, depth)
-        else:
+        if self.fuse_depth_in_rgb_encoder == 'add':
             fuse = rgb + depth
+        else:
+            fuse = self.se_layer0(rgb, depth)
 
         rgb = F.max_pool2d(fuse, kernel_size=3, stride=2, padding=1)
         depth = F.max_pool2d(depth, kernel_size=3, stride=2, padding=1)
@@ -205,37 +198,37 @@ class ESANet(nn.Module):
         # block 1
         rgb = self.encoder_rgb.forward_layer1(rgb)
         depth = self.encoder_depth.forward_layer1(depth)
-        if self.fuse_depth_in_rgb_encoder == 'SE-add':
-            fuse = self.se_layer1(rgb, depth)
-        else:
+        if self.fuse_depth_in_rgb_encoder == 'add':
             fuse = rgb + depth
+        else:
+            fuse = self.se_layer1(rgb, depth)
         skip1 = self.skip_layer1(fuse)
 
         # block 2
         rgb = self.encoder_rgb.forward_layer2(fuse)
         depth = self.encoder_depth.forward_layer2(depth)
-        if self.fuse_depth_in_rgb_encoder == 'SE-add':
-            fuse = self.se_layer2(rgb, depth)
-        else:
+        if self.fuse_depth_in_rgb_encoder == 'add':
             fuse = rgb + depth
+        else:
+            fuse = self.se_layer2(rgb, depth)
         skip2 = self.skip_layer2(fuse)
 
         # block 3
         rgb = self.encoder_rgb.forward_layer3(fuse)
         depth = self.encoder_depth.forward_layer3(depth)
-        if self.fuse_depth_in_rgb_encoder == 'SE-add':
-            fuse = self.se_layer3(rgb, depth)
-        else:
+        if self.fuse_depth_in_rgb_encoder == 'add':
             fuse = rgb + depth
+        else:
+            fuse = self.se_layer3(rgb, depth)
         skip3 = self.skip_layer3(fuse)
 
         # block 4
         rgb = self.encoder_rgb.forward_layer4(fuse)
         depth = self.encoder_depth.forward_layer4(depth)
-        if self.fuse_depth_in_rgb_encoder == 'SE-add':
-            fuse = self.se_layer4(rgb, depth)
-        else:
+        if self.fuse_depth_in_rgb_encoder == 'add':
             fuse = rgb + depth
+        else:
+            fuse = self.se_layer4(rgb, depth)
 
         out = self.context_module(fuse)
         out = self.decoder(enc_outs=[out, skip3, skip2, skip1])

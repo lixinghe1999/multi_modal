@@ -99,7 +99,7 @@ def train_main():
     setattr(args, 'network', 'resnet')
     setattr(args, 'pretrained_dir', '../assets/r34_NBt1D.pth')
     teacher_model, _ = build_model(args, n_classes=n_classes_without_void)
-    for j, p in enumerate(model.parameters()):
+    for j, p in enumerate(teacher_model.parameters()):
         p.requires_grad_(False)
     loss_function_train = utils.CrossEntropyLoss2d(device=device, weight=class_weighting)
 
