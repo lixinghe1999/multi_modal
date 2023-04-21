@@ -621,8 +621,10 @@ class EfficientFormer(nn.Module):
             if self.fork_feat and idx in self.out_indices:
                 norm_layer = getattr(self, f'norm{idx}')
                 x_out = norm_layer(x)
+                print(torch.max(x).item(), torch.min(x).item())
+                print(torch.max(x_out).item(), torch.min(x_out).item())
                 outs.append(x_out)
-            print(torch.max(outs[-1]).item(), torch.min(outs[-1]).item())
+
         if self.fork_feat:
             return outs
         return x
