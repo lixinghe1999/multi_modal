@@ -293,9 +293,9 @@ def train_one_epoch(model, teacher_model, train_loader, device, optimizer, loss_
             input_data = [image]
         else:
             input_data = [depth]
-        pred_scales = model(*[input_data])
+        pred_scales = model(*input_data)
         with torch.no_grad():
-            teacher_scale = teacher_model(*[input_data])
+            teacher_scale = teacher_model(*input_data)
         # loss computation
         losses = loss_function_train(pred_scales, target_scales, teacher_scale)
 
