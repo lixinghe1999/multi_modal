@@ -27,7 +27,8 @@ class CrossEntropyLoss2d(nn.Module):
         self.ce_loss = nn.CrossEntropyLoss(
             torch.from_numpy(np.array(weight)).float(),
             reduction='none',
-            ignore_index=-1
+            ignore_index=-1,
+
         )
         self.ce_loss.to(device)
 

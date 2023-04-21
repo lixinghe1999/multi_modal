@@ -17,7 +17,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 import torch.optim
-from torch.optim.lr_scheduler import OneCycleLR
+from torch.optim.lr_scheduler import OneCycleLR, L
 
 from src.args import ArgumentParserRGBDSegmentation
 from src.build_model import build_model
@@ -289,10 +289,6 @@ def train_one_epoch(model, train_loader, device, optimizer, loss_function_train,
                 target_scales.append(sample['label_down'][rate].to(device))
         with torch.autograd.set_detect_anomaly(True):
             optimizer.zero_grad()
-            # # this is more efficient than optimizer.zero_grad()
-            # for param in model.parameters():
-            #     param.grad = None
-            # forward pass
             if modality == 'rgbd':
                 pred_scales = model(image, depth)
             elif modality == 'rgb':
@@ -305,7 +301,7 @@ def train_one_epoch(model, train_loader, device, optimizer, loss_function_train,
             loss_segmentation = sum(losses)
 
             total_loss = loss_segmentation
-
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1e-5)
             total_loss.backward()
             optimizer.step()
 
