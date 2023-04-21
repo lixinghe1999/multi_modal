@@ -10,7 +10,7 @@ import os
 import sys
 import time
 import warnings
-
+import math
 import numpy as np
 
 import torch
@@ -116,18 +116,7 @@ def train_main():
     loss_function_valid_unweighted = \
         utils.CrossEntropyLoss2dForValidDataUnweighted(device=device)
 
-    optimizer = get_optimizer(args, model)
-
-    # in this script lr_scheduler.step() is only called once per epoch
-    lr_scheduler = OneCycleLR(
-        optimizer,
-        max_lr=[i['lr'] for i in optimizer.param_groups],
-        total_steps=args.epochs,
-        div_factor=25,
-        pct_start=0.1,
-        anneal_strategy='cos',
-        final_div_factor=1e4
-    )
+    optimizer, lr_scheduler = get_optimizer(args, model)
 
     # load checkpoint if parameter last_ckpt is provided
     if args.last_ckpt:
@@ -270,7 +259,7 @@ def train_one_epoch(model, train_loader, device, optimizer, loss_function_train,
 
     # summed loss of all resolutions
     total_loss_list = []
-    lr_scheduler.step()
+
     for i, sample in enumerate(train_loader):
 
         start_time_for_one_step = time.time()
@@ -302,8 +291,7 @@ def train_one_epoch(model, train_loader, device, optimizer, loss_function_train,
         total_loss = loss_segmentation
         total_loss.backward()
         optimizer.step()
-
-
+        lr_scheduler.step()
 
         # append loss values to the lists. Later we can calculate the
         # mean training loss of this epoch
@@ -537,8 +525,26 @@ def get_optimizer(args, model):
             'Currently only SGD and Adam as optimizers are '
             'supported. Got {}'.format(args.optimizer))
 
-    print('Using {} as optimizer'.format(args.optimizer))
-    return optimizer
+    def poly_schd(epoch):
+        return math.pow(1 - epoch / args.epochs, args.poly_exp)
+
+    def poly2_schd(epoch):
+        if epoch < args.poly_step:
+            poly_exp = args.poly_exp
+        else:
+            poly_exp = 2 * args.poly_exp
+        return math.pow(1 - epoch / args.max_epoch, poly_exp)
+
+    if args.lr_schedule == 'poly2':
+        scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer,
+                                                lr_lambda=poly2_schd)
+    elif args.lr_schedule == 'poly':
+        scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer,
+                                                lr_lambda=poly_schd)
+    else:
+        raise ValueError('unknown lr schedule {}'.format(args.lr_schedule))
+
+    return optimizer, scheduler
 
 
 if __name__ == '__main__':

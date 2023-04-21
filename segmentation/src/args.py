@@ -56,6 +56,9 @@ class ArgumentParserRGBDSegmentation(argparse.ArgumentParser):
                           help='maximum learning rate. When using one_cycle '
                                'as --lr_scheduler lr will first increase to '
                                'the value provided and then slowly decrease.')
+
+        self.add_argument('--lr_scheduler', default='poly', type=str)
+        self.add_argument('--poly_exp', default=1.0, type=float)
         self.add_argument('--weight_decay', '--wd', default=1e-4, type=float,
                           help='weight decay')
         self.add_argument('--momentum', default=0.9, type=float, metavar='M',
