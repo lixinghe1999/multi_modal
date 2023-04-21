@@ -1,5 +1,5 @@
-# from src.models.efficientformer_v1 import efficientformer_l1_feat
-from src.models.efficientformer_v2 import efficientformerv2_s0
+from src.models.efficientformer_v1 import efficientformer_l1_feat
+from src.models.efficientformer_v2 import efficientformerv2_s0_feat
 import torch.nn as nn
 import torch
 from mmseg.models.necks.fpn import FPN
@@ -81,8 +81,8 @@ class DynamicRGBD(nn.Module):
                 'Only relu, swish and hswish as activation function are '
                 'supported so far. Got {}'.format(activation))
 
-        self.encoder_rgb = efficientformerv2_s0()
-        self.encoder_depth = efficientformerv2_s0()
+        self.encoder_rgb = efficientformerv2_s0_feat()
+        self.encoder_depth = efficientformerv2_s0_feat()
         self.neck = FPN(in_channels=[32, 48, 96, 176], out_channels=256, num_outs=4)
         self.head = FPNHead(in_channels=[256, 256, 256, 256],
                             in_index=[0, 1, 2, 3],
@@ -98,9 +98,6 @@ class DynamicRGBD(nn.Module):
             print('load the pretrained model')
             # load imagenet pretrained or segmentation pretrained
             weight = torch.load('../assets/eformer_s0_450.pth')['model']
-            # weight_backbone = {k[9:]: v for k, v in weight.items() if k.split('.')[0] == 'backbone'}
-            # weight = torch.load('../assets/convnext_small_1k_224.pth')['model']
-            # weight = {k: v for k, v in weight.items() if k.split('.')[0] != 'head'}
             self.encoder_rgb.load_state_dict(weight, False)
             self.encoder_depth.load_state_dict(weight, False)
 
