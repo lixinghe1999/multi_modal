@@ -297,7 +297,7 @@ def train_one_epoch(model, train_loader, device, optimizer, loss_function_train,
                 pred_scales = model(depth)
 
             # loss computation
-            losses = loss_function_train(pred_scales, target_scales)
+            losses = loss_function_train(pred_scales, target_scales.long())
             loss_segmentation = sum(losses)
 
             total_loss = loss_segmentation
