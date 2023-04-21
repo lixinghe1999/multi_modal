@@ -95,9 +95,9 @@ def train_main():
                 param.requires_grad = False
 
     # loss, optimizer, learning rate scheduler, csvlogger  ----------
-    args_new = args
+
     setattr(args, 'network', 'resnet')
-    teacher_model, _ = build_model(args_new, n_classes=n_classes_without_void)
+    teacher_model, _ = build_model(args, n_classes=n_classes_without_void)
     teacher_model.eval()
     loss_function_train = utils.CrossEntropyLoss2d(device=device, weight=class_weighting)
 
