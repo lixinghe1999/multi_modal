@@ -27,7 +27,7 @@ class CrossEntropyLoss2d(nn.Module):
         self.ce_loss = nn.CrossEntropyLoss(
             torch.from_numpy(np.array(weight)).float(),
             reduction='none',
-            # ignore_index=-1,
+            ignore_index=-1,
         )
         self.ce_loss.to(device)
 
@@ -39,7 +39,7 @@ class CrossEntropyLoss2d(nn.Module):
             targets_m -= 1
             # loss_all = self.ce_loss(inputs, targets_m.long())
             print(inputs.shape, targets.shape)
-            loss_all = self.ce_loss(inputs.float(), targets_m.long())
+            loss_all = self.ce_loss(inputs, targets_m.long())
             # print(loss_all)
             # loss_all = torch.nn.functional.cross_entropy(inputs, targets_m)
             number_of_pixels_per_class = \
