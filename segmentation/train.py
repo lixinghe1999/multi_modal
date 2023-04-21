@@ -286,6 +286,7 @@ def train_one_epoch(model, teacher_model, train_loader, device, optimizer, loss_
             for rate in sample['label_down']:
                 target_scales.append(sample['label_down'][rate].to(device))
         optimizer.zero_grad()
+        print(modality)
         if modality == 'rgbd':
             input_data = [image, depth]
         elif modality == 'rgb':
