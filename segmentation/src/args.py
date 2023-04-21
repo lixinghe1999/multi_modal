@@ -1,8 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-.. codeauthor:: Mona Koehler <mona.koehler@tu-ilmenau.de>
-.. codeauthor:: Daniel Seichter <daniel.seichter@tu-ilmenau.de>
-"""
 import argparse
 
 
@@ -23,7 +18,7 @@ class ArgumentParserRGBDSegmentation(argparse.ArgumentParser):
                           help='the path to the weights pretrained on '
                                'SceneNet')
         self.add_argument('--no_imagenet_pretraining',
-                          dest='pretrained_on_imagenet', default=False,
+                          dest='pretrained_on_imagenet', default=True,
                           action='store_false',
                           help='Encoder will be initialized randomly. '
                                '(If not set encoder will be initialized with '
@@ -39,7 +34,7 @@ class ArgumentParserRGBDSegmentation(argparse.ArgumentParser):
         # input dimensions
         self.add_argument('--batch_size', type=int, default=8,
                           help='batch size for training')
-        self.add_argument('--batch_size_valid', type=int, default=24,
+        self.add_argument('--batch_size_valid', type=int, default=None,
                           help='batch size for validation. Can be typically '
                                '2-3 times as large as the batch size for '
                                'training. If None it will be the same as '
@@ -52,11 +47,11 @@ class ArgumentParserRGBDSegmentation(argparse.ArgumentParser):
                                'Images will be resized to this width.')
 
         # epochs
-        self.add_argument('--epochs', default=100, type=int, metavar='N',
+        self.add_argument('--epochs', default=500, type=int, metavar='N',
                           help='number of total epochs to run')
 
         # training hyper parameters
-        self.add_argument('--lr', '--learning-rate', default=0.001,
+        self.add_argument('--lr', '--learning-rate', default=0.01,
                           type=float,
                           help='maximum learning rate. When using one_cycle '
                                'as --lr_scheduler lr will first increase to '
@@ -123,11 +118,8 @@ class ArgumentParserRGBDSegmentation(argparse.ArgumentParser):
                                'consists of one rgb encoder and two decoders '
                                'for the segmentation and the depth prediction'
                                ' respectively.')
-        self.add_argument('--network', type=str, default='resnet',
-                          choices=['resnet', 'convnext', 'efficientformer', 'mobilenet'],
-                          )
         self.add_argument('--encoder_decoder_fusion', type=str,
-                          default='None',
+                          default='add',
                           choices=['add', 'None'],
                           help='How to fuse encoder feature maps into the '
                                'decoder. If None no encoder feature maps are '
