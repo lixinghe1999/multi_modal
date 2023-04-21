@@ -67,7 +67,6 @@ def train_main():
 
     # when using multi scale supervision the label needs to be downsampled.
     label_downsampling_rates = [8, 16, 32]
-    label_downsampling_rates = []
 
     # data preparation ---------------------------------------------------------
     data_loaders = prepare_data(args, ckpt_dir)
@@ -96,10 +95,10 @@ def train_main():
                 param.requires_grad = False
 
     # loss, optimizer, learning rate scheduler, csvlogger  ----------
-
-    # loss functions (only loss_function_train is really needed.
-    # The other loss functions are just there to compare valid loss to
-    # train loss)
+    args_new = args.clone()
+    args_new['network'] = 'resnet'
+    teacher_model, _ = build_model(args_new, n_classes=n_classes_without_void)
+    teacher_model.eval()
     loss_function_train = utils.CrossEntropyLoss2d(device=device, weight=class_weighting)
 
     pixel_sum_valid_data = valid_loader.dataset.compute_class_weights(
@@ -196,7 +195,7 @@ def train_main():
                 param.requires_grad = True
 
         logs = train_one_epoch(
-            model, train_loader, device, optimizer, loss_function_train, epoch,
+            model, teacher_model, train_loader, device, optimizer, loss_function_train, epoch,
             lr_scheduler, args.modality,
             label_downsampling_rates, debug_mode=args.debug)
 
@@ -254,7 +253,7 @@ def train_main():
     print("Training completed ")
 
 
-def train_one_epoch(model, train_loader, device, optimizer, loss_function_train,
+def train_one_epoch(model, teacher_model, train_loader, device, optimizer, loss_function_train,
                     epoch, lr_scheduler, modality,
                     label_downsampling_rates, debug_mode=False):
     training_start_time = time.time()
@@ -285,22 +284,23 @@ def train_one_epoch(model, train_loader, device, optimizer, loss_function_train,
         if len(label_downsampling_rates) > 0:
             for rate in sample['label_down']:
                 target_scales.append(sample['label_down'][rate].to(device))
-        with torch.autograd.set_detect_anomaly(True):
-            optimizer.zero_grad()
-            if modality == 'rgbd':
-                pred_scales = model(image, depth)
-            elif modality == 'rgb':
-                pred_scales = model(image)
-            else:
-                pred_scales = model(depth)
+        optimizer.zero_grad()
+        if modality == 'rgbd':
+            input_data = [image, depth]
+        elif modality == 'rgb':
+            input_data = [image]
+        else:
+            input_data = [depth]
+        pred_scales = model(*[input_data])
+        with torch.no_grad():
+            teacher_scale = teacher_model()
+        # loss computation
+        losses = loss_function_train(pred_scales, target_scales, teacher_scale)
 
-            # loss computation
-            losses = loss_function_train(pred_scales, target_scales)
-
-            loss_segmentation = sum(losses)
-            total_loss = loss_segmentation
-            total_loss.backward()
-            optimizer.step()
+        loss_segmentation = sum(losses)
+        total_loss = loss_segmentation
+        total_loss.backward()
+        optimizer.step()
 
 
 
