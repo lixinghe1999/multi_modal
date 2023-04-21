@@ -124,7 +124,7 @@ class ArgumentParserRGBDSegmentation(argparse.ArgumentParser):
                                'for the segmentation and the depth prediction'
                                ' respectively.')
         self.add_argument('--network', type=str, default='resnet',
-                          choices=['resnet', 'convnext', 'efficientformer'],
+                          choices=['resnet', 'convnext', 'efficientformer', 'mobilenet'],
                           )
         self.add_argument('--encoder_decoder_fusion', type=str,
                           default='None',
