@@ -17,7 +17,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 import torch.optim
-from torch.optim.lr_scheduler import OneCycleLR, L
+from torch.optim.lr_scheduler import OneCycleLR
 
 from src.args import ArgumentParserRGBDSegmentation
 from src.build_model import build_model
