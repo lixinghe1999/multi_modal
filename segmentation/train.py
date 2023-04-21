@@ -298,8 +298,15 @@ def train_one_epoch(model, train_loader, device, optimizer, loss_function_train,
 
             # loss computation
             losses = loss_function_train(pred_scales, target_scales.long())
-            loss_segmentation = sum(losses)
+            # number_of_pixels_per_class = \
+            #     torch.bincount(targets.flatten().type(self.dtype),
+            #                    minlength=self.num_classes)
+            # divisor_weighted_pixel_sum = \
+            #     torch.sum(number_of_pixels_per_class[1:] * self.weight)  # without void
+            # losses.append(torch.sum(loss_all) / divisor_weighted_pixel_sum)
 
+            loss_segmentation = sum(losses)
+            print(loss_segmentation.item())
             total_loss = loss_segmentation
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1e-5)
             total_loss.backward()
