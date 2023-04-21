@@ -622,6 +622,7 @@ class EfficientFormer(nn.Module):
     def forward(self, x):
         x = self.patch_embed(x)
         x = self.forward_tokens(x)
+        print(torch.max(x).item(), torch.min(x).item())
         if self.fork_feat:
             # otuput features of four stages for dense prediction
             return x
