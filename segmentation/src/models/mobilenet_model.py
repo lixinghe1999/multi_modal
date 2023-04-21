@@ -96,8 +96,6 @@ class MobileRGBD(nn.Module):
 
     def forward(self, rgb, depth):
         depth = depth.repeat(1, 3, 1, 1)
-        # rgb = self.encoder_rgb(rgb)
-        # depth = self.encoder_depth(depth)
 
         rgb = self.encoder_rgb.forward_layer(rgb, layers=[0, 1, 2, 3])
         depth = self.encoder_rgb.forward_layer(depth, layers=[0, 1, 2, 3])
