@@ -90,6 +90,7 @@ class LRASPP(BaseSegmentation):
                 mode='bilinear',
                 align_corners=True
             )
+
         y = self.conv_up1(aspp)
         y = F.interpolate(y, size=s4.shape[2:], mode='bilinear', align_corners=False)
 
