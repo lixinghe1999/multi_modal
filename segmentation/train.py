@@ -300,7 +300,7 @@ def train_one_epoch(model, train_loader, device, optimizer, loss_function_train,
 
             loss_segmentation = sum(losses)
             total_loss = loss_segmentation
-            torch.nn.utils.clip_grad_norm_(model.parameters(), 1e-5)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1e-5)
             total_loss.backward()
             optimizer.step()
 
