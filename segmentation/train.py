@@ -96,11 +96,11 @@ def train_main():
 
     # loss, optimizer, learning rate scheduler, csvlogger  ----------
 
-    setattr(args, 'network', 'resnet')
-    setattr(args, 'pretrained_dir', '../assets/r34_NBt1D.pth')
-    teacher_model, _ = build_model(args, n_classes=n_classes_without_void)
-    for j, p in enumerate(teacher_model.parameters()):
-        p.requires_grad_(False)
+    # setattr(args, 'network', 'resnet')
+    # setattr(args, 'pretrained_dir', '../assets/r34_NBt1D.pth')
+    # teacher_model, _ = build_model(args, n_classes=n_classes_without_void)
+    # for j, p in enumerate(teacher_model.parameters()):
+    #     p.requires_grad_(False)
     loss_function_train = utils.CrossEntropyLoss2d(device=device, weight=class_weighting)
 
     pixel_sum_valid_data = valid_loader.dataset.compute_class_weights(
@@ -197,7 +197,7 @@ def train_main():
                 param.requires_grad = True
 
         logs = train_one_epoch(
-            model, teacher_model, train_loader, device, optimizer, loss_function_train, epoch,
+            model, train_loader, device, optimizer, loss_function_train, epoch,
             lr_scheduler, args.modality,
             label_downsampling_rates, debug_mode=args.debug)
 
@@ -255,7 +255,7 @@ def train_main():
     print("Training completed ")
 
 
-def train_one_epoch(model, teacher_model, train_loader, device, optimizer, loss_function_train,
+def train_one_epoch(model, train_loader, device, optimizer, loss_function_train,
                     epoch, lr_scheduler, modality,
                     label_downsampling_rates, debug_mode=False):
     training_start_time = time.time()
@@ -294,9 +294,9 @@ def train_one_epoch(model, teacher_model, train_loader, device, optimizer, loss_
         else:
             input_data = [depth]
         pred_scales = model(*input_data)
-        teacher_scale = teacher_model(*input_data)
+        # teacher_scale = teacher_model(*input_data)
         # loss computation
-        losses = loss_function_train(pred_scales, target_scales, teacher_scale)
+        losses = loss_function_train(pred_scales, target_scales)
 
         loss_segmentation = sum(losses)
         total_loss = loss_segmentation
