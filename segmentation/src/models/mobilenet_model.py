@@ -42,7 +42,8 @@ class MobileRGBD(nn.Module):
         if pretrained_on_imagenet:
             print('load the pretrained model')
             # load imagenet pretrained or segmentation pretrained
-            weight = torch.load('../assets/mobilenetv3-large.pth')
+            # weight = torch.load('../assets/mobilenetv3-large.pth')
+            weight = torch.load('../assets/mobilenetv3-large-lraspp-f128')
             self.encoder_rgb.load_state_dict(weight, True)
             self.encoder_depth.load_state_dict(weight, True)
 
