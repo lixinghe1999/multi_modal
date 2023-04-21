@@ -120,6 +120,7 @@ def build_model(args, n_classes):
                 upsampling=args.upsampling
             )
         else:
+            print('load mobilenet')
             model = MobileV3Large.from_pretrained()
 
     if torch.cuda.is_available():
