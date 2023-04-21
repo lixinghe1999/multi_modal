@@ -614,6 +614,7 @@ class EfficientFormer(nn.Module):
             if self.fork_feat and idx in self.out_indices:
                 # norm_layer = getattr(self, f'norm{idx}')
                 # x_out = norm_layer(x)
+                print(torch.max(x).item(), torch.min(x).item())
                 outs.append(x)
         if self.fork_feat:
             return outs
@@ -622,7 +623,7 @@ class EfficientFormer(nn.Module):
     def forward(self, x):
         x = self.patch_embed(x)
         x = self.forward_tokens(x)
-        print(torch.max(x).item(), torch.min(x).item())
+
         if self.fork_feat:
             # otuput features of four stages for dense prediction
             return x
