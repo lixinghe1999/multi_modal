@@ -39,12 +39,11 @@ class MobileRGBD(nn.Module):
         self.encoder_rgb = mobilenetv3_large(feature_out=True)
         self.encoder_depth = mobilenetv3_large(feature_out=True)
         self.channels_decoder_in = dims[-1]
-        if pretrained_on_imagenet:
-            print('load the pretrained model')
-            # load imagenet pretrained or segmentation pretrained
-            weight = torch.load('../assets/mobilenetv3-large.pth')
-            self.encoder_rgb.load_state_dict(weight, True)
-            self.encoder_depth.load_state_dict(weight, True)
+        print('load the pretrained model')
+        # load imagenet pretrained or segmentation pretrained
+        weight = torch.load('../assets/mobilenetv3-large.pth')
+        self.encoder_rgb.load_state_dict(weight, True)
+        self.encoder_depth.load_state_dict(weight, True)
 
         # context module
         if 'learned-3x3' in upsampling:

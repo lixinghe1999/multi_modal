@@ -23,7 +23,7 @@ class ArgumentParserRGBDSegmentation(argparse.ArgumentParser):
                           help='the path to the weights pretrained on '
                                'SceneNet')
         self.add_argument('--no_imagenet_pretraining',
-                          dest='pretrained_on_imagenet', default=True,
+                          dest='pretrained_on_imagenet', default=False,
                           action='store_false',
                           help='Encoder will be initialized randomly. '
                                '(If not set encoder will be initialized with '
