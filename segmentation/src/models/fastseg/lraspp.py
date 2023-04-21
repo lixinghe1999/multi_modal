@@ -101,7 +101,7 @@ class LRASPP(BaseSegmentation):
         y = self.conv_up3(y)
         y = self.last(y)
         y = F.interpolate(y, size=x.shape[2:], mode='bilinear', align_corners=False)
-        return y
+        return [y]
 
 
 class MobileV3Large(LRASPP):
