@@ -37,7 +37,6 @@ class CrossEntropyLoss2d(nn.Module):
             # mask = targets > 0
             targets_m = targets.clone()
             targets_m -= 1
-            print(targets_m.min())
             print(torch.max(inputs), torch.min(inputs))
             print(inputs.isnan().any())
             loss_all = self.ce_loss(inputs, targets_m.long())
@@ -47,6 +46,7 @@ class CrossEntropyLoss2d(nn.Module):
             divisor_weighted_pixel_sum = \
                 torch.sum(number_of_pixels_per_class[1:] * self.weight)   # without void
             losses.append(torch.sum(loss_all) / divisor_weighted_pixel_sum)
+            print(losses[-1].item())
         return losses
 
 
