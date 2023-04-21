@@ -38,7 +38,7 @@ if __name__ == '__main__':
     model, device = build_model(args, n_classes=n_classes)
     checkpoint = torch.load(args.ckpt_path,
                             map_location=lambda storage, loc: storage)
-    model.load_state_dict(checkpoint['state_dict'])
+    # model.load_state_dict(checkpoint['state_dict'])
     print('Loaded checkpoint from {}'.format(args.ckpt_path))
 
     model.eval()
