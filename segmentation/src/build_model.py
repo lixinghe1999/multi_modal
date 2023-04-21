@@ -10,7 +10,6 @@ from torch import nn
 
 from src.models.model import ESANet
 from src.models.convnext_model import ConvNextRGBD, ConvNextOneModality
-from src.models.efficientformer_model import DynamicRGBD
 from src.models.mobilenet_model import MobileRGBD
 from src.models.fastseg import MobileV3Large
 from src.models.model_one_modality import ESANetOneModality
