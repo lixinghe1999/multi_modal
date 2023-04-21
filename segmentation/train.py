@@ -101,9 +101,7 @@ def train_main():
     # loss functions (only loss_function_train is really needed.
     # The other loss functions are just there to compare valid loss to
     # train loss)
-    loss_function_train = torch.nn.CrossEntropyLoss(
-        torch.tensor(class_weighting).to(device).float(),
-        reduction='none')
+    loss_function_train = utils.CrossEntropyLoss2d(device=device, weight=class_weighting)
     pixel_sum_valid_data = valid_loader.dataset.compute_class_weights(
         weight_mode='linear'
     )
@@ -284,9 +282,9 @@ def train_one_epoch(model, train_loader, device, optimizer, loss_function_train,
             depth = sample['depth'].to(device)
             batch_size = depth.data.shape[0]
         target_scales = sample['label'].to(device)
-        # if len(label_downsampling_rates) > 0:
-        #     for rate in sample['label_down']:
-        #         target_scales.append(sample['label_down'][rate].to(device))
+        if len(label_downsampling_rates) > 0:
+            for rate in sample['label_down']:
+                target_scales.append(sample['label_down'][rate].to(device))
         with torch.autograd.set_detect_anomaly(True):
             optimizer.zero_grad()
             if modality == 'rgbd':
@@ -297,13 +295,7 @@ def train_one_epoch(model, train_loader, device, optimizer, loss_function_train,
                 pred_scales = model(depth)
 
             # loss computation
-            losses = loss_function_train(pred_scales, target_scales.long())
-            # number_of_pixels_per_class = \
-            #     torch.bincount(targets.flatten().type(self.dtype),
-            #                    minlength=self.num_classes)
-            # divisor_weighted_pixel_sum = \
-            #     torch.sum(number_of_pixels_per_class[1:] * self.weight)  # without void
-            # losses.append(torch.sum(loss_all) / divisor_weighted_pixel_sum)
+            losses = loss_function_train(pred_scales, target_scales)
 
             loss_segmentation = sum(losses)
             print(loss_segmentation.shape)
