@@ -57,7 +57,7 @@ class ArgumentParserRGBDSegmentation(argparse.ArgumentParser):
                                'as --lr_scheduler lr will first increase to '
                                'the value provided and then slowly decrease.')
 
-        self.add_argument('--lr_scheduler', default='poly', type=str)
+        self.add_argument('--lr_schedule', default='poly', type=str)
         self.add_argument('--poly_exp', default=1.0, type=float)
         self.add_argument('--weight_decay', '--wd', default=1e-4, type=float,
                           help='weight decay')
