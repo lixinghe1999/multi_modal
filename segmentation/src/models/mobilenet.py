@@ -121,13 +121,13 @@ class InvertedResidual(nn.Module):
 
 
 class MobileNetV3(nn.Module):
-    def __init__(self, cfgs, mode, num_classes=1000, width_mult=1.):
+    def __init__(self, cfgs, mode, feature_out=False, num_classes=1000, width_mult=1.):
         super(MobileNetV3, self).__init__()
         # setting of inverted residual blocks
         self.cfgs = cfgs
         assert mode in ['large', 'small']
         self.out_layer = [3, 6, 12, 15]
-        self.feature = True
+        self.feature_out = feature_out
         # building first layer
         input_channel = _make_divisible(16 * width_mult, 8)
         layers = [conv_3x3_bn(3, input_channel, 2)]
@@ -152,14 +152,17 @@ class MobileNetV3(nn.Module):
         )
 
         self._initialize_weights()
-
+    def forward_layer(self, x, layers=[0]):
+        for l in layers:
+            x = self.features[l](x)
+        return x
     def forward(self, x):
         features = []
         for i, layer in enumerate(self.features):
             x = layer(x)
             if i in self.out_layer:
                 features.append(x)
-        if self.feature:
+        if self.feature_out:
             return features
         x = self.conv(x)
         x = self.avgpool(x)

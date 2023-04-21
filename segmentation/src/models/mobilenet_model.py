@@ -21,16 +21,9 @@ class MobileRGBD(nn.Module):
                  height=480,
                  width=640,
                  num_classes=37,
-                 encoder_rgb='resnet34',
-                 encoder_depth='resnet34',
-                 encoder_block='NonBottleneck1D',
-                 channels_decoder=None,  # default: [128, 128, 128]
                  pretrained_on_imagenet=True,
-                 pretrained_dir='./trained_models/imagenet',
-                 activation='relu',
                  encoder_decoder_fusion='add',
                  context_module='ppm',
-                 nr_decoder_blocks=None,  # default: [1, 1, 1]
                  fuse_depth_in_rgb_encoder='SE-add',
                  upsampling='bilinear'):
 
@@ -42,15 +35,16 @@ class MobileRGBD(nn.Module):
 
         self.activation = nn.ReLU(inplace=True)
 
-        if encoder_rgb == 'resnet50' or encoder_depth == 'resnet50':
-            warnings.warn('Parameter encoder_block is ignored for ResNet50. '
-                          'ResNet50 always uses Bottleneck')
-
-        # rgb encoder
         dims = [24, 40, 112, 160]
-        self.encoder_rgb = mobilenetv3_large()
-        self.encoder_depth = mobilenetv3_large()
+        self.encoder_rgb = mobilenetv3_large(feature_out=True)
+        self.encoder_depth = mobilenetv3_large(feature_out=True)
         self.channels_decoder_in = dims[-1]
+        if pretrained_on_imagenet:
+            print('load the pretrained model')
+            # load imagenet pretrained or segmentation pretrained
+            weight = torch.load('../assets/mobilenetv3-large.pth')['model']
+            self.encoder_rgb.load_state_dict(weight, True)
+            self.encoder_depth.load_state_dict(weight, True)
 
         # context module
         if 'learned-3x3' in upsampling:
@@ -62,21 +56,22 @@ class MobileRGBD(nn.Module):
         else:
             upsampling_context_module = upsampling
 
+        self.se_layer = nn.ModuleList([SqueezeAndExciteFusionAdd(
+                                        dims[0], activation=self.activation),
+                                        SqueezeAndExciteFusionAdd(
+                                        dims[1], activation=self.activation),
+                                        SqueezeAndExciteFusionAdd(
+                                        dims[2], activation=self.activation),
+                                        SqueezeAndExciteFusionAdd(
+                                        dims[3], activation=self.activation)])
+
         self.skip_layer = nn.ModuleList([ConvBNAct(
-            dims[0],
-            channels_decoder[2],
-            kernel_size=1,
-            activation=self.activation),
-            ConvBNAct(
-                dims[1],
-                channels_decoder[1],
-                kernel_size=1,
-                activation=self.activation),
-                ConvBNAct(
-                    dims[2],
-                    channels_decoder[0],
-                    kernel_size=1,
-                    activation=self.activation)
+            dims[0], channels_decoder[2],
+            kernel_size=1, activation=self.activation),
+            ConvBNAct(dims[1], channels_decoder[1],
+                kernel_size=1,activation=self.activation),
+            ConvBNAct(dims[2], channels_decoder[0],
+                    kernel_size=1, activation=self.activation)
         ])
 
         self.context_module, channels_after_context_module = \
@@ -101,14 +96,31 @@ class MobileRGBD(nn.Module):
         )
 
     def forward(self, rgb, depth):
-        rgb = self.encoder_rgb(rgb)
-        depth = self.encoder_depth(depth.repeat(1, 3, 1, 1))
-        fuse = [r + d for r, d in zip(rgb, depth)]
-        skip = []
-        for f, skip_layer in zip(fuse[:-1], self.skip_layer):
-            skip.append(skip_layer(f))
-        out = self.context_module(fuse[-1])
-        out = self.decoder(enc_outs=[out] + skip[::-1])
+        depth = depth.repeat(1, 3, 1, 1)
+        # rgb = self.encoder_rgb(rgb)
+        # depth = self.encoder_depth(depth)
+
+        rgb = self.encoder_rgb.forward(rgb, layers=[0, 1, 2, 3])
+        depth = self.encoder_rgb.forward(depth, layers=[0, 1, 2, 3])
+        fuse = self.se_layer[0](rgb, depth)
+        skip1 = self.skip_layer[0](fuse)
+
+        rgb = self.encoder_rgb.forward(fuse, layers=[4, 5, 6])
+        depth = self.encoder_rgb.forward(depth, layers=[4, 5, 6])
+        fuse = self.se_layer[1](rgb, depth)
+        skip2 = self.skip_layer[1](fuse)
+
+        rgb = self.encoder_rgb.forward(fuse, layers=[7, 8, 9, 10, 11, 12])
+        depth = self.encoder_rgb.forward(depth, layers=[7, 8, 9, 10, 11, 12])
+        fuse = self.se_layer[2](rgb, depth)
+        skip3 = self.skip_layer[2](fuse)
+
+        rgb = self.encoder_rgb.forward(fuse, layers=[13, 14, 15])
+        depth = self.encoder_rgb.forward(depth, layers=[13, 14, 15])
+        fuse = self.se_layer[3](rgb, depth)
+        out = self.context_module(fuse)
+
+        out = self.decoder(enc_outs=[out, skip3, skip2, skip1])
         return out
 
 

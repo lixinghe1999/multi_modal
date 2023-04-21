@@ -6,7 +6,6 @@
 import argparse
 from datetime import datetime
 import json
-import pickle
 import os
 import sys
 import time
@@ -68,7 +67,6 @@ def train_main():
 
     # when using multi scale supervision the label needs to be downsampled.
     label_downsampling_rates = [8, 16, 32]
-    # label_downsampling_rates = []
 
     # data preparation ---------------------------------------------------------
     data_loaders = prepare_data(args, ckpt_dir)
