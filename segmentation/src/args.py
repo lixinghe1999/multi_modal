@@ -107,6 +107,8 @@ class ArgumentParserRGBDSegmentation(argparse.ArgumentParser):
                           help='Take a different encoder for the depth '
                                'features than for the rgb features. Parameter '
                                'will only be used when modality is rgbd.')
+        self.add_argument('--network', type=str, default='resnet',
+                         choices=['resnet', 'convnext', 'mobilenet'])
         self.add_argument('--modality', type=str, default='rgbd',
                           choices=['rgbd', 'rgb', 'depth'],
                           help='If modality is rgb or depth the model '
