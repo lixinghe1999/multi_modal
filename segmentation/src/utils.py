@@ -34,6 +34,7 @@ class CrossEntropyLoss2d(nn.Module):
     def forward(self, inputs_scales, targets_scales, teacher_scales):
         losses = []
         for inputs, targets, teachers in zip(inputs_scales, targets_scales, teacher_scales):
+            print(inputs.shape, targets.shape, teachers.shape)
             # mask = targets > 0
             targets_m = targets.clone()
             targets_m -= 1
