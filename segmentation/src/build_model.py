@@ -121,7 +121,6 @@ def build_model(args, n_classes):
             )
         else:
             model = MobileV3Large.from_pretrained()
-            model.last = nn.Conv2d(128, 37, kernel_size=1)
 
     if torch.cuda.is_available():
         device = torch.device("cuda:0")
