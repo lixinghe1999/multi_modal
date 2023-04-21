@@ -98,8 +98,8 @@ class DynamicRGBD(nn.Module):
             print('load the pretrained model')
             # load imagenet pretrained or segmentation pretrained
             weight = torch.load('../assets/eformer_s0_450.pth')['model']
-            self.encoder_rgb.load_state_dict(weight, True)
-            self.encoder_depth.load_state_dict(weight, True)
+            self.encoder_rgb.load_state_dict(weight, False)
+            self.encoder_depth.load_state_dict(weight, False)
 
     def forward(self, rgb, depth):
         rgb = self.encoder_rgb(rgb)
