@@ -612,8 +612,8 @@ class EfficientFormer(nn.Module):
         for idx, block in enumerate(self.network):
             x = block(x)
             if self.fork_feat and idx in self.out_indices:
-                # norm_layer = getattr(self, f'norm{idx}')
-                # x_out = norm_layer(x)
+                norm_layer = getattr(self, f'norm{idx}')
+                x_out = norm_layer(x)
                 print(torch.max(x).item(), torch.min(x).item())
                 outs.append(x)
         if self.fork_feat:
