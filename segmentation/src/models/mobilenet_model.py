@@ -20,7 +20,7 @@ class MobileRGBD(nn.Module):
     def __init__(self,
                  height=480,
                  width=640,
-                 num_classes=37,
+                 num_classes=40,
                  pretrained_on_imagenet=True,
                  encoder_decoder_fusion='add',
                  context_module='ppm',
