@@ -291,7 +291,7 @@ def train_one_epoch(model, train_loader, device, optimizer, loss_function_train,
         total_loss = loss_segmentation
         total_loss.backward()
         optimizer.step()
-        lr_scheduler.step()
+
 
         # append loss values to the lists. Later we can calculate the
         # mean training loss of this epoch
@@ -315,7 +315,7 @@ def train_one_epoch(model, train_loader, device, optimizer, loss_function_train,
         if debug_mode:
             # only one batch while debugging
             break
-
+    lr_scheduler.step()
     # fill the logs for csv log file and web logger
     logs = dict()
     logs['time_training'] = time.time() - training_start_time
