@@ -1,5 +1,5 @@
-from src.models.efficientformer_v1 import efficientformer_l1_feat
-from src.models.efficientformer_v2 import efficientformerv2_s0_feat
+# from src.models.efficientformer_v1 import efficientformer_l1_feat
+from src.models.efficientformer_v2 import efficientformerv2_s0
 import torch.nn as nn
 import torch
 from mmseg.models.necks.fpn import FPN
@@ -81,8 +81,8 @@ class DynamicRGBD(nn.Module):
                 'Only relu, swish and hswish as activation function are '
                 'supported so far. Got {}'.format(activation))
 
-        self.encoder_rgb = efficientformerv2_s0_feat()
-        self.encoder_depth = efficientformerv2_s0_feat()
+        self.encoder_rgb = efficientformerv2_s0()
+        self.encoder_depth = efficientformerv2_s0()
         self.neck = FPN(in_channels=[32, 48, 96, 176], out_channels=256, num_outs=4)
         self.head = FPNHead(in_channels=[256, 256, 256, 256],
                             in_index=[0, 1, 2, 3],

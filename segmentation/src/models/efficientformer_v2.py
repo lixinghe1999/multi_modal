@@ -1,9 +1,12 @@
+"""
+EfficientFormer_v2
+"""
 import os
 import copy
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import math
-
 from typing import Dict
 import itertools
 
@@ -11,9 +14,6 @@ from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from timm.models.layers import DropPath, trunc_normal_
 from timm.models.registry import register_model
 from timm.models.layers.helpers import to_2tuple
-
-from mmseg.models.builder import BACKBONES as seg_BACKBONES
-
 
 EfficientFormer_width = {
     'L': [40, 80, 192, 384],  # 26m 83.3% 6attn
@@ -117,14 +117,9 @@ class Attention4D(torch.nn.Module):
                 if offset not in attention_offsets:
                     attention_offsets[offset] = len(attention_offsets)
                 idxs.append(attention_offsets[offset])
-
-        self.register_buffer('attention_biases', torch.zeros(num_heads, 49))
-        self.register_buffer('attention_bias_idxs',
-                             torch.ones(49, 49).long())
-
-        self.attention_biases_seg = torch.nn.Parameter(
+        self.attention_biases = torch.nn.Parameter(
             torch.zeros(num_heads, len(attention_offsets)))
-        self.register_buffer('attention_bias_idxs_seg',
+        self.register_buffer('attention_bias_idxs',
                              torch.LongTensor(idxs).view(N, N))
 
     @torch.no_grad()
@@ -133,33 +128,33 @@ class Attention4D(torch.nn.Module):
         if mode and hasattr(self, 'ab'):
             del self.ab
         else:
-            self.ab = self.attention_biases_seg[:, self.attention_bias_idxs_seg]
+            self.ab = self.attention_biases[:, self.attention_bias_idxs]
 
     def forward(self, x):  # x (B,N,C)
         B, C, H, W = x.shape
         if self.stride_conv is not None:
             x = self.stride_conv(x)
-            H = H // 2
-            W = W // 2
 
-        q = self.q(x).flatten(2).reshape(B, self.num_heads, -1, H * W).permute(0, 1, 3, 2)
-        k = self.k(x).flatten(2).reshape(B, self.num_heads, -1, H * W).permute(0, 1, 2, 3)
+        q = self.q(x).flatten(2).reshape(B, self.num_heads, -1, self.N).permute(0, 1, 3, 2)
+        k = self.k(x).flatten(2).reshape(B, self.num_heads, -1, self.N).permute(0, 1, 2, 3)
         v = self.v(x)
         v_local = self.v_local(v)
-        v = v.flatten(2).reshape(B, self.num_heads, -1, H * W).permute(0, 1, 3, 2)
+        v = v.flatten(2).reshape(B, self.num_heads, -1, self.N).permute(0, 1, 3, 2)
 
-        attn = (q @ k) * self.scale
-        bias = self.attention_biases_seg[:, self.attention_bias_idxs_seg] if self.training else self.ab
-        bias = torch.nn.functional.interpolate(bias.unsqueeze(0), size=(attn.size(-2), attn.size(-1)), mode='bicubic')
-        attn = attn + bias
-
+        attn = (
+                (q @ k) * self.scale
+                +
+                (self.attention_biases[:, self.attention_bias_idxs]
+                 if self.training else self.ab)
+        )
+        # attn = (q @ k) * self.scale
         attn = self.talking_head1(attn)
         attn = attn.softmax(dim=-1)
         attn = self.talking_head2(attn)
 
         x = (attn @ v)
 
-        out = x.transpose(2, 3).reshape(B, self.dh, H, W) + v_local
+        out = x.transpose(2, 3).reshape(B, self.dh, self.resolution, self.resolution) + v_local
         if self.upsample is not None:
             out = self.upsample(out)
 
@@ -190,7 +185,6 @@ class LGQuery(torch.nn.Module):
                                   nn.BatchNorm2d(out_dim), )
 
     def forward(self, x):
-        B, C, H, W = x.shape
         local_q = self.local(x)
         pool_q = self.pool(x)
         q = local_q + pool_q
@@ -206,6 +200,7 @@ class Attention4DDownsample(torch.nn.Module):
                  act_layer=None,
                  ):
         super().__init__()
+
         self.num_heads = num_heads
         self.scale = key_dim ** -0.5
         self.key_dim = key_dim
@@ -222,7 +217,6 @@ class Attention4DDownsample(torch.nn.Module):
             self.out_dim = out_dim
         else:
             self.out_dim = dim
-
         self.resolution2 = math.ceil(self.resolution / 2)
         self.q = LGQuery(dim, self.num_heads * self.key_dim, self.resolution, self.resolution2)
 
@@ -259,14 +253,9 @@ class Attention4DDownsample(torch.nn.Module):
                 if offset not in attention_offsets:
                     attention_offsets[offset] = len(attention_offsets)
                 idxs.append(attention_offsets[offset])
-
-        self.register_buffer('attention_biases', torch.zeros(num_heads, 196))
-        self.register_buffer('attention_bias_idxs',
-                             torch.ones(49, 196).long())
-
-        self.attention_biases_seg = torch.nn.Parameter(
+        self.attention_biases = torch.nn.Parameter(
             torch.zeros(num_heads, len(attention_offsets)))
-        self.register_buffer('attention_bias_idxs_seg',
+        self.register_buffer('attention_bias_idxs',
                              torch.LongTensor(idxs).view(N_, N))
 
     @torch.no_grad()
@@ -275,26 +264,28 @@ class Attention4DDownsample(torch.nn.Module):
         if mode and hasattr(self, 'ab'):
             del self.ab
         else:
-            self.ab = self.attention_biases_seg[:, self.attention_bias_idxs_seg]
+            self.ab = self.attention_biases[:, self.attention_bias_idxs]
 
     def forward(self, x):  # x (B,N,C)
         B, C, H, W = x.shape
 
-        q = self.q(x).flatten(2).reshape(B, self.num_heads, -1, H * W // 4).permute(0, 1, 3, 2)
-        k = self.k(x).flatten(2).reshape(B, self.num_heads, -1, H * W).permute(0, 1, 2, 3)
+        q = self.q(x).flatten(2).reshape(B, self.num_heads, -1, self.N2).permute(0, 1, 3, 2)
+        k = self.k(x).flatten(2).reshape(B, self.num_heads, -1, self.N).permute(0, 1, 2, 3)
         v = self.v(x)
         v_local = self.v_local(v)
-        v = v.flatten(2).reshape(B, self.num_heads, -1, H * W).permute(0, 1, 3, 2)
+        v = v.flatten(2).reshape(B, self.num_heads, -1, self.N).permute(0, 1, 3, 2)
 
-        attn = (q @ k) * self.scale
-        bias = self.attention_biases_seg[:, self.attention_bias_idxs_seg] if self.training else self.ab
-        bias = torch.nn.functional.interpolate(bias.unsqueeze(0), size=(attn.size(-2), attn.size(-1)), mode='bicubic')
-        attn = attn + bias
+        attn = (
+                (q @ k) * self.scale
+                +
+                (self.attention_biases[:, self.attention_bias_idxs]
+                 if self.training else self.ab)
+        )
 
+        # attn = (q @ k) * self.scale
         attn = attn.softmax(dim=-1)
-
         x = (attn @ v).transpose(2, 3)
-        out = x.reshape(B, self.dh, H // 2, W // 2) + v_local
+        out = x.reshape(B, self.dh, self.resolution2, self.resolution2) + v_local
 
         out = self.proj(out)
         return out
@@ -323,7 +314,6 @@ class Embedding(nn.Module):
         elif self.asub:
             self.attn = attn_block(dim=in_chans, out_dim=embed_dim,
                                    resolution=resolution, act_layer=act_layer)
-
             patch_size = to_2tuple(patch_size)
             stride = to_2tuple(stride)
             padding = to_2tuple(padding)
@@ -344,9 +334,7 @@ class Embedding(nn.Module):
         elif self.asub:
             out_conv = self.conv(x)
             out_conv = self.bn(out_conv)
-
             out = self.attn(x) + out_conv
-
         else:
             x = self.proj(x)
             out = self.norm(x)
@@ -377,7 +365,6 @@ class Mlp(nn.Module):
             self.mid_norm = nn.BatchNorm2d(hidden_features)
 
         self.norm1 = nn.BatchNorm2d(hidden_features)
-        # self.norm1 = PruneBatchNorm2d(hidden_features)
         self.norm2 = nn.BatchNorm2d(out_features)
 
     def _init_weights(self, m):
@@ -394,7 +381,6 @@ class Mlp(nn.Module):
         if self.mid_conv:
             x_mid = self.mid(x)
             x_mid = self.mid_norm(x_mid)
-            # x = self.act(x_mid + x)
             x = self.act(x_mid)
         x = self.drop(x)
 
@@ -406,7 +392,6 @@ class Mlp(nn.Module):
 
 
 class AttnFFN(nn.Module):
-
     def __init__(self, dim, mlp_ratio=4.,
                  act_layer=nn.ReLU, norm_layer=nn.LayerNorm,
                  drop=0., drop_path=0.,
@@ -462,16 +447,15 @@ class FFN(nn.Module):
         if self.use_layer_scale:
             x = x + self.drop_path(self.layer_scale_2 * self.mlp(x))
         else:
-            x = x + self.drop_path(self.token_mixer(x))
             x = x + self.drop_path(self.mlp(x))
         return x
 
 
-def meta_blocks(dim, index, layers,
-                pool_size=3, mlp_ratio=4.,
-                act_layer=nn.GELU, norm_layer=nn.LayerNorm,
-                drop_rate=.0, drop_path_rate=0.,
-                use_layer_scale=True, layer_scale_init_value=1e-5, vit_num=1, resolution=7, e_ratios=None):
+def eformer_block(dim, index, layers,
+                  pool_size=3, mlp_ratio=4.,
+                  act_layer=nn.GELU, norm_layer=nn.LayerNorm,
+                  drop_rate=.0, drop_path_rate=0.,
+                  use_layer_scale=True, layer_scale_init_value=1e-5, vit_num=1, resolution=7, e_ratios=None):
     blocks = []
     for block_idx in range(layers[index]):
         block_dpr = drop_path_rate * (
@@ -499,13 +483,11 @@ def meta_blocks(dim, index, layers,
                 use_layer_scale=use_layer_scale,
                 layer_scale_init_value=layer_scale_init_value,
             ))
-
     blocks = nn.Sequential(*blocks)
     return blocks
 
 
-class EfficientFormer(nn.Module):
-
+class EfficientFormerV2(nn.Module):
     def __init__(self, layers, embed_dims=None,
                  mlp_ratios=4, downsamples=None,
                  pool_size=3,
@@ -519,7 +501,7 @@ class EfficientFormer(nn.Module):
                  pretrained=None,
                  vit_num=0,
                  distillation=True,
-                 resolution=512,
+                 resolution=224,
                  e_ratios=expansion_ratios_L,
                  **kwargs):
         super().__init__()
@@ -532,16 +514,16 @@ class EfficientFormer(nn.Module):
 
         network = []
         for i in range(len(layers)):
-            stage = meta_blocks(embed_dims[i], i, layers,
-                                pool_size=pool_size, mlp_ratio=mlp_ratios,
-                                act_layer=act_layer, norm_layer=norm_layer,
-                                drop_rate=drop_rate,
-                                drop_path_rate=drop_path_rate,
-                                use_layer_scale=use_layer_scale,
-                                layer_scale_init_value=layer_scale_init_value,
-                                resolution=math.ceil(resolution / (2 ** (i + 2))),
-                                vit_num=vit_num,
-                                e_ratios=e_ratios)
+            stage = eformer_block(embed_dims[i], i, layers,
+                                  pool_size=pool_size, mlp_ratio=mlp_ratios,
+                                  act_layer=act_layer, norm_layer=norm_layer,
+                                  drop_rate=drop_rate,
+                                  drop_path_rate=drop_path_rate,
+                                  use_layer_scale=use_layer_scale,
+                                  layer_scale_init_value=layer_scale_init_value,
+                                  resolution=math.ceil(resolution / (2 ** (i + 2))),
+                                  vit_num=vit_num,
+                                  e_ratios=e_ratios)
             network.append(stage)
             if i >= len(layers) - 1:
                 break
@@ -567,6 +549,13 @@ class EfficientFormer(nn.Module):
         if self.fork_feat:
             # add a norm layer for each output
             self.out_indices = [0, 2, 4, 6]
+            for i_emb, i_layer in enumerate(self.out_indices):
+                if i_emb == 0 and os.environ.get('FORK_LAST3', None):
+                    layer = nn.Identity()
+                else:
+                    layer = norm_layer(embed_dims[i_emb])
+                layer_name = f'norm{i_layer}'
+                self.add_module(layer_name, layer)
         else:
             # Classifier head
             self.norm = norm_layer(embed_dims[-1])
@@ -586,8 +575,6 @@ class EfficientFormer(nn.Module):
         if self.fork_feat and (
                 self.init_cfg is not None or pretrained is not None):
             self.init_weights()
-            self = torch.nn.SyncBatchNorm.convert_sync_batchnorm(self)
-            self.train()
 
     # init for classification
     def cls_init_weights(self, m):
@@ -598,14 +585,35 @@ class EfficientFormer(nn.Module):
 
     # init for mmdetection or mmsegmentation by loading
     # imagenet pre-trained weights
+    def init_weights(self, pretrained=None):
+        logger = get_root_logger()
+        if self.init_cfg is None and pretrained is None:
+            logger.warn(f'No pre-trained weights for '
+                        f'{self.__class__.__name__}, '
+                        f'training start from scratch')
+            pass
+        else:
+            assert 'checkpoint' in self.init_cfg, f'Only support ' \
+                                                  f'specify `Pretrained` in ' \
+                                                  f'`init_cfg` in ' \
+                                                  f'{self.__class__.__name__} '
+            if self.init_cfg is not None:
+                ckpt_path = self.init_cfg['checkpoint']
+            elif pretrained is not None:
+                ckpt_path = pretrained
 
-    @torch.no_grad()
-    def train(self, mode=True):
-        super().train(mode)
-        for m in self.modules():
-            # trick: eval have effect on BatchNorm only
-            if isinstance(m, nn.BatchNorm2d):
-                m.eval()
+            ckpt = _load_checkpoint(
+                ckpt_path, logger=logger, map_location='cpu')
+            if 'state_dict' in ckpt:
+                _state_dict = ckpt['state_dict']
+            elif 'model' in ckpt:
+                _state_dict = ckpt['model']
+            else:
+                _state_dict = ckpt
+
+            state_dict = _state_dict
+            missing_keys, unexpected_keys = \
+                self.load_state_dict(state_dict, False)
 
     def forward_tokens(self, x):
         outs = []
@@ -614,8 +622,7 @@ class EfficientFormer(nn.Module):
             if self.fork_feat and idx in self.out_indices:
                 norm_layer = getattr(self, f'norm{idx}')
                 x_out = norm_layer(x)
-                print(torch.max(x).item(), torch.min(x).item())
-                outs.append(x)
+                outs.append(x_out)
         if self.fork_feat:
             return outs
         return x
@@ -623,7 +630,6 @@ class EfficientFormer(nn.Module):
     def forward(self, x):
         x = self.patch_embed(x)
         x = self.forward_tokens(x)
-
         if self.fork_feat:
             # otuput features of four stages for dense prediction
             return x
@@ -638,57 +644,70 @@ class EfficientFormer(nn.Module):
         # for image classification
         return cls_out
 
-@seg_BACKBONES.register_module()
-class efficientformerv2_s0_feat(EfficientFormer):
-    def __init__(self, **kwargs):
-        super().__init__(
-            layers=EfficientFormer_depth['S0'],
-            embed_dims=EfficientFormer_width['S0'],
-            downsamples=[True, True, True, True],
-            fork_feat=True,
-            drop_path_rate=0.,
-            vit_num=2,
-            e_ratios=expansion_ratios_S0,
-            **kwargs)
+
+def _cfg(url='', **kwargs):
+    return {
+        'url': url,
+        'num_classes': 1000, 'input_size': (3, 224, 224), 'pool_size': None,
+        'crop_pct': .95, 'interpolation': 'bicubic',
+        'mean': IMAGENET_DEFAULT_MEAN, 'std': IMAGENET_DEFAULT_STD,
+        'classifier': 'head',
+        **kwargs
+    }
 
 
-@seg_BACKBONES.register_module()
-class efficientformerv2_s1_feat(EfficientFormer):
-    def __init__(self, **kwargs):
-        super().__init__(
-            layers=EfficientFormer_depth['S1'],
-            embed_dims=EfficientFormer_width['S1'],
-            downsamples=[True, True, True, True],
-            fork_feat=True,
-            drop_path_rate=0.,
-            vit_num=2,
-            e_ratios=expansion_ratios_S1,
-            **kwargs)
+@register_model
+def efficientformerv2_s0(pretrained=False, **kwargs):
+    model = EfficientFormerV2(
+        layers=EfficientFormer_depth['S0'],
+        embed_dims=EfficientFormer_width['S0'],
+        downsamples=[True, True, True, True, True],
+        fork_feat=True,
+        vit_num=2,
+        drop_path_rate=0.0,
+        e_ratios=expansion_ratios_S0,
+        **kwargs)
+    model.default_cfg = _cfg(crop_pct=0.9)
+    return model
 
 
-@seg_BACKBONES.register_module()
-class efficientformerv2_s2_feat(EfficientFormer):
-    def __init__(self, **kwargs):
-        super().__init__(
-            layers=EfficientFormer_depth['S2'],
-            embed_dims=EfficientFormer_width['S2'],
-            downsamples=[True, True, True, True],
-            fork_feat=True,
-            drop_path_rate=0.02,
-            vit_num=4,
-            e_ratios=expansion_ratios_S2,
-            **kwargs)
+@register_model
+def efficientformerv2_s1(pretrained=False, **kwargs):
+    model = EfficientFormerV2(
+        layers=EfficientFormer_depth['S1'],
+        embed_dims=EfficientFormer_width['S1'],
+        downsamples=[True, True, True, True],
+        vit_num=2,
+        drop_path_rate=0.0,
+        e_ratios=expansion_ratios_S1,
+        **kwargs)
+    model.default_cfg = _cfg(crop_pct=0.9)
+    return model
 
 
-@seg_BACKBONES.register_module()
-class efficientformerv2_l_feat(EfficientFormer):
-    def __init__(self, **kwargs):
-        super().__init__(
-            layers=EfficientFormer_depth['L'],
-            embed_dims=EfficientFormer_width['L'],
-            downsamples=[True, True, True, True],
-            fork_feat=True,
-            drop_path_rate=0.1,
-            vit_num=6,
-            e_ratios=expansion_ratios_L,
-            **kwargs)
+@register_model
+def efficientformerv2_s2(pretrained=False, **kwargs):
+    model = EfficientFormerV2(
+        layers=EfficientFormer_depth['S2'],
+        embed_dims=EfficientFormer_width['S2'],
+        downsamples=[True, True, True, True],
+        vit_num=4,
+        drop_path_rate=0.02,
+        e_ratios=expansion_ratios_S2,
+        **kwargs)
+    model.default_cfg = _cfg(crop_pct=0.9)
+    return model
+
+
+@register_model
+def efficientformerv2_l(pretrained=False, **kwargs):
+    model = EfficientFormerV2(
+        layers=EfficientFormer_depth['L'],
+        embed_dims=EfficientFormer_width['L'],
+        downsamples=[True, True, True, True],
+        vit_num=6,
+        drop_path_rate=0.1,
+        e_ratios=expansion_ratios_L,
+        **kwargs)
+    model.default_cfg = _cfg(crop_pct=0.9)
+    return 
