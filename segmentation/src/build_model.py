@@ -80,8 +80,8 @@ def build_model(args, n_classes):
                 fuse_depth_in_rgb_encoder=args.fuse_depth_in_rgb_encoder,
                 upsampling=args.upsampling
             )
-        elif args.network == 'efficientformer':
-            model = DynamicRGBD()
+        elif args.network == 'mobilenet':
+            model = MobileRGBD()
 
     else:  # just one modality
         if args.modality == 'rgb':
