@@ -97,7 +97,7 @@ class DynamicRGBD(nn.Module):
         if pretrained_on_imagenet:
             print('load the pretrained model')
             # load imagenet pretrained or segmentation pretrained
-            weight = torch.load('../assets/eformer_s0_450.pth')
+            weight = torch.load('../assets/eformer_s0_450.pth')['model']
             # weight_backbone = {k[9:]: v for k, v in weight.items() if k.split('.')[0] == 'backbone'}
             # weight = torch.load('../assets/convnext_small_1k_224.pth')['model']
             # weight = {k: v for k, v in weight.items() if k.split('.')[0] != 'head'}
