@@ -1,6 +1,6 @@
-from src.models.vanilla_model import main
+from src.models.efficientformer_model import main
 from src.models.convnext import AdaConvNeXt, ConvNeXt
-from src.models.vanilla_model import ConvNextRGBD
+from src.models.convnext_model import ConvNextRGBD
 import torch
 if __name__ == '__main__':
     main()

@@ -1,5 +1,5 @@
 import torch
-from src.models.vanilla_model import ConvNextRGBD
+from src.models.convnext_model import ConvNextRGBD
 from src.models.model import ESANet
 import time
 import argparse
