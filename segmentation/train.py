@@ -306,7 +306,7 @@ def train_one_epoch(model, train_loader, device, optimizer, loss_function_train,
             # losses.append(torch.sum(loss_all) / divisor_weighted_pixel_sum)
 
             loss_segmentation = sum(losses)
-            print(loss_segmentation.item())
+            print(loss_segmentation.shape)
             total_loss = loss_segmentation
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1e-5)
             total_loss.backward()
