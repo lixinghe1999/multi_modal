@@ -567,6 +567,13 @@ class EfficientFormer(nn.Module):
         if self.fork_feat:
             # add a norm layer for each output
             self.out_indices = [0, 2, 4, 6]
+            for i_emb, i_layer in enumerate(self.out_indices):
+                if i_emb == 0 and os.environ.get('FORK_LAST3', None):
+                    layer = nn.Identity()
+                else:
+                    layer = norm_layer(embed_dims[i_emb])
+                layer_name = f'norm{i_layer}'
+                self.add_module(layer_name, layer)
         else:
             # Classifier head
             self.norm = norm_layer(embed_dims[-1])
