@@ -100,23 +100,23 @@ class MobileRGBD(nn.Module):
         # rgb = self.encoder_rgb(rgb)
         # depth = self.encoder_depth(depth)
 
-        rgb = self.encoder_rgb.forward(rgb, layers=[0, 1, 2, 3])
-        depth = self.encoder_rgb.forward(depth, layers=[0, 1, 2, 3])
+        rgb = self.encoder_rgb.forward_layer(rgb, layers=[0, 1, 2, 3])
+        depth = self.encoder_rgb.forward_layer(depth, layers=[0, 1, 2, 3])
         fuse = self.se_layer[0](rgb, depth)
         skip1 = self.skip_layer[0](fuse)
 
-        rgb = self.encoder_rgb.forward(fuse, layers=[4, 5, 6])
-        depth = self.encoder_rgb.forward(depth, layers=[4, 5, 6])
+        rgb = self.encoder_rgb.forward_layer(fuse, layers=[4, 5, 6])
+        depth = self.encoder_rgb.forward_layer(depth, layers=[4, 5, 6])
         fuse = self.se_layer[1](rgb, depth)
         skip2 = self.skip_layer[1](fuse)
 
-        rgb = self.encoder_rgb.forward(fuse, layers=[7, 8, 9, 10, 11, 12])
-        depth = self.encoder_rgb.forward(depth, layers=[7, 8, 9, 10, 11, 12])
+        rgb = self.encoder_rgb.forward_layer(fuse, layers=[7, 8, 9, 10, 11, 12])
+        depth = self.encoder_rgb.forward_layer(depth, layers=[7, 8, 9, 10, 11, 12])
         fuse = self.se_layer[2](rgb, depth)
         skip3 = self.skip_layer[2](fuse)
 
-        rgb = self.encoder_rgb.forward(fuse, layers=[13, 14, 15])
-        depth = self.encoder_rgb.forward(depth, layers=[13, 14, 15])
+        rgb = self.encoder_rgb.forward_layer(fuse, layers=[13, 14, 15])
+        depth = self.encoder_rgb.forward_layer(depth, layers=[13, 14, 15])
         fuse = self.se_layer[3](rgb, depth)
         out = self.context_module(fuse)
 
