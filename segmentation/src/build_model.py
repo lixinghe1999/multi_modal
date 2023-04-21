@@ -47,7 +47,6 @@ def build_model(args, n_classes):
         # specific depth encoder is provided
         if args.encoder_depth in [None, 'None']:
             args.encoder_depth = args.encoder
-        print(args.network)
         if args.network == 'resnet':
             model = ESANet(
                 height=args.height,
