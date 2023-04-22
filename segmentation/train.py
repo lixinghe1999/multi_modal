@@ -183,7 +183,7 @@ def train_main():
         logs = train_one_epoch(
             model, train_loader, device, optimizer, loss_function_train, epoch,
             lr_scheduler, args.modality,
-            label_downsampling_rates, debug_mode=args.debug)
+            label_downsampling_rates, debug_mode=True)
         # validation after every epoch -----------------------------------------
         miou, logs = validate(
             model, valid_loader, device, cameras,
@@ -255,7 +255,6 @@ def train_one_epoch(model, train_loader, device, optimizer, loss_function_train,
     total_loss_list = []
 
     for i, sample in enumerate(train_loader):
-        break
         start_time_for_one_step = time.time()
 
         # load the data and send them to gpu
