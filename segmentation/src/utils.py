@@ -38,13 +38,14 @@ class CrossEntropyLoss2d(nn.Module):
             targets_m = targets.clone()
             targets_m -= 1
             loss_all = self.ce_loss(inputs, targets_m.long())
-            number_of_pixels_per_class = \
-                torch.bincount(targets.flatten().type(self.dtype),
-                               minlength=self.num_classes)
-            divisor_weighted_pixel_sum = \
-                torch.sum(number_of_pixels_per_class[1:] * self.weight)   # without void
-            loss1 = torch.sum(loss_all) / divisor_weighted_pixel_sum
+            # number_of_pixels_per_class = \
+            #     torch.bincount(targets.flatten().type(self.dtype),
+            #                    minlength=self.num_classes)
+            # divisor_weighted_pixel_sum = \
+            #     torch.sum(number_of_pixels_per_class[1:] * self.weight)   # without void
+            # loss1 = torch.sum(loss_all) / divisor_weighted_pixel_sum
             # loss2 = nn.functional.mse_loss(inputs, teachers) * 1
+            loss1 = torch.sum(loss_all)
             losses.append(loss1)
         return losses
 
