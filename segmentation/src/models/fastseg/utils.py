@@ -16,7 +16,7 @@ def get_trunk(trunk_name):
         s4_ch = 24
         high_level_ch = 1280
     elif trunk_name == 'mobilenetv3_large':
-        backbone = MobileNetV3_Large(pretrained=False)
+        backbone = MobileNetV3_Large(pretrained=True)
         s2_ch = 16
         s4_ch = 24
         high_level_ch = 960
