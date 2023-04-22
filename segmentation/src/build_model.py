@@ -119,6 +119,7 @@ def build_model(args, n_classes):
                 upsampling=args.upsampling
             )
         else:
+            print(args.pretrained_on_imagenet)
             if args.pretrained_on_imagenet:
                 model = MobileV3Large.from_pretrained()
             else:
