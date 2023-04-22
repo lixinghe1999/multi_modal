@@ -124,14 +124,15 @@ def build_model(args, n_classes):
                 model.last = nn.Conv2d(128, n_classes, kernel_size=1)
             else:
                 model = MobileV3Large(num_classes=n_classes)
-    model = torch.nn.DataParallel(model, device_ids=(0, 1))
+
     if torch.cuda.is_available():
         device = torch.device("cuda:0")
     else:
         device = torch.device("cpu")
 
-    print('Device:', device)
-    model.to(device)
+    # print('Device:', device)
+    # model.to(device)
+    model = torch.nn.DataParallel(model, device_ids=(0, 1))
     # print(model)
 
     if args.he_init:
