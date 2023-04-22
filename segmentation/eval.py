@@ -21,7 +21,7 @@ if __name__ == '__main__':
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.set_common_args()
     parser.add_argument('--ckpt_path', type=str,
-                        required=True,
+                        required=False,
                         help='Path to the checkpoint of the trained model.')
     args = parser.parse_args()
 
