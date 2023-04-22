@@ -29,6 +29,7 @@ class BaseSegmentation(nn.Module):
                 raise ValueError(f'pretrained weights not found for model {name}, please specify a checkpoint')
         else:
             checkpoint = torch.load(filename, map_location='cpu')
+        print(checkpoint['num_classes'])
         net = cls(checkpoint['num_classes'], num_filters=num_filters, **kwargs)
         net.load_checkpoint(checkpoint)
         return net
