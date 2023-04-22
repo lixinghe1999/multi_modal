@@ -53,22 +53,24 @@ class ConvNextRGBD(nn.Module):
                 'Only relu, swish and hswish as activation function are '
                 'supported so far. Got {}'.format(activation))
 
-        dims = [96, 192, 384, 768]
+        # dims = [96, 192, 384, 768]
+        dims = [128, 256, 512, 1024]
         self.encoder_rgb = ConvNeXt(dims=dims, depths=[3, 3, 27, 3])
         self.encoder_depth = ConvNeXt(dims=dims, depths=[3, 3, 27, 3])
-        self.UPerHead = UPerHead(in_channels=[96, 192, 384, 768],
-                                 num_classes=num_classes,
-                                 in_index=[0, 1, 2, 3],
-                                 pool_scales=(1, 2, 3, 6),
-                                 channels=512,
-                                 dropout_ratio=0.1,
-                                 upsampling_mode=upsampling,
-                                 norm_cfg=dict(type='BN', requires_grad=True),
-                                 align_corners=False, )
+        # self.UPerHead = UPerHead(in_channels=[96, 192, 384, 768],
+        #                          num_classes=num_classes,
+        #                          in_index=[0, 1, 2, 3],
+        #                          pool_scales=(1, 2, 3, 6),
+        #                          channels=512,
+        #                          dropout_ratio=0.1,
+        #                          upsampling_mode=upsampling,
+        #                          norm_cfg=dict(type='BN', requires_grad=True),
+        #                          align_corners=False, )
 
         if pretrained_on_imagenet:
             print('load the pretrained model')
-            weight = torch.load('../assets/upernet_convnext_small_1k_512x512.pth')['state_dict']
+            # weight = torch.load('../assets/upernet_convnext_small_1k_512x512.pth')['state_dict']
+            weight = torch.load('../assets/upernet_convnext_base_22k_640x640.pth')['state_dict']
             weight_backbone = {k[9:]: v for k, v in weight.items() if k.split('.')[0] == 'backbone'}
             self.encoder_rgb.load_state_dict(weight_backbone)
             self.encoder_depth.load_state_dict(weight_backbone)
