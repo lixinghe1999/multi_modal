@@ -255,7 +255,7 @@ def train_one_epoch(model, train_loader, device, optimizer, loss_function_train,
     total_loss_list = []
 
     for i, sample in enumerate(train_loader):
-
+        break
         start_time_for_one_step = time.time()
 
         # load the data and send them to gpu
