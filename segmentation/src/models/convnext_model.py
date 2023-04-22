@@ -72,10 +72,10 @@ class ConvNextRGBD(nn.Module):
             weight_backbone = {k[9:]: v for k, v in weight.items() if k.split('.')[0] == 'backbone'}
             self.encoder_rgb.load_state_dict(weight_backbone)
             self.encoder_depth.load_state_dict(weight_backbone)
-            # for j, p in enumerate(self.encoder_rgb.parameters()):
-            #     p.requires_grad_(False)
-            # for j, p in enumerate(self.encoder_depth.parameters()):
-            #     p.requires_grad_(False)
+            for j, p in enumerate(self.encoder_rgb.parameters()):
+                p.requires_grad_(False)
+            for j, p in enumerate(self.encoder_depth.parameters()):
+                p.requires_grad_(False)
         self.channels_decoder_in = dims[-1]
 
 
