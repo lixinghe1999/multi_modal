@@ -118,7 +118,7 @@ def print_log(epoch, local_count, count_inter, dataset_size, loss, time_inter,
 def save_ckpt(ckpt_dir, model, optimizer, epoch):
     state = {
         'epoch': epoch,
-        'state_dict': model.module.state_dict(),
+        'state_dict': model.state_dict(),
         'optimizer': optimizer.state_dict(),
     }
     ckpt_model_filename = "ckpt_epoch_{}.pth".format(epoch)
@@ -131,7 +131,7 @@ def save_ckpt_every_epoch(ckpt_dir, model, optimizer, epoch, best_miou,
                           best_miou_epoch):
     state = {
         'epoch': epoch,
-        'state_dict': model.module.state_dict(),
+        'state_dict': model.state_dict(),
         'optimizer': optimizer.state_dict(),
         'best_miou': best_miou,
         'best_miou_epoch': best_miou_epoch

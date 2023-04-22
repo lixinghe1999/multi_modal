@@ -126,13 +126,13 @@ def build_model(args, n_classes):
                 model = MobileV3Large(num_classes=n_classes)
 
     if torch.cuda.is_available():
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        # device = torch.device("cuda:0")
+        # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        device = torch.device("cuda:0")
     else:
         device = torch.device("cpu")
 
     print('Device:', device)
-    model = torch.nn.DataParallel(model)
+    # model = torch.nn.DataParallel(model)
     model.to(device)
     # print(model)
 
