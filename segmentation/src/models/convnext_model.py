@@ -68,14 +68,14 @@ class ConvNextRGBD(nn.Module):
 
         if pretrained_on_imagenet:
             print('load the pretrained model')
-            # load imagenet pretrained or segmentation pretrained
             weight = torch.load('../assets/upernet_convnext_small_1k_512x512.pth')['state_dict']
             weight_backbone = {k[9:]: v for k, v in weight.items() if k.split('.')[0] == 'backbone'}
             self.encoder_rgb.load_state_dict(weight_backbone)
             self.encoder_depth.load_state_dict(weight_backbone)
-            # weight_uperhead = {k[12:]: v for k, v in weight.items() if k.split('.')[0] == 'decode_head'}
-            # weight_uperhead = {k: v for k, v in weight_uperhead.items() if k.split('.')[0] != 'conv_seg'}
-            # self.UPerHead.load_state_dict(weight_uperhead, strict=False)
+            # for j, p in enumerate(self.encoder_rgb.parameters()):
+            #     p.requires_grad_(False)
+            # for j, p in enumerate(self.encoder_depth.parameters()):
+            #     p.requires_grad_(False)
         self.channels_decoder_in = dims[-1]
 
 
