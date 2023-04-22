@@ -277,7 +277,7 @@ def train_one_epoch(model, train_loader, device, optimizer, loss_function_train,
         pred_scales = model(*input_data)
         # teacher_scale = teacher_model(*input_data)
         # loss computation
-        losses = loss_function_train(pred_scales, target_scales)
+        losses = loss_function_train(pred_scales, torch.nn.functional.one_hot(target_scales))
 
         loss_segmentation = sum(losses)
         total_loss = loss_segmentation
