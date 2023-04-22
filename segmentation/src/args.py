@@ -47,7 +47,7 @@ class ArgumentParserRGBDSegmentation(argparse.ArgumentParser):
                                'Images will be resized to this width.')
 
         # epochs
-        self.add_argument('--epochs', default=200, type=int, metavar='N',
+        self.add_argument('--epochs', default=100, type=int, metavar='N',
                           help='number of total epochs to run')
 
         # training hyper parameters
