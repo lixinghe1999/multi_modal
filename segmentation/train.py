@@ -277,7 +277,8 @@ def train_one_epoch(model, train_loader, device, optimizer, loss_function_train,
         pred_scales = model(*input_data)
         # loss computation
         # losses = loss_function_train(pred_scales, torch.nn.functional.one_hot(target_scales, num_classes=19))
-        losses = loss_function_train(pred_scales, target_scales.long())
+        losses = loss_function_train(pred_scales, torch.nn.functional.one_hot
+        (target_scales.long() - 1, num_classes=19).permute(0, 3, 1, 2).float())
 
         loss_segmentation = sum(losses)
         total_loss = loss_segmentation
