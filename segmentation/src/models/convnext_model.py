@@ -71,13 +71,11 @@ class ConvNextRGBD(nn.Module):
             # load imagenet pretrained or segmentation pretrained
             weight = torch.load('../assets/upernet_convnext_small_1k_512x512.pth')['state_dict']
             weight_backbone = {k[9:]: v for k, v in weight.items() if k.split('.')[0] == 'backbone'}
-            # weight = torch.load('../assets/convnext_small_1k_224.pth')['model']
-            # weight = {k: v for k, v in weight.items() if k.split('.')[0] != 'head'}
             self.encoder_rgb.load_state_dict(weight_backbone)
             self.encoder_depth.load_state_dict(weight_backbone)
-            weight_uperhead = {k[12:]: v for k, v in weight.items() if k.split('.')[0] == 'decode_head'}
-            weight_uperhead = {k: v for k, v in weight_uperhead.items() if k.split('.')[0] != 'conv_seg'}
-            self.UPerHead.load_state_dict(weight_uperhead, strict=False)
+            # weight_uperhead = {k[12:]: v for k, v in weight.items() if k.split('.')[0] == 'decode_head'}
+            # weight_uperhead = {k: v for k, v in weight_uperhead.items() if k.split('.')[0] != 'conv_seg'}
+            # self.UPerHead.load_state_dict(weight_uperhead, strict=False)
         self.channels_decoder_in = dims[-1]
 
 
@@ -130,42 +128,41 @@ class ConvNextRGBD(nn.Module):
             self.skip_layer3 = nn.Identity()
 
         # context module
-        # if 'learned-3x3' in upsampling:
-        #     warnings.warn('for the context module the learned upsampling is '
-        #                   'not possible as the feature maps are not upscaled '
-        #                   'by the factor 2. We will use nearest neighbor '
-        #                   'instead.')
-        #     upsampling_context_module = 'nearest'
-        # else:
-        #     upsampling_context_module = upsampling
-        # self.context_module, channels_after_context_module = \
-        #     get_context_module(
-        #         context_module,
-        #         self.channels_decoder_in,
-        #         channels_decoder[0],
-        #         input_size=(height // 32, width // 32),
-        #         activation=self.activation,
-        #         upsampling_mode=upsampling_context_module
-        #     )
-        #
-        # # decoder
-        # self.decoder = Decoder(
-        #     channels_in=channels_after_context_module,
-        #     channels_decoder=channels_decoder,
-        #     activation=self.activation,
-        #     nr_decoder_blocks=nr_decoder_blocks,
-        #     encoder_decoder_fusion=encoder_decoder_fusion,
-        #     upsampling_mode=upsampling,
-        #     num_classes=num_classes
-        # )
+        if 'learned-3x3' in upsampling:
+            warnings.warn('for the context module the learned upsampling is '
+                          'not possible as the feature maps are not upscaled '
+                          'by the factor 2. We will use nearest neighbor '
+                          'instead.')
+            upsampling_context_module = 'nearest'
+        else:
+            upsampling_context_module = upsampling
+        self.context_module, channels_after_context_module = \
+            get_context_module(
+                context_module,
+                self.channels_decoder_in,
+                channels_decoder[0],
+                input_size=(height // 32, width // 32),
+                activation=self.activation,
+                upsampling_mode=upsampling_context_module
+            )
+
+        # decoder
+        self.decoder = Decoder(
+            channels_in=channels_after_context_module,
+            channels_decoder=channels_decoder,
+            activation=self.activation,
+            nr_decoder_blocks=nr_decoder_blocks,
+            encoder_decoder_fusion=encoder_decoder_fusion,
+            upsampling_mode=upsampling,
+            num_classes=num_classes
+        )
 
     def forward(self, rgb, depth):
         # block 1
         rgb = self.encoder_rgb.forward_layer1(rgb)
         depth = self.encoder_depth.forward_layer1(depth.repeat(1, 3, 1, 1))
         if self.fuse_depth_in_rgb_encoder == 'SE-add':
-            rgb, depth_t = self.se_layer1(rgb, depth)
-            fuse = rgb + depth_t
+            fuse = self.se_layer1(rgb, depth)
         else:
             fuse = rgb + depth
         skip1 = self.skip_layer1(fuse)
@@ -174,8 +171,7 @@ class ConvNextRGBD(nn.Module):
         rgb = self.encoder_rgb.forward_layer2(fuse)
         depth = self.encoder_depth.forward_layer2(depth)
         if self.fuse_depth_in_rgb_encoder == 'SE-add':
-            rgb, depth_t = self.se_layer2(rgb, depth)
-            fuse = rgb + depth_t
+            fuse= self.se_layer2(rgb, depth)
         else:
             fuse = rgb + depth
         skip2 = self.skip_layer2(fuse)
@@ -184,8 +180,7 @@ class ConvNextRGBD(nn.Module):
         rgb = self.encoder_rgb.forward_layer3(fuse)
         depth = self.encoder_depth.forward_layer3(depth)
         if self.fuse_depth_in_rgb_encoder == 'SE-add':
-            rgb, depth_t = self.se_layer3(rgb, depth)
-            fuse = rgb + depth_t
+            fuse = self.se_layer3(rgb, depth)
         else:
             fuse = rgb + depth
         skip3 = self.skip_layer3(fuse)
@@ -194,13 +189,12 @@ class ConvNextRGBD(nn.Module):
         rgb = self.encoder_rgb.forward_layer4(fuse)
         depth = self.encoder_depth.forward_layer4(depth)
         if self.fuse_depth_in_rgb_encoder == 'SE-add':
-            rgb, depth_t = self.se_layer4(rgb, depth)
-            fuse = rgb + depth_t
+            fuse = self.se_layer4(rgb, depth)
         else:
             fuse = rgb + depth
-        # out = self.context_module(fuse)
-        # out = self.decoder(enc_outs=[out, skip3, skip2, skip1])
-        out = self.UPerHead([skip1, skip2, skip3, fuse])
+        out = self.context_module(fuse)
+        out = self.decoder(enc_outs=[out, skip3, skip2, skip1])
+        # out = self.UPerHead([skip1, skip2, skip3, fuse])
         return out
 
 class UPerHead(BaseDecodeHead):

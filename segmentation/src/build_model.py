@@ -121,6 +121,7 @@ def build_model(args, n_classes):
         else:
             if args.pretrained_on_imagenet:
                 model = MobileV3Large.from_pretrained()
+                model.last = nn.Conv2d(128, n_classes, kernel_size=1)
             else:
                 model = MobileV3Large(num_classes=n_classes)
 
