@@ -103,7 +103,7 @@ class LRASPP(BaseSegmentation):
         y = self.last(y)
         y = F.interpolate(y, size=x.shape[2:], mode='bilinear', align_corners=False)
         if self.training:
-            return [y]
+            return y
         else:
             return y
 
