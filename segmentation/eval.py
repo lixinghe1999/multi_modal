@@ -33,7 +33,6 @@ if __name__ == '__main__':
         data_loader = add_data_loader[0]
 
     n_classes = data_loader.dataset.n_classes_without_void
-    print(n_classes)
     # model and checkpoint loading
     model, device = build_model(args, n_classes=n_classes)
     checkpoint = torch.load(args.ckpt_path,
