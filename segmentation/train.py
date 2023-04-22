@@ -53,7 +53,6 @@ def train_main():
     training_starttime = datetime.now().strftime("%d_%m_%Y-%H_%M_%S-%f")
     ckpt_dir = os.path.join(args.results_dir, args.dataset,
                             f'checkpoints_{training_starttime}')
-    print('get the folder', ckpt_dir)
     os.makedirs(ckpt_dir, exist_ok=True)
     os.makedirs(os.path.join(ckpt_dir, 'confusion_matrices'), exist_ok=True)
 
