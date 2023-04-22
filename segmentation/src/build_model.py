@@ -119,11 +119,10 @@ def build_model(args, n_classes):
                 upsampling=args.upsampling
             )
         else:
-            model = MobileV3Large.from_pretrained()
-            # if args.pretrained_on_imagenet:
-            #     model = MobileV3Large.from_pretrained()
-            # else:
-            #     model = MobileV3Large(num_classes=n_classes)
+            if args.pretrained_on_imagenet:
+                model = MobileV3Large.from_pretrained()
+            else:
+                model = MobileV3Large(num_classes=n_classes)
 
     if torch.cuda.is_available():
         device = torch.device("cuda:0")
