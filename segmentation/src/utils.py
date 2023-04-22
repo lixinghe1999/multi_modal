@@ -45,7 +45,7 @@ class CrossEntropyLoss2d(nn.Module):
             #     torch.sum(number_of_pixels_per_class[1:] * self.weight)   # without void
             # loss1 = torch.sum(loss_all) / divisor_weighted_pixel_sum
             # loss2 = nn.functional.mse_loss(inputs, teachers) * 1
-            loss1 = torch.sum(loss_all)
+            loss1 = torch.mean(loss_all)
             losses.append(loss1)
         return losses
 
