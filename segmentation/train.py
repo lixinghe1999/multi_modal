@@ -49,12 +49,11 @@ def parse_args():
 
 def train_main():
     args = parse_args()
-
     # directory for storing weights and other training related files
     training_starttime = datetime.now().strftime("%d_%m_%Y-%H_%M_%S-%f")
     ckpt_dir = os.path.join(args.results_dir, args.dataset,
                             f'checkpoints_{training_starttime}')
-    print(ckpt_dir)
+    print('get the folder', ckpt_dir)
     os.makedirs(ckpt_dir, exist_ok=True)
     os.makedirs(os.path.join(ckpt_dir, 'confusion_matrices'), exist_ok=True)
 
