@@ -359,6 +359,7 @@ class MixVisionTransformer(nn.Module):
         print(x[0].shape, x[1].shape)
         # stage 1
         x, H, W = self.patch_embed1(x)
+        print(H, W)
         for i, blk in enumerate(self.block1):
             score = self.score_predictor[0](x)
             mask = [F.softmax(score_.reshape(B, -1, 2), dim=2)[:, :, 0] for score_ in score]  # mask_: [B, N]
