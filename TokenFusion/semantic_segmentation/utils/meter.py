@@ -7,7 +7,7 @@ import numpy as np
 def confusion_matrix(x, y, n, ignore_label=None, mask=None):
     if mask is None:
         mask = np.ones_like(x) == 1
-    k = (x >= 0) & (y < n) & (x != ignore_label) & (mask.bool())
+    k = (x >= 0) & (y < n) & (x != ignore_label) & (mask.astype(np.bool))
     return np.bincount(n * x[k].astype(int) + y[k], minlength=n ** 2).reshape(n, n)
 
 
