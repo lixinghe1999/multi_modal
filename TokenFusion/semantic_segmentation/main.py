@@ -209,7 +209,8 @@ def load_ckpt(ckpt_path, ckpt_dict):
     print(ckpt.keys())
     for (k, v) in ckpt_dict.items():
         if k in ckpt:
-            v.load_state_dict(ckpt[k])
+            # v.load_state_dict(ckpt[k])
+            v.load_state_dict({a.replace('module.', ''): b for a, b in ckpt[k].items()})
     best_val = ckpt.get('best_val', 0)
     epoch_start = ckpt.get('epoch_start', 0)
     print_log('Found checkpoint at {} with best_val {:.4f} at epoch {}'.
