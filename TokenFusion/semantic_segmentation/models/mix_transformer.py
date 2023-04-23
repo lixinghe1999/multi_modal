@@ -356,7 +356,7 @@ class MixVisionTransformer(nn.Module):
         B = x[0].shape[0]
         outs0, outs1 = [], []
         masks = []
-
+        print(x[0].shape, x[1].shape)
         # stage 1
         x, H, W = self.patch_embed1(x)
         for i, blk in enumerate(self.block1):
@@ -368,7 +368,7 @@ class MixVisionTransformer(nn.Module):
         x = [x_.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous() for x_ in x]
         outs0.append(x[0])
         outs1.append(x[1])
-
+        print(x[0].shape, x[1].shape)
         # stage 2
         x, H, W = self.patch_embed2(x)
         for i, blk in enumerate(self.block2):
@@ -380,7 +380,7 @@ class MixVisionTransformer(nn.Module):
         x = [x_.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous() for x_ in x]
         outs0.append(x[0])
         outs1.append(x[1])
-
+        print(x[0].shape, x[1].shape)
         # stage 3
         x, H, W = self.patch_embed3(x)
         for i, blk in enumerate(self.block3):
@@ -392,6 +392,7 @@ class MixVisionTransformer(nn.Module):
         x = [x_.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous() for x_ in x]
         outs0.append(x[0])
         outs1.append(x[1])
+        print(x[0].shape, x[1].shape)
 
         # stage 4
         x, H, W = self.patch_embed4(x)
@@ -404,7 +405,7 @@ class MixVisionTransformer(nn.Module):
         x = [x_.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous() for x_ in x]
         outs0.append(x[0])
         outs1.append(x[1])
-
+        print(x[0].shape, x[1].shape)
         return [outs0, outs1], masks
 
     def forward(self, x):
