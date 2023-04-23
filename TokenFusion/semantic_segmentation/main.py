@@ -120,7 +120,7 @@ def create_segmenter(num_classes, gpu, backbone):
     param_groups = segmenter.get_param_groups()
     assert(torch.cuda.is_available())
     segmenter.to(gpu[0])
-    #  segmenter = torch.nn.DataParallel(segmenter, gpu)
+    segmenter = torch.nn.DataParallel(segmenter, gpu)
     # segmenter = DistributedDataParallel(wetr, device_ids=[-1], find_unused_parameters=True)
     return segmenter, param_groups
 
