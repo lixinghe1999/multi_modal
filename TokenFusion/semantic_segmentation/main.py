@@ -110,7 +110,7 @@ def get_arguments():
                         help='Lamda for L1 norm.')
     # parser.add_argument('-t', '--bn-threshold', type=float, default=BN_threshold,
     #                     help='Threshold for slimming BNs.')
-    parser.add_argument('--backbone', default='mit_b1', type=str)
+    parser.add_argument('--backbone', default='mit_b3', type=str)
     return parser.parse_args()
 
 
@@ -208,7 +208,7 @@ def load_ckpt(ckpt_path, ckpt_dict):
     ckpt = torch.load(ckpt_path, map_location='cpu')
     for (k, v) in ckpt_dict.items():
         if k in ckpt:
-            v.load_state_dict(ckpt[k], False)
+            v.load_state_dict(ckpt[k], True)
             #v.load_state_dict({a.replace('module.', ''): b for a, b in ckpt[k].items()})
     best_val = ckpt.get('best_val', 0)
     epoch_start = ckpt.get('epoch_start', 0)
