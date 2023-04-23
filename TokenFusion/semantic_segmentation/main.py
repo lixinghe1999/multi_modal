@@ -205,7 +205,7 @@ def create_optimisers(lr_enc, lr_dec, mom_enc, mom_dec, wd_enc, wd_dec, param_en
 
 
 def load_ckpt(ckpt_path, ckpt_dict):
-    ckpt = torch.load(ckpt_path, map_location='cpu')
+    ckpt = torch.load(ckpt_path, map_location='cpu')['state_dict']
     for (k, v) in ckpt_dict.items():
         if k in ckpt:
             v.load_state_dict(ckpt[k])
