@@ -119,6 +119,7 @@ class WeTr(nn.Module):
         x = [self.decoder(x[0]), self.decoder(x[1])]
         ens = 0
         alpha_soft = F.softmax(self.alpha)
+        print(alpha_soft)
         for l in range(self.num_parallel):
             ens += alpha_soft[l] * x[l].detach()
         x.append(ens)
