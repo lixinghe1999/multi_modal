@@ -198,6 +198,7 @@ class MixVisionTransformer(nn.Module):
         super().__init__()
         self.num_classes = num_classes
         self.depths = depths
+        self.embed_dims = embed_dims
 
         # patch_embed
         self.patch_embed1 = OverlapPatchEmbed(img_size=img_size, patch_size=7, stride=4, in_chans=in_chans,

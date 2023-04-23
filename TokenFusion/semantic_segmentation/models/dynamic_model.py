@@ -1,10 +1,8 @@
-import torch
 import torch.nn as nn
-import torch.nn.functional as F 
-from . import mix_transformer
+from . import dynamic_segformer
+import torch.nn.functional as F
 from mmcv.cnn import ConvModule
-from .modules import num_parallel
-
+import torch
 
 class MLP(nn.Module):
     """
@@ -18,7 +16,6 @@ class MLP(nn.Module):
         x = x.flatten(2).transpose(1, 2)
         x = self.proj(x)
         return x
-
 
 class SegFormerHead(nn.Module):
     """
@@ -77,27 +74,18 @@ class SegFormerHead(nn.Module):
         return x
 
 
-class WeTr(nn.Module):
-    def __init__(self, backbone, num_classes=20, embedding_dim=256, pretrained=True):
+class Dynamic_Model(nn.Module):
+    def __init__(self, backbone, num_classes=20, embedding_dim=256):
         super().__init__()
         self.num_classes = num_classes
         self.embedding_dim = embedding_dim
         self.feature_strides = [4, 8, 16, 32]
-        self.num_parallel = num_parallel
-        #self.in_channels = [32, 64, 160, 256]
-        #self.in_channels = [64, 128, 320, 512]
+        self.num_parallel = 2
+        self.encoder_rgb = getattr(dynamic_segformer, backbone)()
+        self.encoder_depth = getattr(dynamic_segformer, backbone)()
+        self.in_channels = self.encoder_rgb.embed_dims
 
-        self.encoder = getattr(mix_transformer, backbone)()
-        self.in_channels = self.encoder.embed_dims
-        ## initilize encoder
-        if pretrained:
-            state_dict = torch.load('pretrained/' + backbone + '.pth')
-            state_dict.pop('head.weight')
-            state_dict.pop('head.bias')
-            state_dict = expand_state_dict(self.encoder.state_dict(), state_dict, self.num_parallel)
-            self.encoder.load_state_dict(state_dict, strict=True)
-
-        self.decoder = SegFormerHead(feature_strides=self.feature_strides, in_channels=self.in_channels, 
+        self.decoder = SegFormerHead(feature_strides=self.feature_strides, in_channels=self.in_channels,
                                      embedding_dim=self.embedding_dim, num_classes=self.num_classes)
 
         self.alpha = nn.Parameter(torch.ones(self.num_parallel, requires_grad=True))
@@ -114,38 +102,15 @@ class WeTr(nn.Module):
             param_groups[2].append(param)
         return param_groups
 
-    def forward(self, x):
-        x, masks = self.encoder(x)
-        x = [self.decoder(x[0]), self.decoder(x[1])]
+    def forward(self, rgb, depth):
+        rgb = self.encoder_rgb(rgb)
+        depth = self.encoder_depth(depth)
+        for r, d in zip(rgb, depth):
+            print(r.shape, d.shape)
+        x = [self.decoder(rgb), self.decoder(depth)]
         ens = 0
-        alpha_soft = F.softmax(self.alpha)
+        alpha_soft = F.softmax(self.alpha, dim=-1)
         for l in range(self.num_parallel):
             ens += alpha_soft[l] * x[l].detach()
         x.append(ens)
-        return x, masks
-
-
-def expand_state_dict(model_dict, state_dict, num_parallel):
-    model_dict_keys = model_dict.keys()
-    state_dict_keys = state_dict.keys()
-    for model_dict_key in model_dict_keys:
-        model_dict_key_re = model_dict_key.replace('module.', '')
-        if model_dict_key_re in state_dict_keys:
-            model_dict[model_dict_key] = state_dict[model_dict_key_re]
-        for i in range(num_parallel):
-            ln = '.ln_%d' % i
-            replace = True if ln in model_dict_key_re else False
-            model_dict_key_re = model_dict_key_re.replace(ln, '')
-            if replace and model_dict_key_re in state_dict_keys:
-                model_dict[model_dict_key] = state_dict[model_dict_key_re]
-    return model_dict
-    
-
-if __name__=="__main__":
-    # import torch.distributed as dist
-    # dist.init_process_group('gloo', init_method='file:///temp/somefile', rank=0, world_size=1)
-    pretrained_weights = torch.load('pretrained/mit_b1.pth')
-    wetr = WeTr('mit_b1', num_classes=20, embedding_dim=256, pretrained=True).cuda()
-    wetr.get_param_groupsv()
-    dummy_input = torch.rand(2,3,512,512).cuda()
-    wetr(dummy_input)
+        return x
