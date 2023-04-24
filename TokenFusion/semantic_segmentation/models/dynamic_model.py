@@ -1,5 +1,5 @@
 import torch.nn as nn
-from . import SegFormer
+from . import dynamic_segformer
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
 import torch
@@ -73,36 +73,6 @@ class SegFormerHead(nn.Module):
 
         return x
 
-class PredictorLG(nn.Module):
-    """ Image to Patch Embedding
-    """
-    def __init__(self, embed_dim=384):
-        super().__init__()
-        self.in_conv = nn.Sequential(
-            nn.LayerNorm(embed_dim),
-            nn.Linear(embed_dim, embed_dim),
-            nn.GELU()
-        )
-
-        self.out_conv = nn.Sequential(
-            nn.Linear(embed_dim, embed_dim // 2),
-            nn.GELU(),
-            nn.Linear(embed_dim // 2, embed_dim // 4),
-            nn.GELU(),
-            nn.Linear(embed_dim // 4, 2),
-            nn.LogSoftmax(dim=-1)
-        )
-
-    def forward(self, x, policy):
-
-        x = self.in_conv(x)
-        B, N, C = x.size()
-        half_C = torch.div(C, 2, rounding_mode='trunc')
-        local_x = x[:,:, :half_C]
-        global_x = (x[:,:, half_C:] * policy).sum(dim=1, keepdim=True) / torch.sum(policy, dim=1, keepdim=True)
-        x = torch.cat([local_x, global_x.expand(B, N, half_C)], dim=-1)
-        return self.out_conv(x)
-
 class Dynamic_Model(nn.Module):
     def __init__(self, backbone, num_classes=20, embedding_dim=256, pretrained=True,
                  pruning_loc=[1, 2, 3], token_ratio=[0.9, 0.7, 0.5]):
@@ -113,8 +83,8 @@ class Dynamic_Model(nn.Module):
         self.num_parallel = 2
         self.pruning_loc = pruning_loc
         self.token_ratio = token_ratio
-        self.encoder_rgb = getattr(SegFormer, backbone)()
-        self.encoder_depth = getattr(SegFormer, backbone)()
+        self.encoder_rgb = getattr(dynamic_segformer, backbone)()
+        self.encoder_depth = getattr(dynamic_segformer, backbone)()
         self.in_channels = self.encoder_rgb.embed_dims
 
         if pretrained:
@@ -125,7 +95,7 @@ class Dynamic_Model(nn.Module):
             self.encoder_depth.load_state_dict(state_dict, strict=True)
 
         if len(pruning_loc) > 0:
-            predictor_list = [PredictorLG(self.in_channels[i]) for i in range(len(pruning_loc))]
+            predictor_list = [dynamic_segformer.PredictorLG(self.in_channels[i]) for i in range(len(pruning_loc))]
             self.score_predictor = nn.ModuleList(predictor_list)
 
         self.decoder = SegFormerHead(feature_strides=self.feature_strides, in_channels=self.in_channels,
@@ -145,16 +115,20 @@ class Dynamic_Model(nn.Module):
             param_groups[2].append(param)
         return param_groups
 
-    def forward(self, rgb, depth):
+    def forward(self, x):
+        rgb, depth = x
         B = rgb.shape[0]
         outs = []
+        p_count = 0
+        prev_decision = torch.ones(B, self.num_patches, 1, dtype=rgb.dtype, device=rgb.device)
+        policy = torch.ones(B, self.num_patches + 2, 1, dtype=rgb.dtype, device=rgb.device)
+
         # stage 1
         rgb, H, W = self.patch_embed1(rgb)
         depth, H, W = self.patch_embed1(depth)
-        for i, blk in enumerate(self.encoder_rgb.block1):
-            rgb = blk(rgb, H, W)
-        for i, blk in enumerate(self.encoder_depth.block1):
-            depth = blk(depth, H, W)
+        for i, (blk_r, blk_d) in enumerate(zip(self.encoder_rgb.block1, self.encoder_depth.block1)):
+            rgb = blk_r(rgb, H, W)
+            depth = blk_d(depth, H, W)
         rgb, depth = self.encoder_rgb.norm1(rgb), self.encoder_depth.norm1(depth)
         rgb = rgb.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
         depth = rgb.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
@@ -163,10 +137,29 @@ class Dynamic_Model(nn.Module):
         # stage 2
         rgb, H, W = self.patch_embed2(rgb)
         depth, H, W = self.patch_embed2(depth)
-        for i, blk in enumerate(self.encoder_rgb.block2):
-            rgb = blk(rgb, H, W)
-        for i, blk in enumerate(self.encoder_depth.block2):
-            depth = blk(depth, H, W)
+        spatial_x = torch.cat([rgb, depth], dim=1)
+        pred_score = self.score_predictor[p_count](spatial_x, prev_decision).reshape(B, -1, 2)
+        token_len = rgb.shape[-1]
+        if self.training:
+            rgb = [rgb, rgb]
+            depth = [depth, depth]
+            hard_keep_decision = F.gumbel_softmax(pred_score, hard=True)[:, :, 0:1] * prev_decision
+            decision_rgb = hard_keep_decision[:, :token_len]
+            decision_depth = hard_keep_decision[:, token_len:]
+        else:
+            score = pred_score[:, :, 0]
+            values, indices = torch.sort(score, dim=1, descending=False)
+            num_keep_node = int(self.num_patches * self.token_ratio[p_count])
+            keep_policy = indices[:, -num_keep_node:]
+            # prev_decision = dynamic_segformer.batch_index_select(prev_decision, keep_policy)
+            keep_audio = keep_policy < token_len
+            keep_image = keep_policy >= token_len
+            decision_rgb = torch.masked_select(keep_policy, mask=keep_audio).unsqueeze(0)
+            decision_depth = torch.masked_select(keep_policy, mask=keep_image).unsqueeze(0) - token_len
+        for i, (blk_r, blk_d) in enumerate(zip(self.encoder_rgb.block2, self.encoder_depth.block2)):
+            rgb = blk_r(rgb, H, W, decision_rgb)
+            depth = blk_d(depth, H, W, decision_depth)
+        p_count += 1
         rgb, depth = self.encoder_rgb.norm2(rgb), self.encoder_depth.norm2(depth)
         rgb = rgb.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
         depth = rgb.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
@@ -175,10 +168,9 @@ class Dynamic_Model(nn.Module):
         # stage 3
         rgb, H, W = self.patch_embed3(rgb)
         depth, H, W = self.patch_embed3(depth)
-        for i, blk in enumerate(self.encoder_rgb.block3):
-            rgb = blk(rgb, H, W)
-        for i, blk in enumerate(self.encoder_depth.block3):
-            depth = blk(depth, H, W)
+        for i, (blk_r, blk_d) in enumerate(zip(self.encoder_rgb.block3, self.encoder_depth.block3)):
+            rgb = blk_r(rgb, H, W)
+            depth = blk_d(depth, H, W)
         rgb, depth = self.encoder_rgb.norm3(rgb), self.encoder_depth.norm3(depth)
         rgb = rgb.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
         depth = rgb.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
@@ -187,10 +179,9 @@ class Dynamic_Model(nn.Module):
         # stage 4
         rgb, H, W = self.patch_embed4(rgb)
         depth, H, W = self.patch_embed4(depth)
-        for i, blk in enumerate(self.encoder_rgb.block4):
-            rgb = blk(rgb, H, W)
-        for i, blk in enumerate(self.encoder_depth.block4):
-            depth = blk(depth, H, W)
+        for i, (blk_r, blk_d) in enumerate(zip(self.encoder_rgb.block4, self.encoder_depth.block4)):
+            rgb = blk_r(rgb, H, W)
+            depth = blk_d(depth, H, W)
         rgb, depth = self.encoder_rgb.norm4(rgb), self.encoder_depth.norm4(depth)
         rgb = rgb.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
         depth = rgb.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()

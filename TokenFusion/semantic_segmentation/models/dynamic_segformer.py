@@ -40,6 +40,35 @@ def batch_index_fill(x, x1, x2, idx1, idx2):
     x = x.reshape(B, N, C)
     return x
 
+class PredictorLG(nn.Module):
+    """ Image to Patch Embedding
+    """
+    def __init__(self, embed_dim=384):
+        super().__init__()
+        self.in_conv = nn.Sequential(
+            nn.LayerNorm(embed_dim),
+            nn.Linear(embed_dim, embed_dim),
+            nn.GELU()
+        )
+
+        self.out_conv = nn.Sequential(
+            nn.Linear(embed_dim, embed_dim // 2),
+            nn.GELU(),
+            nn.Linear(embed_dim // 2, embed_dim // 4),
+            nn.GELU(),
+            nn.Linear(embed_dim // 4, 2),
+            nn.LogSoftmax(dim=-1)
+        )
+
+    def forward(self, x, policy):
+        x = self.in_conv(x)
+        B, N, C = x.size()
+        half_C = torch.div(C, 2, rounding_mode='trunc')
+        local_x = x[:,:, :half_C]
+        global_x = (x[:,:, half_C:] * policy).sum(dim=1, keepdim=True) / torch.sum(policy, dim=1, keepdim=True)
+        x = torch.cat([local_x, global_x.expand(B, N, half_C)], dim=-1)
+        return self.out_conv(x)
+
 class Mlp(nn.Module):
     def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
         super().__init__()
@@ -156,8 +185,8 @@ class Block(nn.Module):
         mlp_hidden_dim = int(dim * mlp_ratio)
         self.mlp = Mlp(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop)
 
-    def forward(self, x, H, W):
-        x = x + self.drop_path(self.attn(self.norm1(x), H, W))
+    def forward(self, x, H, W, mask=None):
+        x = x + self.drop_path(self.attn(self.norm1(x), H, W, mask))
         x = x + self.drop_path(self.mlp(self.norm2(x), H, W))
 
         return x

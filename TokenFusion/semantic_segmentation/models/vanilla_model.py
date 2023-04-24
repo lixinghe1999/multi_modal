@@ -110,7 +110,7 @@ class Vanilla_Model(nn.Module):
             param_groups[2].append(param)
         return param_groups
 
-    @autocast()
+    # @autocast()
     def forward(self, x):
         rgb, depth = x
         rgb = self.encoder_rgb(rgb)
