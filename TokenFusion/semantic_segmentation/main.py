@@ -282,7 +282,7 @@ def train(segmenter, input_types, train_loader, optimizer, epoch,
     #     sum(slim_params_list < bn_threshold) / len(slim_params_list)), flush=True)
 
     if masks == None:
-        pass
+        print('Epoch %d, loss: %.2f%%' % (epoch, losses.avg), flush=True)
     else:
         portion_rgbs, portion_depths = [], []
         for idx, mask in enumerate(masks):
