@@ -3,7 +3,7 @@ import torch.nn as nn
 from functools import partial
 
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
-from mmseg.models.builder import BACKBONES
+from .modules import ModuleParallel, LayerNormParallel
 import math
 def batch_index_select(x, idx):
     if len(x.size()) == 3:
@@ -40,34 +40,48 @@ def batch_index_fill(x, x1, x2, idx1, idx2):
     x = x.reshape(B, N, C)
     return x
 
+
 class PredictorLG(nn.Module):
-    """ Image to Patch Embedding
+    """ Importance Score Predictor
     """
+
     def __init__(self, embed_dim=384):
         super().__init__()
         self.in_conv = nn.Sequential(
-            nn.LayerNorm(embed_dim),
-            nn.Linear(embed_dim, embed_dim),
+            nn.LayerNorm(embed_dim, eps=1e-6),
+            nn.Linear(embed_dim, embed_dim, 1),
             nn.GELU()
         )
 
         self.out_conv = nn.Sequential(
-            nn.Linear(embed_dim, embed_dim // 2),
+            nn.Linear(embed_dim, embed_dim // 2, 1),
             nn.GELU(),
-            nn.Linear(embed_dim // 2, embed_dim // 4),
+            nn.Linear(embed_dim // 2, embed_dim // 4, 1),
             nn.GELU(),
-            nn.Linear(embed_dim // 4, 2),
-            nn.LogSoftmax(dim=-1)
+            nn.Linear(embed_dim // 4, 2, 1),
+            nn.LogSoftmax(dim=1)
         )
 
-    def forward(self, x, policy):
-        x = self.in_conv(x)
-        B, N, C = x.size()
-        half_C = torch.div(C, 2, rounding_mode='trunc')
-        local_x = x[:,:, :half_C]
-        global_x = (x[:,:, half_C:] * policy).sum(dim=1, keepdim=True) / torch.sum(policy, dim=1, keepdim=True)
-        x = torch.cat([local_x, global_x.expand(B, N, half_C)], dim=-1)
-        return self.out_conv(x)
+    def forward(self, input_x, mask=None):
+        if self.training and mask is not None:
+            x1, x2 = input_x
+            input_x = x1 * mask + x2 * (1 - mask)
+        else:
+            x1 = input_x
+            x2 = input_x
+        x = self.in_conv(input_x)
+        B, C, N = x.size()
+        local_x = x[:, :C // 2]
+        global_x = torch.mean(x[:, C // 2:], keepdim=True, dim=(2))
+        x = torch.cat([local_x, global_x.expand(B, C // 2, N)], dim=1)
+        pred_score = self.out_conv(x)
+
+        if self.training:
+            mask = nn.functional.gumbel_softmax(pred_score, hard=True, dim=1)[:, 0:1]
+            return mask
+        else:
+            return pred_score
+
 
 class Mlp(nn.Module):
     def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
@@ -128,16 +142,18 @@ class Attention(nn.Module):
             self.sr = nn.Conv2d(dim, dim, kernel_size=sr_ratio, stride=sr_ratio)
             self.norm = nn.LayerNorm(dim)
 
-        self.fast_path = nn.Sequential(nn.LayerNorm(dim, eps=1e-6), nn.Linear(dim, dim))
-    def attention(self, x, H, W):
+    def sr(self, x, H, W):
+        B, N, C = x.shape
+        x = x.permute(0, 2, 1).reshape(B, C, H, W)
+        x = self.sr(x)
+        x = x.reshape(B, C, -1).permute(0, 2, 1)
+        x = self.norm(x)
+        return x
+    def forward(self, x, H, W):
+
         B, N, C = x.shape
         q = self.q(x)
         q = q.reshape(B, N, self.num_heads, C // self.num_heads).permute(0, 2, 1, 3)
-        if self.sr_ratio > 1:
-            x = x.permute(0, 2, 1).reshape(B, C, H, W)
-            x = self.sr(x)
-            x = x.reshape(B, C, -1).permute(0, 2, 1)
-            x = self.norm(x)
         kv = self.kv(x)
         kv = kv.reshape(B, -1, 2, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
         k, v = [kv[0], kv[1]]
@@ -148,26 +164,6 @@ class Attention(nn.Module):
         x = self.proj(x)
         x = self.proj_drop(x)
         return x
-    def forward(self, x, H, W, mask):
-        if mask is None:
-            x = self.attention(x, H, W)
-        else:
-            if self.training:
-                x1, x2 = x
-                x1 = self.attention(x1*mask, H, W)
-                x2 = self.fast_path(x2*(1-mask), H, W)
-                x = [x1, x2]
-            else:
-                # inference code
-                idx1, idx2 = mask
-                x1 = batch_index_select(x, idx1)
-                x2 = batch_index_select(x, idx2)
-                x1 = self.attention(x1 * mask, H, W)
-                x2 = self.fast_path(x2)
-                x = torch.zeros_like(x)
-                x = batch_index_fill(x, x1, x2, idx1, idx2)
-        return x
-
 
 class Block(nn.Module):
 
@@ -184,14 +180,42 @@ class Block(nn.Module):
         self.norm2 = norm_layer(dim)
         mlp_hidden_dim = int(dim * mlp_ratio)
         self.mlp = Mlp(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop)
-
+        self.fast_path = nn.Sequential(nn.LayerNorm(dim, eps=1e-6), nn.Linear(dim, dim))
     def forward(self, x, H, W, mask=None):
-        x = x + self.drop_path(self.attn(self.norm1(x), H, W, mask))
-        x = x + self.drop_path(self.mlp(self.norm2(x), H, W))
+        if self.training and mask is not None:
+            x1, x2 = x
+            if self.attn.sr_ratio > 1:
+                x1 = self.attn.sr(x1 * mask, H, W)
+                x2 = self.attn.sr(x2 * (1 - mask), H, W)
+            x1 = x1 + self.drop_path(self.attn(self.norm1(x1), H, W))
+            x1 = x1 + self.drop_path(self.mlp(self.norm2(x1), H, W))
 
+            x2 = x2 + self.drop_path(self.fast_path(self.norm1(x2)))
+            x2 = x2 + self.drop_path(self.mlp(self.norm2(x2), H, W))
+            x = [x1, x2]
+        else:
+            # inference code
+            if self.attn.sr_ratio > 1:
+                x = self.attn.sr(x, H, W)
+            if mask == None:
+                x = x + self.drop_path(self.attn(self.norm1(x), H, W))
+                x = x + self.drop_path(self.mlp(self.norm2(x), H, W))
+            else:
+                print(x.shape, mask.shape)
+                mask = mask.bool()
+                feat_dim = x.shape[-1]
+                x1 = torch.masked_select(x, mask).reshape(1, -1, feat_dim)
+                x2 = torch.masked_select(x, ~mask).reshape(1, -1, feat_dim)
+                print(x1.shape, x2.shape)
+                x1 = x1 + self.drop_path(self.attn(self.norm1(x1), H, W))
+                x1 = x1 + self.drop_path(self.mlp(self.norm2(x1), H, W))
+
+                x2 = x2 + self.drop_path(self.fast_path(self.norm1(x2), H, W))
+                x2 = x2 + self.drop_path(self.mlp(self.norm2(x2), H, W))
+
+                x = torch.zeros_like(x)
+                x = batch_index_fill(x, x1, x2, mask, 1-mask)
         return x
-
-
 class OverlapPatchEmbed(nn.Module):
     """ Image to Patch Embedding
     """
@@ -233,7 +257,6 @@ class OverlapPatchEmbed(nn.Module):
         x = self.norm(x)
 
         return x, H, W
-
 
 class SegFormer(nn.Module):
     def __init__(self, img_size=224, patch_size=16, in_chans=3, num_classes=1000, embed_dims=[64, 128, 256, 512],
