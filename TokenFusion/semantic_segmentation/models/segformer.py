@@ -356,7 +356,7 @@ class DWConv(nn.Module):
 
 
 @BACKBONES.register_module()
-class mit_b0(MixVisionTransformer):
+class mit_b0(SegFormer):
     def __init__(self, **kwargs):
         super(mit_b0, self).__init__(
             patch_size=4, embed_dims=[32, 64, 160, 256], num_heads=[1, 2, 5, 8], mlp_ratios=[4, 4, 4, 4],
@@ -365,7 +365,7 @@ class mit_b0(MixVisionTransformer):
 
 
 @BACKBONES.register_module()
-class mit_b1(MixVisionTransformer):
+class mit_b1(SegFormer):
     def __init__(self, **kwargs):
         super(mit_b1, self).__init__(
             patch_size=4, embed_dims=[64, 128, 320, 512], num_heads=[1, 2, 5, 8], mlp_ratios=[4, 4, 4, 4],
@@ -374,7 +374,7 @@ class mit_b1(MixVisionTransformer):
 
 
 @BACKBONES.register_module()
-class mit_b2(MixVisionTransformer):
+class mit_b2(SegFormer):
     def __init__(self, **kwargs):
         super(mit_b2, self).__init__(
             patch_size=4, embed_dims=[64, 128, 320, 512], num_heads=[1, 2, 5, 8], mlp_ratios=[4, 4, 4, 4],
@@ -383,7 +383,7 @@ class mit_b2(MixVisionTransformer):
 
 
 @BACKBONES.register_module()
-class mit_b3(MixVisionTransformer):
+class mit_b3(SegFormer):
     def __init__(self, **kwargs):
         super(mit_b3, self).__init__(
             patch_size=4, embed_dims=[64, 128, 320, 512], num_heads=[1, 2, 5, 8], mlp_ratios=[4, 4, 4, 4],
@@ -392,7 +392,7 @@ class mit_b3(MixVisionTransformer):
 
 
 @BACKBONES.register_module()
-class mit_b4(MixVisionTransformer):
+class mit_b4(SegFormer):
     def __init__(self, **kwargs):
         super(mit_b4, self).__init__(
             patch_size=4, embed_dims=[64, 128, 320, 512], num_heads=[1, 2, 5, 8], mlp_ratios=[4, 4, 4, 4],
@@ -401,7 +401,7 @@ class mit_b4(MixVisionTransformer):
 
 
 @BACKBONES.register_module()
-class mit_b5(MixVisionTransformer):
+class mit_b5(SegFormer):
     def __init__(self, **kwargs):
         super(mit_b5, self).__init__(
             patch_size=4, embed_dims=[64, 128, 320, 512], num_heads=[1, 2, 5, 8], mlp_ratios=[4, 4, 4, 4],
