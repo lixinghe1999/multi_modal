@@ -99,7 +99,8 @@ class Vanilla_Model(nn.Module):
 
     def get_param_groups(self):
         param_groups = [[], [], []]
-        for name, param in list(self.encoder.named_parameters()):
+        for name, param in (list(self.encoder_rgb.named_parameters()) +
+                            list(self.encoder_depth.named_parameters())):
             if "norm" in name:
                 param_groups[1].append(param)
             else:
