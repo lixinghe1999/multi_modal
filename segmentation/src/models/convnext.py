@@ -119,7 +119,6 @@ class AdaBlock(nn.Module):
             x = self.gamma * x
         return x
 
-    @autocast()
     def forward(self, x, mask=None):
         input_x = x
         if mask is None:  # compatible with the original implementation
