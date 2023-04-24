@@ -245,7 +245,7 @@ class SegFormer(nn.Module):
         self.norm4 = norm_layer(embed_dims[3])
 
         # classification head
-        self.head = nn.Linear(embed_dims[3], num_classes) if num_classes > 0 else nn.Identity()
+        # self.head = nn.Linear(embed_dims[3], num_classes) if num_classes > 0 else nn.Identity()
 
         self.apply(self._init_weights)
 
