@@ -109,7 +109,8 @@ class Vanilla_Model(nn.Module):
             param_groups[2].append(param)
         return param_groups
 
-    def forward(self, rgb, depth):
+    def forward(self, x):
+        rgb, depth = x
         rgb = self.encoder_rgb(rgb)
         depth = self.encoder_depth(depth)
         x = [self.decoder(rgb), self.decoder(depth)]
