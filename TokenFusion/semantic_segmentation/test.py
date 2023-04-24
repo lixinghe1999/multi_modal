@@ -1,4 +1,4 @@
-from models.dynamic_segformer import mit_b3
+from models.segformer import mit_b3
 from models.dynamic_model import Dynamic_Model
 import torch
 if __name__ == '__main__':

@@ -13,7 +13,8 @@ from config import *
 from utils import *
 import utils.helpers as helpers
 from utils.optimizer import PolyWarmupAdamW
-from models.segformer import WeTr
+from models.token_fusion import WeTr
+from models.dynamic_model import Dynamic_Model
 
 from torch.nn.parallel import DistributedDataParallel
 from torch.utils.data.distributed import DistributedSampler
