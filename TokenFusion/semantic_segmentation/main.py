@@ -14,6 +14,7 @@ from utils import *
 import utils.helpers as helpers
 from utils.optimizer import PolyWarmupAdamW
 from models.token_fusion import WeTr
+from models.vanilla_model import Vanilla_Model
 from models.dynamic_model import Dynamic_Model
 
 from torch.nn.parallel import DistributedDataParallel
@@ -117,7 +118,8 @@ def get_arguments():
 
 def create_segmenter(num_classes, gpu, backbone):
     """Create Encoder; for now only ResNet [50,101,152]"""
-    segmenter = WeTr(backbone, num_classes)
+    # segmenter = WeTr(backbone, num_classes)
+    segmenter = Vanilla_Model(backbone, num_classes)
     param_groups = segmenter.get_param_groups()
     assert(torch.cuda.is_available())
     segmenter.to(gpu[0])

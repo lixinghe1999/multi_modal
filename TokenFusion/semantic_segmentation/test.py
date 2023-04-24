@@ -1,5 +1,5 @@
 from models.segformer import mit_b3
-from models.dynamic_model import Dynamic_Model
+from models.vanilla_model import Dynamic_Model
 import torch
 if __name__ == '__main__':
     device = 'cuda'
