@@ -1,5 +1,5 @@
 import torch.nn as nn
-from . import SegFormer
+from . import segformer
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
 import torch
@@ -81,8 +81,8 @@ class Vanilla_Model(nn.Module):
         self.embedding_dim = embedding_dim
         self.feature_strides = [4, 8, 16, 32]
         self.num_parallel = 2
-        self.encoder_rgb = getattr(SegFormer, backbone)()
-        self.encoder_depth = getattr(SegFormer, backbone)()
+        self.encoder_rgb = getattr(segformer, backbone)()
+        self.encoder_depth = getattr(segformer, backbone)()
         self.in_channels = self.encoder_rgb.embed_dims
         if pretrained:
             state_dict = torch.load('pretrained/' + backbone + '.pth')
