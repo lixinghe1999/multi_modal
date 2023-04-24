@@ -152,8 +152,8 @@ class Dynamic_Model(nn.Module):
             num_keep_node = int(self.num_patches * self.token_ratio[p_count])
             keep_policy = indices[:, -num_keep_node:]
             # prev_decision = dynamic_segformer.batch_index_select(prev_decision, keep_policy)
-            keep_audio = keep_policy < token_len
-            keep_image = keep_policy >= token_len
+            keep_rgb = keep_policy < token_len
+            keep_depth = keep_policy >= token_len
             decision_rgb = torch.masked_select(keep_policy, mask=keep_audio).unsqueeze(0)
             decision_depth = torch.masked_select(keep_policy, mask=keep_image).unsqueeze(0) - token_len
         for i, (blk_r, blk_d) in enumerate(zip(self.encoder_rgb.block2, self.encoder_depth.block2)):

@@ -17,7 +17,7 @@ NORMALISE_PARAMS = [1./255,  # Image SCALE
                     np.array([0.229, 0.224, 0.225]).reshape((1, 1, 3)),  # Image STD
                     1./5000]  # Depth SCALE
 BATCH_SIZE = 12
-NUM_WORKERS = 16
+NUM_WORKERS = 4
 NUM_CLASSES = 40
 LOW_SCALE = 0.5
 HIGH_SCALE = 2.0
