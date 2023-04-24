@@ -354,8 +354,6 @@ class DWConv(nn.Module):
         return x
 
 
-
-@BACKBONES.register_module()
 class mit_b0(SegFormer):
     def __init__(self, **kwargs):
         super(mit_b0, self).__init__(
@@ -363,8 +361,6 @@ class mit_b0(SegFormer):
             qkv_bias=True, norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[2, 2, 2, 2], sr_ratios=[8, 4, 2, 1],
             drop_rate=0.0, drop_path_rate=0.1)
 
-
-@BACKBONES.register_module()
 class mit_b1(SegFormer):
     def __init__(self, **kwargs):
         super(mit_b1, self).__init__(
@@ -372,8 +368,6 @@ class mit_b1(SegFormer):
             qkv_bias=True, norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[2, 2, 2, 2], sr_ratios=[8, 4, 2, 1],
             drop_rate=0.0, drop_path_rate=0.1)
 
-
-@BACKBONES.register_module()
 class mit_b2(SegFormer):
     def __init__(self, **kwargs):
         super(mit_b2, self).__init__(
@@ -381,8 +375,6 @@ class mit_b2(SegFormer):
             qkv_bias=True, norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[3, 4, 6, 3], sr_ratios=[8, 4, 2, 1],
             drop_rate=0.0, drop_path_rate=0.1)
 
-
-@BACKBONES.register_module()
 class mit_b3(SegFormer):
     def __init__(self, **kwargs):
         super(mit_b3, self).__init__(
@@ -390,8 +382,6 @@ class mit_b3(SegFormer):
             qkv_bias=True, norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[3, 4, 18, 3], sr_ratios=[8, 4, 2, 1],
             drop_rate=0.0, drop_path_rate=0.1)
 
-
-@BACKBONES.register_module()
 class mit_b4(SegFormer):
     def __init__(self, **kwargs):
         super(mit_b4, self).__init__(
@@ -399,8 +389,6 @@ class mit_b4(SegFormer):
             qkv_bias=True, norm_layer=partial(nn.LayerNorm, eps=1e-6), depths=[3, 8, 27, 3], sr_ratios=[8, 4, 2, 1],
             drop_rate=0.0, drop_path_rate=0.1)
 
-
-@BACKBONES.register_module()
 class mit_b5(SegFormer):
     def __init__(self, **kwargs):
         super(mit_b5, self).__init__(
