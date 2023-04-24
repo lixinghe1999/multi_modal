@@ -257,7 +257,7 @@ def train(segmenter, input_types, train_loader, optimizer, epoch,
             soft_output = nn.LogSoftmax()(output)
             # Compute loss and backpropagate
             loss += segm_crit(soft_output, target)
-
+        print(lamda)
         if lamda > 0:
             L1_loss = 0
             for mask in masks:
