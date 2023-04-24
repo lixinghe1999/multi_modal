@@ -119,4 +119,4 @@ class Vanilla_Model(nn.Module):
         for l in range(self.num_parallel):
             ens += alpha_soft[l] * x[l].detach()
         x.append(ens)
-        return x, [None, None]
+        return x, None

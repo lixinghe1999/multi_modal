@@ -279,16 +279,20 @@ def train(segmenter, input_types, train_loader, optimizer, epoch,
     #     slim_params_list[len(slim_params_list) // 33]), flush=True)
     # print('Epoch %d, portion of slim_params < %.e: %.4f' % (epoch, bn_threshold, \
     #     sum(slim_params_list < bn_threshold) / len(slim_params_list)), flush=True)
-    portion_rgbs, portion_depths = [], []
-    for idx, mask in enumerate(masks):
-        portion_rgb = (mask[0] < 0.02).sum() / mask[0].flatten().shape[0]
-        portion_depth = (mask[1] < 0.02).sum() / mask[1].flatten().shape[0]
-        portion_rgbs.append(portion_rgb)
-        portion_depths.append(portion_depth)
-    portion_rgbs = sum(portion_rgbs) / len(portion_rgbs)
-    portion_depths = sum(portion_depths) / len(portion_depths)
-    print('Epoch %d, portion of scores<0.02 (rgb depth): %.2f%% %.2f%%' %\
-        (epoch, portion_rgbs * 100, portion_depths * 100), flush=True)
+
+    if masks == None:
+        pass
+    else:
+        portion_rgbs, portion_depths = [], []
+        for idx, mask in enumerate(masks):
+            portion_rgb = (mask[0] < 0.02).sum() / mask[0].flatten().shape[0]
+            portion_depth = (mask[1] < 0.02).sum() / mask[1].flatten().shape[0]
+            portion_rgbs.append(portion_rgb)
+            portion_depths.append(portion_depth)
+        portion_rgbs = sum(portion_rgbs) / len(portion_rgbs)
+        portion_depths = sum(portion_depths) / len(portion_depths)
+        print('Epoch %d, portion of scores<0.02 (rgb depth): %.2f%% %.2f%%' %\
+            (epoch, portion_rgbs * 100, portion_depths * 100), flush=True)
 
 
 def validate(segmenter, input_types, val_loader, epoch, num_classes=-1, save_image=0):
