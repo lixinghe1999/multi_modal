@@ -326,7 +326,7 @@ def validate(segmenter, input_types, val_loader, epoch, num_classes=-1, save_ima
             # outputs, alpha_soft = segmenter(inputs)
             outputs, _ = segmenter(inputs)
             for idx, output in enumerate(outputs):
-                output = cv2.resize(output[0, :num_classes].data.cpu().numpy().transpose(1, 2, 0),
+                output = cv2.resize(output[0, :num_classes].data.float().cpu().numpy().transpose(1, 2, 0),
                                     target.size()[1:][::-1],
                                     interpolation=cv2.INTER_CUBIC).argmax(axis=2).astype(np.uint8)
                 # Compute IoU
@@ -451,8 +451,8 @@ def main():
         #     enc_params, dec_params, args.optim_dec)
 
         for epoch in range(min(args.num_epoch[task_idx], total_epoch - epoch_start)):
-            train(segmenter, args.input, train_loader, optimizer, epoch_current,
-                  segm_crit, args.freeze_bn, args.lamda, args.print_loss)
+            # train(segmenter, args.input, train_loader, optimizer, epoch_current,
+            #       segm_crit, args.freeze_bn, args.lamda, args.print_loss)
             if (epoch + 1) % (args.val_every) == 0:
                 miou = validate(segmenter, args.input, val_loader, epoch_current, args.num_classes)
                 saver.save(miou, {'segmenter' : segmenter.state_dict(), 'epoch_start' : epoch_current})
