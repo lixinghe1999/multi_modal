@@ -3,6 +3,7 @@ from . import segformer
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
 import torch
+from torch.cuda.amp import autocast
 
 class MLP(nn.Module):
     """
@@ -109,6 +110,7 @@ class Vanilla_Model(nn.Module):
             param_groups[2].append(param)
         return param_groups
 
+    @autocast()
     def forward(self, x):
         rgb, depth = x
         rgb = self.encoder_rgb(rgb)
