@@ -257,8 +257,9 @@ def train(segmenter, input_types, train_loader, optimizer, epoch,
             soft_output = nn.LogSoftmax()(output)
             # Compute loss and backpropagate
             loss += segm_crit(soft_output, target)
-        print(lamda)
-        if lamda > 0:
+        if mask == None:
+            pass
+        else:
             L1_loss = 0
             for mask in masks:
                 L1_loss += sum([torch.abs(m).sum().cuda() for m in mask])
