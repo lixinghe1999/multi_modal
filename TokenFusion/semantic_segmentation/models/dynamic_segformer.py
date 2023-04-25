@@ -1,3 +1,5 @@
+import time
+
 import torch
 import torch.nn as nn
 from functools import partial
@@ -111,9 +113,9 @@ class Mlp(nn.Module):
             if m.bias is not None:
                 m.bias.data.zero_()
 
-    def forward(self, x, H, W):
-        x = self.fc1(x)
-        x = self.dwconv(x, H, W)
+    def forward(self, x):
+        # x = self.mlp.fc1(self.norm2(x))
+        # x = self.mlp.dwconv(x, H, W)
         x = self.act(x)
         x = self.drop(x)
         x = self.fc2(x)
@@ -142,19 +144,23 @@ class Attention(nn.Module):
             self.sr = nn.Conv2d(dim, dim, kernel_size=sr_ratio, stride=sr_ratio)
             self.norm = nn.LayerNorm(dim)
 
-    def sr(self, x, H, W):
+    def extract_sr(self, x, H, W):
         B, N, C = x.shape
         x = x.permute(0, 2, 1).reshape(B, C, H, W)
         x = self.sr(x)
         x = x.reshape(B, C, -1).permute(0, 2, 1)
         x = self.norm(x)
         return x
-    def forward(self, x, H, W):
-
+    def forward(self, x, sr_x):
         B, N, C = x.shape
         q = self.q(x)
         q = q.reshape(B, N, self.num_heads, C // self.num_heads).permute(0, 2, 1, 3)
-        kv = self.kv(x)
+        # if self.sr_ratio > 1:
+        #     x = x.permute(0, 2, 1).reshape(B, C, H, W)
+        #     x = self.sr(x)
+        #     x = x.reshape(B, C, -1).permute(0, 2, 1)
+        #     x = self.norm(x)
+        kv = self.kv(sr_x)
         kv = kv.reshape(B, -1, 2, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
         k, v = [kv[0], kv[1]]
         attn = (q @ k.transpose(-2, -1)) * self.scale
@@ -184,37 +190,49 @@ class Block(nn.Module):
     def forward(self, x, H, W, mask=None):
         if self.training and mask is not None:
             x1, x2 = x
-            if self.attn.sr_ratio > 1:
-                x1 = self.attn.sr(x1 * mask, H, W)
-                x2 = self.attn.sr(x2 * (1 - mask), H, W)
-            x1 = x1 + self.drop_path(self.attn(self.norm1(x1), H, W))
+            x1 = x1 + self.drop_path(self.attn(self.norm1(x1 * mask), H, W))
             x1 = x1 + self.drop_path(self.mlp(self.norm2(x1), H, W))
 
-            x2 = x2 + self.drop_path(self.fast_path(self.norm1(x2)))
+            x2 = x2 + self.drop_path(self.fast_path(self.norm1(x2 * (1-mask))))
             x2 = x2 + self.drop_path(self.mlp(self.norm2(x2), H, W))
             x = [x1, x2]
         else:
             # inference code
             if self.attn.sr_ratio > 1:
-                x = self.attn.sr(x, H, W)
-            if mask == None:
-                x = x + self.drop_path(self.attn(self.norm1(x), H, W))
-                x = x + self.drop_path(self.mlp(self.norm2(x), H, W))
+                sr_x = self.attn.extract_sr(self.norm1(x), H, W)
             else:
-                print(x.shape, mask.shape)
-                mask = mask.bool()
-                feat_dim = x.shape[-1]
-                x1 = torch.masked_select(x, mask).reshape(1, -1, feat_dim)
-                x2 = torch.masked_select(x, ~mask).reshape(1, -1, feat_dim)
-                print(x1.shape, x2.shape)
-                x1 = x1 + self.drop_path(self.attn(self.norm1(x1), H, W))
-                x1 = x1 + self.drop_path(self.mlp(self.norm2(x1), H, W))
+                sr_x = x
+            if mask == None:
+                x = x + self.drop_path(self.attn(self.norm1(x), sr_x))
+                x_ = self.mlp.fc1(self.norm2(x))
+                x_ = self.mlp.dwconv(x_, H, W)
+                x = x + self.drop_path(self.mlp(x_))
+            else:
+                t_list = []
+                t_start = time.time()
+                mask1, mask2 = mask
+                x1 = x[:, mask1[0]]
+                x2 = x[:, mask2[0]]
+                t_list.append(time.time())
+                x1 = x1 + self.drop_path(self.attn(self.norm1(x1), sr_x))
+                t_list.append(time.time())
+                x2 = x2 + self.drop_path(self.fast_path(self.norm1(x2)))
+                t_list.append(time.time())
 
-                x2 = x2 + self.drop_path(self.fast_path(self.norm1(x2), H, W))
-                x2 = x2 + self.drop_path(self.mlp(self.norm2(x2), H, W))
+                x = batch_index_fill(x, x1, x2, mask1, mask2)
+                t_list.append(time.time())
 
-                x = torch.zeros_like(x)
-                x = batch_index_fill(x, x1, x2, mask, 1-mask)
+                x_ = self.mlp.fc1(self.norm2(x))
+                x_ = self.mlp.dwconv(x_, H, W)
+                t_list.append(time.time())
+                x1_ = x_[:, mask1[0]]
+                x2_ = x_[:, mask2[0]]
+                t_list.append(time.time())
+                x1 = x1 + self.drop_path(self.mlp(x1_))
+                x2 = x2 + self.drop_path(self.mlp(x2_))
+                t_list.append(time.time())
+                x = batch_index_fill(x, x1, x2, mask1, mask2)
+                print([t - t_start for t in t_list])
         return x
 class OverlapPatchEmbed(nn.Module):
     """ Image to Patch Embedding

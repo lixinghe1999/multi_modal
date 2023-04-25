@@ -1,3 +1,5 @@
+import time
+
 import torch.nn as nn
 from . import dynamic_segformer
 import torch.nn.functional as F
@@ -123,34 +125,33 @@ class Dynamic_Model(nn.Module):
             hard_keep_decision = F.gumbel_softmax(pred_score, hard=True)[:, :, 0:1] * prev_decision
             decision_rgb = hard_keep_decision[:, :token_len]
             decision_depth = hard_keep_decision[:, token_len:]
-            print('train')
-            print(decision_rgb.shape, decision_depth.shape)
         else:
             spatial_x = torch.cat([rgb, depth], dim=1)
             prev_decision = torch.ones(B, spatial_x.shape[1], 1, dtype=rgb.dtype, device=rgb.device)
             score = self.score_predictor[p_count](spatial_x, prev_decision).reshape(B, -1, 2)[:, :, 0]
             token_len = rgb.shape[1]
             idx = torch.argsort(score, dim=1, descending=True)
-            print(idx)
             num_keep_node = int(2 * token_len * self.token_ratio[p_count])
             keep_policy = idx[:, :num_keep_node]
-            keep_rgb = keep_policy < token_len
-            keep_depth = keep_policy >= token_len
+            keep_rgb, keep_depth = keep_policy < token_len, keep_policy >= token_len
             keep_rgb = torch.masked_select(keep_policy, mask=keep_rgb).unsqueeze(0)
             keep_depth = torch.masked_select(keep_policy, mask=keep_depth).unsqueeze(0) - token_len
-            # return keep_rgb, keep_depth
-            print(keep_rgb.shape, keep_depth.shape)
-            decision_rgb = torch.zeros(B, 1 * token_len, 1)
-            decision_rgb[:, keep_rgb] = 1
-            decision_depth = torch.zeros(B, 1 * token_len, 1)
-            decision_depth[:, keep_depth] = 1
-            print(decision_rgb.shape, decision_depth.shape)
-        return decision_rgb, decision_depth
+
+            del_policy = idx[:, num_keep_node:]
+            del_rgb, del_depth = del_policy < token_len, del_policy >= token_len
+            del_rgb = torch.masked_select(del_policy, mask=del_rgb).unsqueeze(0)
+            del_depth = torch.masked_select(del_policy, mask=del_depth).unsqueeze(0) - token_len
+        #     decision_rgb = torch.zeros(B, 1 * token_len, 1)
+        #     decision_rgb[:, keep_rgb] = 1
+        #     decision_depth = torch.zeros(B, 1 * token_len, 1)
+        #     decision_depth[:, keep_depth] = 1
+        # return decision_rgb, decision_depth
+        return [keep_rgb, del_rgb], [keep_depth, del_depth]
     def forward(self, x):
+        t_start = time.time()
         rgb, depth = x
         B = rgb.shape[0]
         p_count = 0
-        outs = []
         if self.training:
             rgb = [rgb, rgb]
             depth = [depth, depth]
@@ -164,11 +165,15 @@ class Dynamic_Model(nn.Module):
         else:
             rgb, H, W = self.encoder_rgb.patch_embed1(rgb)
             depth, H, W = self.encoder_depth.patch_embed1(depth)
-        decision_rgb, decision_depth = self.get_mask(rgb, depth, B, p_count)
+        print(time.time() - t_start)
+        # decision_rgb, decision_depth = self.get_mask(rgb, depth, B, p_count)
+        decision_rgb, decision_depth = None, None
+        print(time.time() - t_start)
         p_count += 1
         for i, (blk_r, blk_d) in enumerate(zip(self.encoder_rgb.block1, self.encoder_depth.block1)):
             rgb = blk_r(rgb, H, W, decision_rgb)
             depth = blk_d(depth, H, W, decision_depth)
+        print(time.time() - t_start)
         if self.training:
             rgb = [self.encoder_rgb.norm1(rgb[0]), self.encoder_rgb.norm1(rgb[1])]
             rgb = [r.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous() for r in rgb]
@@ -178,31 +183,32 @@ class Dynamic_Model(nn.Module):
             rgb, depth = self.encoder_rgb.norm1(rgb), self.encoder_depth.norm1(depth)
             rgb = rgb.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
             depth = rgb.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
+        print(time.time() - t_start)
 
         # stage 2
-        if self.training:
-            rgb0, H, W = self.encoder_rgb.patch_embed2(rgb[0])
-            depth0, H, W = self.encoder_depth.patch_embed2(depth[0])
-            rgb1, H, W = self.encoder_rgb.patch_embed2(rgb[1])
-            depth1, H, W = self.encoder_depth.patch_embed2(depth[1])
-            rgb, depth = [rgb0, rgb1], [depth0, depth1]
-        else:
-            rgb, H, W = self.encoder_rgb.patch_embed2(rgb)
-            depth, H, W = self.encoder_depth.patch_embed2(depth)
-        decision_rgb, decision_depth = self.get_mask(rgb, depth, B, p_count)
-        for i, (blk_r, blk_d) in enumerate(zip(self.encoder_rgb.block2, self.encoder_depth.block2)):
-            rgb = blk_r(rgb, H, W, decision_rgb)
-            depth = blk_d(depth, H, W, decision_depth)
-        p_count += 1
-        if self.training:
-            rgb = [self.encoder_rgb.norm2(rgb[0]), self.encoder_rgb.norm2(rgb[1])]
-            rgb = [r.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous() for r in rgb]
-            depth = [self.encoder_depth.norm2(depth[0]), self.encoder_depth.norm2(depth[1])]
-            depth = [d.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous() for d in depth]
-        else:
-            rgb, depth = self.encoder_rgb.norm2(rgb), self.encoder_depth.norm2(depth)
-            rgb = rgb.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
-            depth = rgb.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
+        # if self.training:
+        #     rgb0, H, W = self.encoder_rgb.patch_embed2(rgb[0])
+        #     depth0, H, W = self.encoder_depth.patch_embed2(depth[0])
+        #     rgb1, H, W = self.encoder_rgb.patch_embed2(rgb[1])
+        #     depth1, H, W = self.encoder_depth.patch_embed2(depth[1])
+        #     rgb, depth = [rgb0, rgb1], [depth0, depth1]
+        # else:
+        #     rgb, H, W = self.encoder_rgb.patch_embed2(rgb)
+        #     depth, H, W = self.encoder_depth.patch_embed2(depth)
+        # decision_rgb, decision_depth = self.get_mask(rgb, depth, B, p_count)
+        # for i, (blk_r, blk_d) in enumerate(zip(self.encoder_rgb.block2, self.encoder_depth.block2)):
+        #     rgb = blk_r(rgb, H, W, decision_rgb)
+        #     depth = blk_d(depth, H, W, decision_depth)
+        # p_count += 1
+        # if self.training:
+        #     rgb = [self.encoder_rgb.norm2(rgb[0]), self.encoder_rgb.norm2(rgb[1])]
+        #     rgb = [r.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous() for r in rgb]
+        #     depth = [self.encoder_depth.norm2(depth[0]), self.encoder_depth.norm2(depth[1])]
+        #     depth = [d.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous() for d in depth]
+        # else:
+        #     rgb, depth = self.encoder_rgb.norm2(rgb), self.encoder_depth.norm2(depth)
+        #     rgb = rgb.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
+        #     depth = rgb.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
 
         # # stage 3
         # rgb, H, W = self.encoder_rgb.patch_embed3(rgb)
