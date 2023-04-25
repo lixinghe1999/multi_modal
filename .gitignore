@@ -1,0 +1,8 @@
+.DS_Store
+__pycache__
+*.pth
+*.pt
+*.pth.tar
+*.pkl
+TokenFusion/semantic_segmentation/ckpt/*
+*.csv
