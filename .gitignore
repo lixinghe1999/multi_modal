@@ -4,6 +4,4 @@ __pycache__
 *.pt
 *.pth.tar
 *.pkl
-TokenFusion/semantic_segmentation/ckpt/*
 *.csv
-TokenFusion/semantic_segmentation/imgs/*
