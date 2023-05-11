@@ -5,3 +5,5 @@ __pycache__
 *.pth.tar
 *.pkl
 *.csv
+OpenPCDet/YOLO3_legacy/weights/*
+OpenPCDet/YOLO3_legacy/checkpoints/*
