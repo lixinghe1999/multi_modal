@@ -40,6 +40,9 @@ def eval_one_epoch(cfg, args, model, dataloader, epoch_id, logger, dist_test=Fal
     if getattr(args, 'infer_time', False):
         start_iter = int(len(dataloader) * 0.1)
         infer_time_meter = common_utils.AverageMeter()
+        load_time_meter = common_utils.AverageMeter()
+        read_time_meter = common_utils.AverageMeter()
+        
 
     logger.info('*************** EPOCH %s EVALUATION *****************' % epoch_id)
     if dist_test:
@@ -55,16 +58,29 @@ def eval_one_epoch(cfg, args, model, dataloader, epoch_id, logger, dist_test=Fal
     if cfg.LOCAL_RANK == 0:
         progress_bar = tqdm.tqdm(total=len(dataloader), leave=True, desc='eval', dynamic_ncols=True)
     start_time = time.time()
+    disp_dict = {}
+    model_time_meter = [common_utils.AverageMeter() for _ in range(6)]
     for i, batch_dict in enumerate(dataloader):
-        load_data_to_gpu(batch_dict)
-
         if getattr(args, 'infer_time', False):
+            read_time = time.time() - start_time
+            read_time_meter.update(read_time * 1000)
+            disp_dict['read_time'] = f'{read_time_meter.val:.2f}({read_time_meter.avg:.2f})'
+            start_time = time.time()
+        load_data_to_gpu(batch_dict)
+        
+        if getattr(args, 'infer_time', False):
+            load_time = time.time() - start_time
+            load_time_meter.update(load_time * 1000)
+            disp_dict['load_time'] = f'{load_time_meter.val:.2f}({load_time_meter.avg:.2f})'
             start_time = time.time()
 
         with torch.no_grad():
-            pred_dicts, ret_dict = model(batch_dict)
-
-        disp_dict = {}
+            pred_dicts, ret_dict, model_infer_time = model(batch_dict)
+            model_time = []
+            for t, meter in zip(model_infer_time, model_time_meter):
+                meter.update(t * 1000)
+                model_time.append(f'{meter.avg:.2f}')
+            disp_dict['model_time'] = ' '.join(model_time)
 
         if getattr(args, 'infer_time', False):
             inference_time = time.time() - start_time
@@ -81,6 +97,8 @@ def eval_one_epoch(cfg, args, model, dataloader, epoch_id, logger, dist_test=Fal
         if cfg.LOCAL_RANK == 0:
             progress_bar.set_postfix(disp_dict)
             progress_bar.update()
+        if getattr(args, 'infer_time', False):
+            start_time = time.time()
 
     if cfg.LOCAL_RANK == 0:
         progress_bar.close()

@@ -100,7 +100,6 @@ class DataProcessor(object):
             shuffle_idx = np.random.permutation(points.shape[0])
             points = points[shuffle_idx]
             data_dict['points'] = points
-
         return data_dict
 
     def transform_points_to_voxels_placeholder(self, data_dict=None, config=None):
@@ -150,7 +149,6 @@ class DataProcessor(object):
         points = data_dict['points']
         voxel_output = self.voxel_generator.generate(points)
         voxels, coordinates, num_points = voxel_output
-
         if not data_dict['use_lead_xyz']:
             voxels = voxels[..., 3:]  # remove xyz in voxels(N, 3)
 

@@ -64,29 +64,29 @@ class LateFusion(nn.Module):
        
         return non_empty_iou_test_tensor, non_empty_tensor_index_tensor
     def forward(self, batch_dict):
-        # box = batch_dict['gt_boxes2d']
-        # # box_3d = batch_dict['batch_box_preds']
+        box = batch_dict['gt_boxes2d']
+        box_3d = batch_dict['batch_box_preds']
         # box_3d = batch_dict['gt_boxes']
 
-        # for b2, b3, c, p, image_shape in zip(box, box_3d, batch_dict['calib'], batch_dict['batch_cls_preds'], batch_dict['image_shape']):
-        #     # cls_preds = torch.sigmoid(p)
-        #     # cls_preds, label_preds = torch.max(cls_preds, dim=-1)
-        #     # selected, selected_scores = model_nms_utils.class_agnostic_nms(
-        #     #     box_scores=cls_preds, box_preds=b3,
-        #     #     nms_config=self.nms_config,
-        #     #     score_thresh=None
-        #     # )
-        #     # b3 = b3[selected]
-        #     # p = selected_scores
-        #     print(b2.shape, b3.shape)
-        #     iou, tensor_index = self.get_iou(b2, b3, c, p, image_shape)
-        #     print(iou.shape)
-        #     iou = iou.reshape(1, 1, 1, -1).repeat(1, 4, 1, 1)
-        #     x = self.fuse_2d_3d(iou)
+        for b2, b3, c, p, image_shape in zip(box, box_3d, batch_dict['calib'], batch_dict['batch_cls_preds'], batch_dict['image_shape']):
+            # cls_preds = torch.sigmoid(p)
+            # cls_preds, label_preds = torch.max(cls_preds, dim=-1)
+            # selected, selected_scores = model_nms_utils.class_agnostic_nms(
+            #     box_scores=cls_preds, box_preds=b3,
+            #     nms_config=self.nms_config,
+            #     score_thresh=None
+            # )
+            # b3 = b3[selected]
+            # p = selected_scores
+            print(b2.shape, b3.shape)
+            iou, tensor_index = self.get_iou(b2, b3, c, p, image_shape)
+            print(iou.shape)
+            iou = iou.reshape(1, 1, 1, -1).repeat(1, 4, 1, 1)
+            x = self.fuse_2d_3d(iou)
 
-        #     out = torch.zeros(1, b2.shape[0] * b3.shape[0], dtype=x.dtype,device = x.device)
-        #     out[:, tensor_index[:, 0]] = x[0, 0, 0,:]
-        #     out = out.reshape(1, b2.shape[0], b3.shape[0])
-        #     x = torch.max(out, dim=1)[0]
+            out = torch.zeros(1, b2.shape[0] * b3.shape[0], dtype=x.dtype,device = x.device)
+            out[:, tensor_index[:, 0]] = x[0, 0, 0,:]
+            out = out.reshape(1, b2.shape[0], b3.shape[0])
+            x = torch.max(out, dim=1)[0]
             
         return batch_dict

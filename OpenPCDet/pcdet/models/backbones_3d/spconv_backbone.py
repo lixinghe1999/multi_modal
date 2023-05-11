@@ -1,7 +1,7 @@
 from functools import partial
 
 import torch.nn as nn
-
+import torch
 from ...utils.spconv_utils import replace_feature, spconv
 
 
@@ -73,7 +73,6 @@ class VoxelBackBone8x(nn.Module):
         norm_fn = partial(nn.BatchNorm1d, eps=1e-3, momentum=0.01)
 
         self.sparse_shape = grid_size[::-1] + [1, 0, 0]
-
         self.conv_input = spconv.SparseSequential(
             spconv.SubMConv3d(input_channels, 16, 3, padding=1, bias=False, indice_key='subm1'),
             norm_fn(16),
