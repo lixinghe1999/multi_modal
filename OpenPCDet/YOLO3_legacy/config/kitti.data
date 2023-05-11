@@ -1,0 +1,5 @@
+classes=8
+dataset=../data/kitti/training
+names= Car, Van, Truck, Pedestrian, Person_sitting, Cyclist, Tram, Misc
+backup=backup/
+eval=kittiv1
