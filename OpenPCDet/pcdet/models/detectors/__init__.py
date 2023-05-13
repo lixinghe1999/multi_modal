@@ -14,6 +14,7 @@ from .mppnet_e2e import MPPNetE2E
 from .pillarnet import PillarNet
 from .voxelnext import VoxelNeXt
 from .clocs import CLOCs
+from .dyn_second import Dyn_SECONDNet
 
 __all__ = {
     'Detector3DTemplate': Detector3DTemplate,
@@ -33,6 +34,7 @@ __all__ = {
     'PillarNet': PillarNet,
     'VoxelNeXt': VoxelNeXt,
     'CLOCs': CLOCs,
+    'Dyn_SECONDNet': Dyn_SECONDNet
 }
 
 

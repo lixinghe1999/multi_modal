@@ -58,7 +58,24 @@ class VoxelGeneratorWrapper():
             coordinates = tv_coordinates.numpy()
             num_points = tv_num_points.numpy()
         return voxels, coordinates, num_points
-
+    
+def corners_nd(dims, origin=0.5):
+    ndim = int(dims.shape[1])
+    corners_norm = np.stack(
+        np.unravel_index(np.arange(2**ndim), [2] * ndim), axis=1)
+    # now corners_norm has format: (2d) x0y0, x0y1, x1y0, x1y1
+    # (3d) x0y0z0, x0y0z1, x0y1z0, x0y1z1, x1y0z0, x1y0z1, x1y1z0, x1y1z1
+    # so need to convert to a format which is convenient to do other computing.
+    # for 2d boxes, format is clockwise start from minimum point
+    # for 3d boxes, please draw them by your hand.
+    if ndim == 2:
+        # generate clockwise box corners
+        corners_norm = corners_norm[[0, 1, 3, 2]]
+    elif ndim == 3:
+        corners_norm = corners_norm[[0, 1, 3, 2, 4, 5, 7, 6]]
+    corners_norm = corners_norm - np.array(origin)
+    corners = dims.reshape(-1, 1, ndim) * corners_norm.reshape(1, 2**ndim, ndim)
+    return corners
 
 class DataProcessor(object):
     def __init__(self, processor_configs, point_cloud_range, training, num_point_features):
@@ -78,7 +95,6 @@ class DataProcessor(object):
     def mask_points_and_boxes_outside_range(self, data_dict=None, config=None):
         if data_dict is None:
             return partial(self.mask_points_and_boxes_outside_range, config=config)
-
         if data_dict.get('points', None) is not None:
             mask = common_utils.mask_points_by_range(data_dict['points'], self.point_cloud_range)
             data_dict['points'] = data_dict['points'][mask]
@@ -175,7 +191,23 @@ class DataProcessor(object):
             data_dict['voxel_coords'] = coordinates
             data_dict['voxel_num_points'] = num_points
         return data_dict
-
+    def gt_downsample(self, data_dict=None, config=None):
+        if data_dict is None:
+            return partial(self.gt_downsample, config=config)
+        gt_boxes = data_dict['gt_boxes']
+        centers = gt_boxes[:, :3]
+        dims = gt_boxes[:, 3:6]
+        corners = np.concatenate([centers - dims/2, centers + dims/2], axis=1)
+        points_coord = data_dict['points'][:, :3]
+        mask = np.logical_and(points_coord > corners[:, :3].reshape(-1, 1, 3), points_coord < corners[:, 3:].reshape(-1, 1, 3))
+        mask = np.any(mask, axis=0)
+        mask = np.all(mask[:, 1:], axis=1)
+        points = data_dict['points'][mask]
+        if len(points) < 1000:
+            extra_choice = np.random.choice(np.arange(0, len(points_coord), dtype=np.int32), 1000 - len(points), replace=False)
+            points = np.concatenate([points, data_dict['points'][extra_choice]], axis=0)
+        data_dict['points'] = points
+        return data_dict
     def sample_points(self, data_dict=None, config=None):
         if data_dict is None:
             return partial(self.sample_points, config=config)

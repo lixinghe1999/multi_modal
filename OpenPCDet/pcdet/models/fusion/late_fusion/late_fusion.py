@@ -1,8 +1,6 @@
-import numpy as np
 import torch
 import torch.nn as nn
-import numba
-from .torch_box_ops import center_to_corner_box3d, project_to_image, box_lidar_to_camera
+from ..torch_box_ops import center_to_corner_box3d, project_to_image, box_lidar_to_camera
 from torchvision.ops.boxes import _box_inter_union, nms
 from ...model_utils import model_nms_utils
 
@@ -57,8 +55,6 @@ class LateFusion(nn.Module):
         maxxy[:,1] = torch.clamp(maxxy[:,1],min = 0,max = img_height)
         box_2d_preds = torch.cat([minxy, maxxy], dim=1)
         dis_to_lidar = torch.norm(box_3d[:,:2],p=2,dim=1,keepdim=True)/82.0
-        # print(box_2d_preds)
-        # print(box_2d)
         non_empty_iou_test_tensor, non_empty_tensor_index_tensor = IoU(box_2d_preds, box_2d,
                                             pred_score, torch.ones((box_2d.shape[0], 1)), dis_to_lidar)
        

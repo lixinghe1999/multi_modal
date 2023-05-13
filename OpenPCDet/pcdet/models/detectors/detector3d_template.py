@@ -48,12 +48,8 @@ class Detector3DTemplate(nn.Module):
             )
             self.add_module(module_name, module)
         return model_info_dict['module_list']
-    def build_late_fusion(self, model_info_dict):
-        late_fusion_module = late_fusion.__all__[self.model_cfg.FUSION.NAME](
-            nms_config=self.model_cfg.POST_PROCESSING.NMS_CONFIG,
-        )
-        model_info_dict['module_list'].append(late_fusion_module)
-        return late_fusion_module, model_info_dict
+    
+
     def build_vfe(self, model_info_dict):
         if self.model_cfg.get('VFE', None) is None:
             return None, model_info_dict

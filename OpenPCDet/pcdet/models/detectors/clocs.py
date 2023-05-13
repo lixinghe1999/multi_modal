@@ -1,5 +1,5 @@
 from .detector3d_template import Detector3DTemplate
-
+from ..fusion import late_fusion
 
 class CLOCs(Detector3DTemplate):
     def __init__(self, model_cfg, num_class, dataset):
@@ -9,7 +9,12 @@ class CLOCs(Detector3DTemplate):
             'backbone_2d', 'dense_head',  'point_head', 'roi_head', 'late_fusion'
         ]
         self.module_list = self.build_networks()
-
+    def build_late_fusion(self, model_info_dict):
+        late_fusion_module = late_fusion.__all__[self.model_cfg.FUSION.NAME](
+            nms_config=self.model_cfg.POST_PROCESSING.NMS_CONFIG,
+        )
+        model_info_dict['module_list'].append(late_fusion_module)
+        return late_fusion_module, model_info_dict
     def forward(self, batch_dict):
         for cur_module in self.module_list:
             batch_dict = cur_module(batch_dict)

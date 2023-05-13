@@ -38,8 +38,8 @@ def eval_one_epoch(cfg, args, model, dataloader, epoch_id, logger, dist_test=Fal
     det_annos = []
 
     if getattr(args, 'infer_time', False):
-        start_iter = int(len(dataloader) * 0.1)
-        infer_time_meter = common_utils.AverageMeter()
+        # start_iter = int(len(dataloader) * 0.1)
+        model_time_meter = [common_utils.AverageMeter() for _ in range(6)]
         load_time_meter = common_utils.AverageMeter()
         read_time_meter = common_utils.AverageMeter()
         
@@ -59,34 +59,29 @@ def eval_one_epoch(cfg, args, model, dataloader, epoch_id, logger, dist_test=Fal
         progress_bar = tqdm.tqdm(total=len(dataloader), leave=True, desc='eval', dynamic_ncols=True)
     start_time = time.time()
     disp_dict = {}
-    model_time_meter = [common_utils.AverageMeter() for _ in range(6)]
+    
     for i, batch_dict in enumerate(dataloader):
         if getattr(args, 'infer_time', False):
             read_time = time.time() - start_time
             read_time_meter.update(read_time * 1000)
-            disp_dict['read_time'] = f'{read_time_meter.val:.2f}({read_time_meter.avg:.2f})'
+            disp_dict['read'] = f'{read_time_meter.val:.2f}({read_time_meter.avg:.2f})'
             start_time = time.time()
         load_data_to_gpu(batch_dict)
         
         if getattr(args, 'infer_time', False):
             load_time = time.time() - start_time
             load_time_meter.update(load_time * 1000)
-            disp_dict['load_time'] = f'{load_time_meter.val:.2f}({load_time_meter.avg:.2f})'
+            disp_dict['load'] = f'{load_time_meter.val:.2f}({load_time_meter.avg:.2f})'
             start_time = time.time()
 
         with torch.no_grad():
             pred_dicts, ret_dict, model_infer_time = model(batch_dict)
             model_time = []
+        if getattr(args, 'infer_time', False):
             for t, meter in zip(model_infer_time, model_time_meter):
                 meter.update(t * 1000)
                 model_time.append(f'{meter.avg:.2f}')
-            disp_dict['model_time'] = ' '.join(model_time)
-
-        if getattr(args, 'infer_time', False):
-            inference_time = time.time() - start_time
-            infer_time_meter.update(inference_time * 1000)
-            # use ms to measure inference time
-            disp_dict['infer_time'] = f'{infer_time_meter.val:.2f}({infer_time_meter.avg:.2f})'
+            disp_dict['model'] = ' '.join(model_time)
 
         statistics_info(cfg, ret_dict, metric, disp_dict)
         annos = dataset.generate_prediction_dicts(
