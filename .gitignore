@@ -5,6 +5,8 @@ __pycache__
 *.pth.tar
 *.pkl
 *.csv
+*.png
+*.flac
 OpenPCDet/yolov3/checkpoints/*
 OpenPCDet/yolov3/weights/*
 .gitignore
