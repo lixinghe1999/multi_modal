@@ -10,7 +10,7 @@ import pandas as pd
 import numpy as np
 from numpy.random import randint
 import pickle
-
+import torch
 
 class TBNDataSet(data.Dataset):
     def __init__(self, dataset, list_file,
@@ -85,7 +85,6 @@ class TBNDataSet(data.Dataset):
         return self._log_specgram(samples)
 
     def _load_data(self, modality, record, idx):
-        print(modality, record.untrimmed_video_name, idx)
         if modality == 'RGB' or modality == 'RGBDiff':
             idx_untrimmed = record.start_frame + idx
             return [Image.open(os.path.join(self.visual_path, record.participant_id, 'rgb_frames', record.untrimmed_video_name, self.image_tmpl[modality].format(idx_untrimmed))).convert('RGB')]
@@ -164,7 +163,7 @@ class TBNDataSet(data.Dataset):
 
             if m != 'RGB' and self.mode == 'train':
                 np.random.shuffle(segment_indices)
-            img, label = self.get(m, record, segment_indices)
+            img, label, metadata = self.get(m, record, segment_indices)
             input[m] = img
 
         return input, label
@@ -172,8 +171,11 @@ class TBNDataSet(data.Dataset):
     def get(self, modality, record, indices):
 
         images = list()
+        print(modality, record, indices)
+        print(self.new_length[modality])
         for seg_ind in indices:
             p = int(seg_ind)
+            
             for i in range(self.new_length[modality]):
                 seg_imgs = self._load_data(modality, record, p)
                 images.extend(seg_imgs)
@@ -187,9 +189,10 @@ class TBNDataSet(data.Dataset):
         return len(self.video_list)
 
 if __name__ == "__main__":
+    transform = {'RGB': torch.nn.Identity(), 'Flow': torch.nn.Identity(), 'Spec': torch.nn.Identity()}
     new_length = {'RGB': 1, 'Flow': 1, 'Spec': 5}
     image_tmpl = {'RGB': 'frame_{:010d}.jpg', 'Flow': 'flow_{}_{:010d}.jpg', 'Spec': 'spec_{:010d}.jpg'}
     dataset = TBNDataSet('epic-kitchens-100', pd.read_pickle('EPIC_val_action_labels.pkl'),
-                         new_length, ['RGB'], image_tmpl, visual_path='/hdd0/EPIC_KITCHENS_100')
-    data = dataset.__getitem__(0)
-    print(data.shape)
+                         new_length, ['RGB'], image_tmpl, visual_path='/hdd0/EPIC-KITCHENS', transform=transform,)
+    data, label = dataset.__getitem__(0)
+    print(data['RGB'][0].size)
