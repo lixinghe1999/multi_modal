@@ -8,11 +8,16 @@ import torch
 from torch.cuda.amp import autocast
 class Early_Exit(nn.Module):
     def __init__(self, backbone, scale='base', pretrained=False):
-        super(backbone, self).__init__(scale, pretrained)
+        super(Early_Exit, self).__init__()
+        backbone = backbone(scale, pretrained)
+        module_list = ['audio', 'image', 'embed_dim']
+        for m in module_list:
+            setattr(self, m, getattr(backbone, m))
         self.len_blocks = len(self.audio.blocks)
         self.head = nn.ModuleList([nn.Linear(self.embed_dim * 2, 309) for _ in range(self.len_blocks)])
+
     def get_parameters(self):
-        parameter = [{'params': self.projection.parameters()}]
+        parameter = [{'params': self.head.parameters()}]
         return parameter
 
     @autocast()

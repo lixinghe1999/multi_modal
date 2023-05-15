@@ -74,8 +74,6 @@ if __name__ == "__main__":
     torch.cuda.set_device(args.cuda)
 
     model = getattr(model, args.model)(args.scale, pretrained=True).to(device)
-    # model.audio.load_state_dict(torch.load('vanilla_A_6_0.5303089942924621.pth'))
-    # model.image.load_state_dict(torch.load('vanilla_V_7_0.5041330446762449.pth'))
 
     if args.test:
         model.load_state_dict(torch.load('MBT_base_0.659.pth'))
