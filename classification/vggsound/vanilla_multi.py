@@ -1,7 +1,7 @@
 from vggsound import VGGSound
 import numpy as np
 import torch
-import model
+import models
 
 import argparse
 import warnings
@@ -73,7 +73,7 @@ if __name__ == "__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     torch.cuda.set_device(args.cuda)
 
-    model = getattr(model, args.model)(args.scale, pretrained=True).to(device)
+    model = getattr(models, args.model)(args.scale, pretrained=True).to(device)
 
     if args.test:
         model.load_state_dict(torch.load('MBT_base_0.659.pth'))

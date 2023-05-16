@@ -1,4 +1,4 @@
-from model.vit_model import VisionTransformerDiffPruning
+from models.vit_model import VisionTransformerDiffPruning
 import torch
 if __name__ == "__main__":
     config = dict(patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True,

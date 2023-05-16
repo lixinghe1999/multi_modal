@@ -1,5 +1,5 @@
 import torch
-from model.dynamicvit_legacy import AVnet_Dynamic
+from models.dynamicvit_legacy import AVnet_Dynamic
 import time
 import argparse
 import numpy as np

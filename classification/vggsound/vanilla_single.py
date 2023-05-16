@@ -1,7 +1,7 @@
 from vggsound import VGGSound
 import numpy as np
 import torch
-from model import AudioTransformerDiffPruning, VisionTransformerDiffPruning
+from models import AudioTransformerDiffPruning, VisionTransformerDiffPruning
 
 import argparse
 import warnings

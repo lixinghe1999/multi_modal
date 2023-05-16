@@ -1,9 +1,8 @@
-import time
 from vggsound import VGGSound
 import numpy as np
 import torch
-from model.dynmm import DynMM, Gate_MM, Gate_SM
-import model 
+from models.dynmm import DynMM, Gate_MM, Gate_SM
+import models 
 from tqdm import tqdm
 import argparse
 import warnings
@@ -112,7 +111,7 @@ if __name__ == "__main__":
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     torch.cuda.set_device(args.cuda)
-    model = DynMM(getattr(model, args.model), args.modal, args.scale, pretrained=True).to(device)
+    model = DynMM(getattr(models, args.model), args.modal, args.scale, pretrained=True).to(device)
     model.load_state_dict(torch.load('MBT_base_0.6702001.pth'), strict=False)
     if args.test:
         model.load_state_dict(torch.load())

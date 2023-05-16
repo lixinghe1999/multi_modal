@@ -1,8 +1,8 @@
 from vggsound import VGGSound
 import numpy as np
 import torch
-from model.early_exit import Early_Exit
-import model
+from models.early_exit import Early_Exit
+import models
 import warnings
 from tqdm import tqdm
 import argparse
@@ -101,7 +101,7 @@ if __name__ == "__main__":
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     torch.cuda.set_device(args.cuda)
-    model = Early_Exit(getattr(model, args.model), args.scale, pretrained=True).to(device)
+    model = Early_Exit(getattr(models, args.model), args.scale, pretrained=True).to(device)
     if args.test:
         model.load_state_dict(torch.load())
 
