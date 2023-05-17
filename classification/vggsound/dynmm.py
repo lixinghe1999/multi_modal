@@ -1,4 +1,4 @@
-from vggsound import VGGSound
+from classification.vggsound.dataset.vggsound import VGGSound
 import numpy as np
 import torch
 from models.dynmm import DynMM, Gate_MM, Gate_SM

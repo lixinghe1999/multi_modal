@@ -1,4 +1,4 @@
-from vggsound import VGGSound
+from dataset.vggsound import VGGSound
 import numpy as np
 import torch
 import models

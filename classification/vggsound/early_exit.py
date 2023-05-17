@@ -1,4 +1,4 @@
-from vggsound import VGGSound
+from classification.vggsound.dataset.vggsound import VGGSound
 import numpy as np
 import torch
 from models.early_exit import Early_Exit
