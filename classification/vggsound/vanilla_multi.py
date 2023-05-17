@@ -1,4 +1,4 @@
-from .dataset import VGGSound, TBNDataSet
+import dataset
 import numpy as np
 import torch
 import models
@@ -62,6 +62,7 @@ def train(model, train_dataset, test_dataset, test=False):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-m', '--model', default='MBT', type=str)
+    parser.add_argument('-d', '--dataset', default='EPICKitchen', type=str) # VGGSound, EPICKitchen
     parser.add_argument('-w', '--worker', default=4, type=int)
     parser.add_argument('-b', '--batch', default=4, type=int)
     parser.add_argument('-s', '--scale', default='base', type=str)
@@ -76,9 +77,9 @@ if __name__ == "__main__":
     model = getattr(models, args.model)(args.scale, pretrained=True).to(device)
 
     if args.test:
-        model.load_state_dict(torch.load('MBT_base_0.659.pth'))
+        model.load_state_dict(torch.load('MBT_base_0.6702001.pth'))
 
-    dataset = VGGSound()
+    dataset = getattr(dataset, args.dataset)()
     len_train = int(len(dataset) * 0.8)
     len_test = len(dataset) - len_train
     train_dataset, test_dataset = torch.utils.data.random_split(dataset, [len_train, len_test], generator=torch.Generator().manual_seed(42))
