@@ -10,15 +10,95 @@ import pandas as pd
 import numpy as np
 from numpy.random import randint
 import pickle
-import torch
+import torchvision
+from transform import GroupScale, GroupCenterCrop, GroupOverSample, GroupNormalize, Stack, ToTorchFormatTensor, GroupRandomHorizontalFlip, GroupMultiScaleCrop
+def get_augmentation(modality):
+        augmentation = {}
+        if 'RGB' in modality:
+            augmentation['RGB'] = torchvision.transforms.Compose([GroupMultiScaleCrop(self.input_size['RGB'], [1, .875, .75, .66]),
+                                                   GroupRandomHorizontalFlip(is_flow=False)])
+        if 'Flow' in modality:
+            augmentation['Flow'] = torchvision.transforms.Compose([GroupMultiScaleCrop(self.input_size['Flow'], [1, .875, .75]),
+                                                   GroupRandomHorizontalFlip(is_flow=True)])
+        if 'RGBDiff' in modality:
+            augmentation['RGBDiff'] = torchvision.transforms.Compose([GroupMultiScaleCrop(self.input_size['RGBDiff'], [1, .875, .75]),
+                                                   GroupRandomHorizontalFlip(is_flow=False)])
 
-class TBNDataSet(data.Dataset):
-    def __init__(self, dataset, list_file,
-                 new_length, modality, image_tmpl,
-                 visual_path=None, audio_path=None,
-                 resampling_rate=44000,
-                 num_segments=3, transform=None,
-                 mode='train', use_audio_dict=True):
+        return augmentation
+def get_normalization(modality, input_mean, input_std):
+    normalize = {}
+    for m in modality:
+        if (m != 'Spec'):
+            normalize[m] = GroupNormalize(input_mean[m], input_std[m])
+    return normalize
+def get_test_transform(modality=['RGB', 'Spec'], test_crops=1, scale_size={'RGB': 256, 'Spec': 256}, input_size={'RGB': 224, 'Spec': 224}, input_mean={'RGB': (0.43818652, 0.4067926,  0.38199832)}, input_std={'RGB': (0.28311136, 0.2763161,  0.2787475)}):
+    test_transform = {}
+    for m in modality:
+        if m != 'Spec':
+            if test_crops == 1:
+                cropping = torchvision.transforms.Compose([
+                    GroupScale(scale_size[m]),
+                    GroupCenterCrop(input_size[m]),
+                ])
+            elif test_crops == 10:
+                cropping = torchvision.transforms.Compose([
+                    GroupOverSample(input_size[m], scale_size[m])
+                ])
+            else:
+                raise ValueError("Only 1 and 10 crops are supported" +
+                                 " while we got {}".format(test_crops))
+
+            test_transform[m] = torchvision.transforms.Compose([
+                cropping, Stack(),
+                ToTorchFormatTensor(),
+                GroupNormalize(input_mean[m], input_std[m]), ])
+
+        else:
+            test_transform[m] = torchvision.transforms.Compose([
+                Stack(),
+                ToTorchFormatTensor(div=False), ])
+    return test_transform
+
+def get_train_transform(modality=['RGB', 'Spec'], test_crops=10, scale_size={'RGB': 256, 'Spec': 256}, input_size={'RGB': 224, 'Spec': 224}, input_mean={'RGB': (0.43818652, 0.4067926,  0.38199832)}, input_std={'RGB': (0.28311136, 0.2763161,  0.2787475)}):
+    train_transform = {}
+    val_transform = {}
+    train_augmentation = get_augmentation(modality)
+    normalize = get_normalization(modality, input_mean, input_std)
+    for m in modality:
+        if (m != 'Spec'):
+            train_transform[m] = torchvision.transforms.Compose([
+                train_augmentation[m],
+                Stack(),
+                ToTorchFormatTensor(),
+                normalize[m],
+            ])
+
+            val_transform[m] = torchvision.transforms.Compose([
+                GroupScale(int(scale_size[m])),
+                GroupCenterCrop(input_size[m]),
+                Stack(),
+                ToTorchFormatTensor(),
+                normalize[m],
+            ])
+        else:
+            # Prepare train/val dictionaries containing the transformations
+            # (augmentation+normalization)
+            # for each modality
+            train_transform[m] = torchvision.transforms.Compose([
+                Stack(),
+                ToTorchFormatTensor(),
+            ])
+
+            val_transform[m] = torchvision.transforms.Compose([
+                Stack(),
+                ToTorchFormatTensor(),
+            ])
+            
+class EPICKitchen(data.Dataset):
+    def __init__(self, dataset='epic-kitchens-100', list_file=pd.read_pickle('EPIC_val_action_labels.pkl'),
+                 new_length={'RGB': 1, 'Flow': 1, 'Spec': 5}, modality= ['RGB', 'Spec'], image_tmpl={'RGB': 'frame_{:010d}.jpg'},  visual_path='/hdd0/EPIC-KITCHENS', audio_path='/hdd0/EPIC-KITCHENS/audio',
+                 resampling_rate=44000, num_segments=1, transform=get_test_transform(),
+                 mode='test', use_audio_dict=False):
         self.dataset = dataset
         if audio_path is not None:
             if not use_audio_dict:
@@ -166,32 +246,29 @@ class TBNDataSet(data.Dataset):
             img, label, metadata = self.get(m, record, segment_indices)
             input[m] = img
 
-        return input, label
+        return input['RGB'], input['Spec'], label
 
     def get(self, modality, record, indices):
 
         images = list()
         for seg_ind in indices:
             p = int(seg_ind)
-            
             for i in range(self.new_length[modality]):
                 seg_imgs = self._load_data(modality, record, p)
+                print(len(seg_imgs), seg_imgs[0].size, seg_imgs[0].mode)
                 images.extend(seg_imgs)
                 if p < record.num_frames[modality]:
                     p += 1
-
+        print(len(images))
         process_data = self.transform[modality](images)
+        print(type(process_data), process_data.shape)
         return process_data, record.label, record.metadata
 
     def __len__(self):
         return len(self.video_list)
 
 if __name__ == "__main__":
-    transform = {'RGB': torch.nn.Identity(), 'Flow': torch.nn.Identity(), 'Spec': torch.nn.Identity()}
-    new_length = {'RGB': 1, 'Flow': 1, 'Spec': 5}
-    image_tmpl = {'RGB': 'frame_{:010d}.jpg', 'Flow': 'flow_{}_{:010d}.jpg', 'Spec': 'spec_{:010d}.jpg'}
-    dataset = TBNDataSet('epic-kitchens-100', pd.read_pickle('EPIC_val_action_labels.pkl'),
-                         new_length, ['RGB', 'Spec'], image_tmpl, visual_path='/hdd0/EPIC-KITCHENS', audio_path='/hdd0/EPIC-KITCHENS/audio', transform=transform, use_audio_dict=False)
-    data, label = dataset.__getitem__(0)
-    print(data['RGB'][0].size)
-    print(data['Spec'][0].size)
+    dataset = EPICKitchen()
+    rgb, spec, label = dataset.__getitem__(0)
+    print(len(rgb), rgb[0].shape)
+    print(len(spec), spec[0].shape)

@@ -1,2 +1,2 @@
-from vggsound import VGGSound
-from epic_kitchen import TBNDataSet
+from .vggsound import VGGSound
+from .epic_kitchen import EPICKitchen
