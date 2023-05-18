@@ -1,6 +1,6 @@
 import os
 dataset_path = '/hdd0/EPIC-KITCHENS'
-participants = ['P03', 'P04', 'P06', 'P07']
+participants = ['P03']
 modalities = ['rgb_frames']
 for participant in participants:
     for modal in modalities:
