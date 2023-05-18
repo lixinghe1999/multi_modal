@@ -526,8 +526,8 @@ class AudioTransformerDiffPruning(VisionTransformerDiffPruning):
     :param audioset_pretrain: if use full AudioSet and ImageNet pretrained model
     :param model_size: the model size of AST, should be in [tiny224, small224, base224, base384], base224 and base 384 are same model, but are trained differently during ImageNet pretraining.
     """
-    def __init__(self, config, pretrained=None, label_dim=309, fstride=16, tstride=16, input_fdim=128,
-                 input_tdim=384, ):
+    def __init__(self, config, pretrained=None, label_dim=309, fstride=16, tstride=16, input_fdim=256,
+                 input_tdim=256, ): # 128, 384 for vggsound
 
         super(AudioTransformerDiffPruning, self).__init__(**config)
 
@@ -545,7 +545,7 @@ class AudioTransformerDiffPruning(VisionTransformerDiffPruning):
         if pretrained is not None:
             self.load_state_dict(pretrained, strict=False)
         # the linear projection layer
-        new_proj = torch.nn.Conv2d(1, self.original_embedding_dim, kernel_size=(16, 16), stride=(fstride, tstride))
+        new_proj = torch.nn.Conv2d(5, self.original_embedding_dim, kernel_size=(16, 16), stride=(fstride, tstride))
         if pretrained is not None:
             new_proj.weight = torch.nn.Parameter(torch.sum(self.patch_embed.proj.weight, dim=1).unsqueeze(1))
             new_proj.bias = self.patch_embed.proj.bias

@@ -6,10 +6,12 @@ import models
 import argparse
 import warnings
 from tqdm import tqdm
+import pandas as pd
+
+
 warnings.filterwarnings("ignore")
 # remove annoying librosa warning
-
-def test_epoch(model, test_loader):
+def test_vggsound(model, test_loader):
     model.eval()
     acc = []; ratio = []
     with torch.no_grad():
@@ -24,17 +26,31 @@ def test_epoch(model, test_loader):
     ratio = np.concatenate(ratio, axis=0)
     print('mean =', np.mean(ratio), 'variance =', np.var(ratio))
     return np.mean(acc)
-def train_step(model, input_data, optimizer, criteria, label):
+def test_epickitchen(model, test_loader):
+    model.eval()
+    acc = {'verb':[], 'noun':[]}
+    with torch.no_grad():
+        for batch in tqdm(test_loader):
+            input_data = [batch[0].to(device), batch[1].to(device)]
+            predict = model(*input_data)
+            for key in batch[-1]:
+                acc[key].append((torch.argmax(predict[key], dim=-1).cpu() == batch[-1][key]).sum() / len(batch[-1]))
+    return {'verb':np.mean(acc['verb']), 'noun':np.mean(acc['noun'])}
+def train_step(model, input_data, optimizer, criteria, label, device):
     output = model(*input_data)
     # Backward
     optimizer.zero_grad()
-    if isinstance(output, tuple):
-        output = output[0]
-    loss = criteria(output, label)
+    print(label)
+    if isinstance(label, dict):
+        loss = 0
+        for key in label:
+            loss += criteria(output[key], label[key].to(device))
+    else:
+        loss = criteria(output, label.to(device))
     loss.backward()
     optimizer.step()
     return loss.item()
-def train(model, train_dataset, test_dataset, test=False):
+def train(model, train_dataset, test_dataset, test=False, test_epoch=test_vggsound):
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset, num_workers=workers, batch_size=batch_size, shuffle=True,
                                                drop_last=True, pin_memory=False)
     test_loader = torch.utils.data.DataLoader(dataset=test_dataset, num_workers=workers, batch_size=batch_size, shuffle=False)
@@ -48,10 +64,12 @@ def train(model, train_dataset, test_dataset, test=False):
     else:
         for epoch in range(10):
             model.train()
-            for _, batch in enumerate(tqdm(train_loader)):
+            for i, batch in enumerate(tqdm(train_loader)):
                 input_data = [batch[0].to(device), batch[1].to(device)]
-                train_step(model, input_data=input_data, optimizer=optimizer,
-                            criteria=criteria, label=batch[-1].to(device))
+                loss = train_step(model, input_data=input_data, optimizer=optimizer,
+                            criteria=criteria, label=batch[-1], device=device)
+                if i % 100 == 0:
+                    print('loss =', loss)
             scheduler.step()
             acc = test_epoch(model, test_loader)
             print('epoch', epoch, 'acc =', acc)
@@ -74,13 +92,29 @@ if __name__ == "__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     torch.cuda.set_device(args.cuda)
 
-    model = getattr(models, args.model)(args.scale, pretrained=True).to(device)
+    
 
+    if args.dataset == 'VGGSound':
+        dataset = getattr(dataset, args.dataset)()
+        len_train = int(len(dataset) * 0.8)
+        len_test = len(dataset) - len_train
+        train_dataset, test_dataset = torch.utils.data.random_split(dataset, [len_train, len_test], generator=torch.Generator().manual_seed(42))
+        model = getattr(models, args.model)(args.scale, pretrained=True, num_class=309).to(device)
+        train(model, train_dataset, test_dataset, args.test, test_vggsound)
+    else:
+        import pickle
+        print('pre-load audio dict.....')
+        audio_path = pickle.load(open('/hdd0/EPIC-KITCHENS/audio_dict.pkl', 'rb'))
+        print('finish loading....')
+        train_transform, val_transform = dataset.get_train_transform()
+        train_dataset = getattr(dataset, args.dataset)(list_file=pd.read_pickle('EPIC_train.pkl'),               
+                                                 transform=train_transform, mode='train', audio_path=audio_path)
+        val_dataset = getattr(dataset, args.dataset)(list_file=pd.read_pickle('EPIC_val.pkl'),               
+                                                 transform=val_transform, mode='val', audio_path=audio_path)
+        model = getattr(models, args.model)(args.scale, pretrained=True, num_class=(97, 300)).to(device)
+        train(model, train_dataset, val_dataset, args.test, test_epickitchen)
     if args.test:
         model.load_state_dict(torch.load('MBT_base_0.6702001.pth'))
 
-    dataset = getattr(dataset, args.dataset)()
-    len_train = int(len(dataset) * 0.8)
-    len_test = len(dataset) - len_train
-    train_dataset, test_dataset = torch.utils.data.random_split(dataset, [len_train, len_test], generator=torch.Generator().manual_seed(42))
-    train(model, train_dataset, test_dataset, args.test)
+    
+    

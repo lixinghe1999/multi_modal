@@ -1,4 +1,4 @@
-from video_records import EpicKitchens55_VideoRecord, EpicKitchens100_VideoRecord
+from .video_records import EpicKitchens55_VideoRecord, EpicKitchens100_VideoRecord
 import torch.utils.data as data
 
 import librosa
@@ -11,17 +11,17 @@ import numpy as np
 from numpy.random import randint
 import pickle
 import torchvision
-from transform import GroupScale, GroupCenterCrop, GroupOverSample, GroupNormalize, Stack, ToTorchFormatTensor, GroupRandomHorizontalFlip, GroupMultiScaleCrop
-def get_augmentation(modality):
+from .transform import GroupScale, GroupCenterCrop, GroupOverSample, GroupNormalize, Stack, ToTorchFormatTensor, GroupRandomHorizontalFlip, GroupMultiScaleCrop
+def get_augmentation(modality, input_size):
         augmentation = {}
         if 'RGB' in modality:
-            augmentation['RGB'] = torchvision.transforms.Compose([GroupMultiScaleCrop(self.input_size['RGB'], [1, .875, .75, .66]),
+            augmentation['RGB'] = torchvision.transforms.Compose([GroupMultiScaleCrop(input_size['RGB'], [1, .875, .75, .66]),
                                                    GroupRandomHorizontalFlip(is_flow=False)])
         if 'Flow' in modality:
-            augmentation['Flow'] = torchvision.transforms.Compose([GroupMultiScaleCrop(self.input_size['Flow'], [1, .875, .75]),
+            augmentation['Flow'] = torchvision.transforms.Compose([GroupMultiScaleCrop(input_size['Flow'], [1, .875, .75]),
                                                    GroupRandomHorizontalFlip(is_flow=True)])
         if 'RGBDiff' in modality:
-            augmentation['RGBDiff'] = torchvision.transforms.Compose([GroupMultiScaleCrop(self.input_size['RGBDiff'], [1, .875, .75]),
+            augmentation['RGBDiff'] = torchvision.transforms.Compose([GroupMultiScaleCrop(input_size['RGBDiff'], [1, .875, .75]),
                                                    GroupRandomHorizontalFlip(is_flow=False)])
 
         return augmentation
@@ -59,10 +59,10 @@ def get_test_transform(modality=['RGB', 'Spec'], test_crops=1, scale_size={'RGB'
                 ToTorchFormatTensor(div=False), ])
     return test_transform
 
-def get_train_transform(modality=['RGB', 'Spec'], test_crops=10, scale_size={'RGB': 256, 'Spec': 256}, input_size={'RGB': 224, 'Spec': 224}, input_mean={'RGB': (0.43818652, 0.4067926,  0.38199832)}, input_std={'RGB': (0.28311136, 0.2763161,  0.2787475)}):
+def get_train_transform(modality=['RGB', 'Spec'], test_crops=10, scale_size={'RGB': 256, 'Spec': 256}, input_size={'RGB': 224, 'Spec': 256}, input_mean={'RGB': (0.43818652, 0.4067926,  0.38199832)}, input_std={'RGB': (0.28311136, 0.2763161,  0.2787475)}):
     train_transform = {}
     val_transform = {}
-    train_augmentation = get_augmentation(modality)
+    train_augmentation = get_augmentation(modality, input_size)
     normalize = get_normalization(modality, input_mean, input_std)
     for m in modality:
         if (m != 'Spec'):
@@ -93,18 +93,19 @@ def get_train_transform(modality=['RGB', 'Spec'], test_crops=10, scale_size={'RG
                 Stack(),
                 ToTorchFormatTensor(),
             ])
+    return train_transform, val_transform
             
 class EPICKitchen(data.Dataset):
-    def __init__(self, dataset='epic-kitchens-100', list_file=pd.read_pickle('EPIC_val_action_labels.pkl'),
-                 new_length={'RGB': 1, 'Flow': 1, 'Spec': 5}, modality= ['RGB', 'Spec'], image_tmpl={'RGB': 'frame_{:010d}.jpg'},  visual_path='/hdd0/EPIC-KITCHENS', audio_path='/hdd0/EPIC-KITCHENS/audio',
-                 resampling_rate=44000, num_segments=1, transform=get_test_transform(),
-                 mode='test', use_audio_dict=False):
+    def __init__(self, dataset='epic-kitchens-100', list_file=pd.read_pickle('EPIC_val.pkl'),
+                 new_length={'RGB': 1, 'Flow': 1, 'Spec': 5}, modality= ['RGB', 'Spec'], image_tmpl={'RGB': 'frame_{:010d}.jpg'},  visual_path='/hdd0/EPIC-KITCHENS', audio_path='/hdd0/EPIC-KITCHENS/audio_dict.pkl',
+                 resampling_rate=44000, num_segments=3, transform=get_test_transform(),
+                 mode='test', use_audio_dict=True):
         self.dataset = dataset
         if audio_path is not None:
             if not use_audio_dict:
                 self.audio_path = Path(audio_path)
             else:
-                self.audio_path = pickle.load(open(audio_path, 'rb'))
+                self.audio_path = audio_path
         self.visual_path = visual_path
         self.list_file = list_file
         self.num_segments = num_segments
@@ -246,7 +247,7 @@ class EPICKitchen(data.Dataset):
             img, label, metadata = self.get(m, record, segment_indices)
             input[m] = img
 
-        return input['RGB'], input['Spec'], label
+        return input['Spec'], input['RGB'], label
 
     def get(self, modality, record, indices):
 
@@ -255,13 +256,10 @@ class EPICKitchen(data.Dataset):
             p = int(seg_ind)
             for i in range(self.new_length[modality]):
                 seg_imgs = self._load_data(modality, record, p)
-                print(len(seg_imgs), seg_imgs[0].size, seg_imgs[0].mode)
                 images.extend(seg_imgs)
                 if p < record.num_frames[modality]:
                     p += 1
-        print(len(images))
         process_data = self.transform[modality](images)
-        print(type(process_data), process_data.shape)
         return process_data, record.label, record.metadata
 
     def __len__(self):
@@ -270,5 +268,3 @@ class EPICKitchen(data.Dataset):
 if __name__ == "__main__":
     dataset = EPICKitchen()
     rgb, spec, label = dataset.__getitem__(0)
-    print(len(rgb), rgb[0].shape)
-    print(len(spec), spec[0].shape)
