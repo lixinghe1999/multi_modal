@@ -40,7 +40,6 @@ def train_step(model, input_data, optimizer, criteria, label, device):
     output = model(*input_data)
     # Backward
     optimizer.zero_grad()
-    print(label)
     if isinstance(label, dict):
         loss = 0
         for key in label:
@@ -68,7 +67,7 @@ def train(model, train_dataset, test_dataset, test=False, test_epoch=test_vggsou
                 input_data = [batch[0].to(device), batch[1].to(device)]
                 loss = train_step(model, input_data=input_data, optimizer=optimizer,
                             criteria=criteria, label=batch[-1], device=device)
-                if i % 100 == 0:
+                if i % 100 == 0 and i > 0:
                     print('loss =', loss)
             scheduler.step()
             acc = test_epoch(model, test_loader)
@@ -81,7 +80,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-m', '--model', default='MBT', type=str)
     parser.add_argument('-d', '--dataset', default='EPICKitchen', type=str) # VGGSound, EPICKitchen
-    parser.add_argument('-w', '--worker', default=4, type=int)
+    parser.add_argument('-w', '--worker', default=8, type=int)
     parser.add_argument('-b', '--batch', default=4, type=int)
     parser.add_argument('-s', '--scale', default='base', type=str)
     parser.add_argument('-c', '--cuda', default=0, type=int)
@@ -104,7 +103,7 @@ if __name__ == "__main__":
     else:
         import pickle
         print('pre-load audio dict.....')
-        audio_path = pickle.load(open('/hdd0/EPIC-KITCHENS/audio_dict.pkl', 'rb'))
+        audio_path = pickle.load(open('./audio_dict.pkl', 'rb'))
         print('finish loading....')
         train_transform, val_transform = dataset.get_train_transform()
         train_dataset = getattr(dataset, args.dataset)(list_file=pd.read_pickle('EPIC_train.pkl'),               

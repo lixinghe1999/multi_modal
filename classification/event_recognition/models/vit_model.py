@@ -545,7 +545,7 @@ class AudioTransformerDiffPruning(VisionTransformerDiffPruning):
         if pretrained is not None:
             self.load_state_dict(pretrained, strict=False)
         # the linear projection layer
-        new_proj = torch.nn.Conv2d(5, self.original_embedding_dim, kernel_size=(16, 16), stride=(fstride, tstride))
+        new_proj = torch.nn.Conv2d(1, self.original_embedding_dim, kernel_size=(16, 16), stride=(fstride, tstride))
         if pretrained is not None:
             new_proj.weight = torch.nn.Parameter(torch.sum(self.patch_embed.proj.weight, dim=1).unsqueeze(1))
             new_proj.bias = self.patch_embed.proj.bias

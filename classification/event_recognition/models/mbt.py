@@ -48,9 +48,8 @@ class MBT(nn.Module):
     def forward(self, audio, image):
         if self.multi_head:
             B = audio.shape[0]
-            audio = audio.view(-1, 5, 256, 256)
+            audio = audio.view(-1, 256, 256)
             image = image.view(-1, 3, 224, 224)
-        print(audio.shape, image.shape)
         self.modality_weight = []
         _, audio = self.audio.preprocess(audio.unsqueeze(1))
         _, image = self.image.preprocess(image)
