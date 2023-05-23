@@ -35,6 +35,9 @@ class MBT(nn.Module):
             self.head = nn.Linear(self.embed_dim * 2, num_class)
             self.multi_head = False
         else:
+            # self.head = nn.Linear(self.embed_dim * 2, 512)
+            # self.head_verb = nn.Linear(512, num_class[0])
+            # self.head_noun = nn.Linear(512, num_class[1])
             self.head_verb = nn.Linear(self.embed_dim * 2, num_class[0])
             self.head_noun = nn.Linear(self.embed_dim * 2, num_class[1])
             self.multi_head = True
@@ -61,14 +64,20 @@ class MBT(nn.Module):
         image = self.image.norm(image)
 
         if self.multi_head:
-            audio = audio[:, 0].view(B, 3, self.embed_dim).mean(dim=1)
+            # audio = audio[:, 0].view(B, 3, self.embed_dim)
+            # image = image[:, 0].view(B, 3, self.embed_dim)
+            # x = torch.cat([audio, image], dim=2)
+            # x = self.head(x)
+            # verb = self.head_verb(x).mean(dim=1)
+            # noun = self.head_noun(x).mean(dim=1)
             image = image[:, 0].view(B, 3, self.embed_dim).mean(dim=1)
+            audio = audio[:, 0].view(B, 3, self.embed_dim).mean(dim=1)
             x = torch.cat([audio, image], dim=1)
-            x = torch.flatten(x, start_dim=1)
-            return {'verb': self.head_verb(x), 'noun': self.head_noun(x)}
+            verb = self.head_verb(x)
+            noun = self.head_noun(x)
+            return {'verb': verb, 'noun': noun}
         else:
             x = torch.cat([audio[:, 0], image[:, 0]], dim=1)
-            x = torch.flatten(x, start_dim=1)
             self.modality_weight = [nn.functional.linear(x[:, :self.embed_dim], self.head.weight[:, :self.embed_dim],
                                                         self.head.bias/2),
                                     nn.functional.linear(x[:, self.embed_dim:], self.head.weight[:, self.embed_dim:],

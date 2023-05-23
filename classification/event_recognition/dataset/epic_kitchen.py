@@ -97,7 +97,7 @@ def get_train_transform(modality=['RGB', 'Spec'], test_crops=10, scale_size={'RG
             
 class EPICKitchen(data.Dataset):
     def __init__(self, dataset='epic-kitchens-100', list_file=pd.read_pickle('EPIC_val.pkl'),
-                 new_length={'RGB': 1, 'Flow': 1, 'Spec': 1}, modality= ['RGB', 'Spec'], image_tmpl={'RGB': 'frame_{:010d}.jpg'},  visual_path='/hdd0/EPIC-KITCHENS', audio_path='./audio_dict.pkl',
+                 new_length={'RGB': 1, 'Flow': 1, 'Spec': 1}, modality= ['RGB', 'Spec'], image_tmpl={'RGB': 'frame_{:010d}.jpg'},  visual_path='../EPIC-KITCHENS', audio_path='./audio_dict.pkl',
                  resampling_rate=24000, num_segments=3, transform=get_test_transform(),
                  mode='test', use_audio_dict=True):
         self.dataset = dataset
@@ -193,7 +193,7 @@ class EPICKitchen(data.Dataset):
         """
         average_duration = (record.num_frames[modality] - self.new_length[modality] + 1) // self.num_segments
         if average_duration > 0:
-            offsets = np.multiply(list(range(self.num_segments)), average_duration) + randint(average_duration, size=self.num_segments)
+            offsets = np.multiply(list(range(self.num_segments)), average_duration) + randint(1, average_duration+1, size=self.num_segments)
         # elif record.num_frames[modality] > self.num_segments:
         #     offsets = np.sort(randint(record.num_frames[modality] - self.new_length[modality] + 1, size=self.num_segments))
         else:

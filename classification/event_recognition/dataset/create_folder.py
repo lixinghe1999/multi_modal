@@ -1,7 +1,7 @@
 import os
-dataset_path = '/hdd0/EPIC-KITCHENS'
-participants = ['P03']
-modalities = ['rgb_frames']
+dataset_path = '../EPIC-KITCHENS'
+participants = ['P01', 'P02', 'P03']
+modalities = ['flow_frames']
 for participant in participants:
     for modal in modalities:
         path = os.path.join(dataset_path, participant, modal)
