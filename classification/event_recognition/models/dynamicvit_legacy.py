@@ -1,5 +1,4 @@
-from models.vit_model import AudioTransformerDiffPruning, VisionTransformerDiffPruning, PredictorLG, \
-    batch_index_select
+from models.vit_model import PredictorLG, batch_index_select
 from torch.cuda.amp import autocast
 import torch
 import torch.nn as nn
@@ -115,56 +114,3 @@ class DynToken(nn.Module):
             else:
                 return x
 
-
-if __name__ == "__main__":
-    device = 'cpu'
-    base_rate = 0.5
-    pruning_loc = [3, 6, 9]
-    token_ratio = [base_rate, base_rate ** 2, base_rate ** 3]
-    config = dict(patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True,
-                  pruning_loc=pruning_loc, token_ratio=token_ratio)
-
-    model_image = VisionTransformerDiffPruning(**config).to(device)
-
-    model_audio = AudioTransformerDiffPruning(config, imagenet_pretrain=True).to(device)
-
-    model_teacher = AVnet_Dynamic(pruning_loc=()).to(device)
-
-    multi_modal_model = AVnet_Dynamic().to(device)
-
-    model_image.eval()
-    model_audio.eval()
-    model_teacher.eval()
-    multi_modal_model.eval()
-
-    audio = torch.zeros(1, 384, 128).to(device)
-    image = torch.zeros(1, 3, 224, 224).to(device)
-
-    num_iterations = 10
-    with torch.no_grad():
-        for i in range(num_iterations):
-            if i == 1:
-                t_start = time.time()
-            multi_modal_model(audio, image)
-        print((time.time() - t_start) / (num_iterations - 1))
-
-    with torch.no_grad():
-        for i in range(num_iterations):
-            if i == 1:
-                t_start = time.time()
-            model_image(image)
-        print((time.time() - t_start) / (num_iterations - 1))
-
-    with torch.no_grad():
-        for i in range(num_iterations):
-            if i == 1:
-                t_start = time.time()
-            model_audio(audio)
-        print((time.time() - t_start) / (num_iterations - 1))
-
-    with torch.no_grad():
-        for i in range(num_iterations):
-            if i == 1:
-                t_start = time.time()
-            model_teacher(audio, image)
-        print((time.time() - t_start) / (num_iterations - 1))

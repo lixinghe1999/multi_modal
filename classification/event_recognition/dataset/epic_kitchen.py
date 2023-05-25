@@ -9,7 +9,7 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 from numpy.random import randint
-import pickle
+import torch
 import torchvision
 from .transform import GroupScale, GroupCenterCrop, GroupOverSample, GroupNormalize, Stack, ToTorchFormatTensor, GroupRandomHorizontalFlip, GroupMultiScaleCrop
 def get_augmentation(modality, input_size):
@@ -58,8 +58,13 @@ def get_test_transform(modality=['RGB', 'Spec'], test_crops=1, scale_size={'RGB'
                 Stack(),
                 ToTorchFormatTensor(div=False), ])
     return test_transform
-
-def get_train_transform(modality=['RGB', 'Spec'], test_crops=10, scale_size={'RGB': 256, 'Spec': 256}, input_size={'RGB': 224, 'Spec': 256}, input_mean={'RGB': (0.43818652, 0.4067926,  0.38199832)}, input_std={'RGB': (0.28311136, 0.2763161,  0.2787475)}):
+# (0.43818652, 0.4067926,  0.38199832), (0.28311136, 0.2763161,  0.2787475)
+# [104, 117, 128], 'Flow': [128]
+# mean: spec, rgb, flow
+# std: spec, rgb, flow
+# tensor([-0.0322]) tensor([0.4290, 0.3740, 0.3360]) tensor([0.5006, 0.5108])
+# tensor([0.0137]) tensor([0.2387, 0.2269, 0.2275]) tensor([0.1581, 0.1154])
+def get_train_transform(modality=['RGB', 'Spec', 'Flow'], test_crops=10, scale_size={'RGB': 256, 'Spec': 256, 'Flow': 256}, input_size={'RGB': 224, 'Spec': 256, 'Flow': 224}, input_mean={'RGB': [0.4290, 0.3740, 0.3360], 'Flow': [0.5006, 0.5108]}, input_std={'RGB': [0.2387, 0.2269, 0.2275], 'Flow': [0.1581, 0.1154]}):
     train_transform = {}
     val_transform = {}
     train_augmentation = get_augmentation(modality, input_size)
@@ -97,7 +102,7 @@ def get_train_transform(modality=['RGB', 'Spec'], test_crops=10, scale_size={'RG
             
 class EPICKitchen(data.Dataset):
     def __init__(self, dataset='epic-kitchens-100', list_file=pd.read_pickle('EPIC_val.pkl'),
-                 new_length={'RGB': 1, 'Flow': 1, 'Spec': 1}, modality= ['RGB', 'Spec'], image_tmpl={'RGB': 'frame_{:010d}.jpg'},  visual_path='../EPIC-KITCHENS', audio_path='./audio_dict.pkl',
+                 new_length={'RGB': 1, 'Flow': 1, 'Spec': 1}, modality= ['RGB', 'Spec', 'Flow'], image_tmpl={'RGB': 'frame_{:010d}.jpg', 'Flow': 'frame_{:010d}.jpg'},  visual_path='../EPIC-KITCHENS', audio_path='./audio_dict.pkl',
                  resampling_rate=24000, num_segments=3, transform=get_test_transform(),
                  mode='test', use_audio_dict=True):
         self.dataset = dataset
@@ -172,8 +177,8 @@ class EPICKitchen(data.Dataset):
         elif modality == 'Flow':
             rgb2flow_fps_ratio = record.fps['Flow'] / float(record.fps['RGB'])
             idx_untrimmed = int(np.floor((record.start_frame * rgb2flow_fps_ratio))) + idx
-            x_img = Image.open(os.path.join(self.visual_path, record.untrimmed_video_name, self.image_tmpl[modality].format('x', idx_untrimmed))).convert('L')
-            y_img = Image.open(os.path.join(self.visual_path, record.untrimmed_video_name, self.image_tmpl[modality].format('y', idx_untrimmed))).convert('L')
+            x_img = Image.open(os.path.join(self.visual_path, record.participant_id, 'flow_frames', record.untrimmed_video_name, 'u', self.image_tmpl[modality].format(idx_untrimmed))).convert('L')
+            y_img = Image.open(os.path.join(self.visual_path, record.participant_id, 'flow_frames', record.untrimmed_video_name, 'v', self.image_tmpl[modality].format(idx_untrimmed))).convert('L')
             return [x_img, y_img]
         elif modality == 'Spec':
             spec = self._extract_sound_feature(record, idx)
@@ -246,8 +251,7 @@ class EPICKitchen(data.Dataset):
                 np.random.shuffle(segment_indices)
             img, label, metadata = self.get(m, record, segment_indices)
             input[m] = img
-
-        return input['Spec'], input['RGB'], label
+        return input['Spec'], input['RGB'], input['Flow'], label
 
     def get(self, modality, record, indices):
 
@@ -256,6 +260,7 @@ class EPICKitchen(data.Dataset):
             p = int(seg_ind)
             for i in range(self.new_length[modality]):
                 seg_imgs = self._load_data(modality, record, p)
+                # print(np.array(seg_imgs[0]).mean(axis=(0,1)))
                 images.extend(seg_imgs)
                 if p < record.num_frames[modality]:
                     p += 1
@@ -266,5 +271,28 @@ class EPICKitchen(data.Dataset):
         return len(self.video_list)
 
 if __name__ == "__main__":
-    dataset = EPICKitchen()
-    rgb, spec, label = dataset.__getitem__(0)
+    import h5py
+    print('pre-load audio dict.....')
+    audio_path = h5py.File('../split_EPIC_audio.hdf5', 'r')
+    print('finish loading....')
+    train_transform, val_transform = get_train_transform()
+    dataset = EPICKitchen(list_file=pd.read_pickle('EPIC_train.pkl'),  transform=train_transform, mode='train', audio_path=audio_path)
+    train_loader = torch.utils.data.DataLoader(dataset=dataset, num_workers=4, batch_size=16, drop_last=True)
+    spec_mean = 0; rgb_mean = 0; flow_mean = 0
+    spec_std = 0; rgb_std = 0; flow_std = 0
+    for batch in train_loader:
+        spec, rgb, flow, label = batch
+        spec_mean += spec.reshape(16 * 3, 1, 256, 256).mean(dim=(0, 2, 3))
+        rgb_mean += rgb.reshape(16 * 3, 3, 224, 224).mean(dim=(0, 2, 3))
+        flow_mean += flow.reshape(16 * 3, 2, 224, 224).mean(dim=(0, 2, 3))
+        spec_std += spec.reshape(16 * 3, 1, 256, 256).std(dim=(0, 2, 3)) ** 2 
+        rgb_std += rgb.reshape(16 * 3, 3, 224, 224).std(dim=(0, 2, 3)) ** 2
+        flow_std += flow.reshape(16 * 3, 2, 224, 224).std(dim=(0, 2, 3)) ** 2
+    spec_mean /= len(train_loader)
+    rgb_mean /= len(train_loader)
+    flow_mean /= len(train_loader)
+    spec_std = (spec_std / len(train_loader)) ** 0.5
+    rgb_std = (rgb_std / len(train_loader)) ** 0.5
+    flow_std = (flow_std / len(train_loader)) ** 0.5
+    print(spec_mean, rgb_mean, flow_mean) 
+    print(spec_std, rgb_std, flow_std)

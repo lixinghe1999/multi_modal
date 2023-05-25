@@ -29,9 +29,10 @@ def test_vggsound(model, test_loader):
 def test_epickitchen(model, test_loader):
     model.eval()
     acc = {'verb':[], 'noun':[], 'action':[]}
+    ratio =  {'verb':[], 'noun':[]}
     with torch.no_grad():
         for batch in tqdm(test_loader):
-            input_data = [batch[0].to(device), batch[1].to(device)]
+            input_data = [batch[0].to(device), batch[1].to(device), batch[2].to(device)]
             predict = model(*input_data)
 
             predict_verb = (torch.argmax(predict['verb'], dim=-1).cpu() == batch[-1]['verb'])
@@ -40,6 +41,23 @@ def test_epickitchen(model, test_loader):
             acc['verb'].append( predict_verb.sum() / len(batch[-1]['verb']))
             acc['noun'].append( predict_noun.sum() / len(batch[-1]['noun']))
             acc['action'].append( predict_action.sum() / len(batch[-1]['verb']))
+            one_hot = torch.nn.functional.one_hot(batch[-1]['verb'], num_classes=97)
+            ratio1 = (torch.nn.functional.sigmoid(model.modality_weight[0]).cpu() * one_hot).sum(dim=-1).abs().numpy()
+            ratio2 = (torch.nn.functional.sigmoid(model.modality_weight[1]).cpu() * one_hot).sum(dim=-1).abs().numpy()
+            ratio3 = (torch.nn.functional.sigmoid(model.modality_weight[2]).cpu() * one_hot).sum(dim=-1).abs().numpy()
+            ratio_sum = ratio1 + ratio2 + ratio3
+            ratio['verb'].append(np.column_stack([ratio1/ratio_sum, ratio2/ratio_sum, ratio3/ratio_sum]))
+
+            one_hot = torch.nn.functional.one_hot(batch[-1]['noun'], num_classes=300)
+            ratio1 = (torch.nn.functional.sigmoid(model.modality_weight[3]).cpu() * one_hot).sum(dim=-1).abs().numpy()
+            ratio2 = (torch.nn.functional.sigmoid(model.modality_weight[4]).cpu() * one_hot).sum(dim=-1).abs().numpy()
+            ratio3 = (torch.nn.functional.sigmoid(model.modality_weight[5]).cpu() * one_hot).sum(dim=-1).abs().numpy()
+            ratio_sum = ratio1 + ratio2 + ratio3
+            ratio['noun'].append(np.column_stack([ratio1/ratio_sum, ratio2/ratio_sum, ratio3/ratio_sum]))
+    ratio['verb'] = np.concatenate(ratio['verb'], axis=0)
+    ratio['noun'] = np.concatenate(ratio['noun'], axis=0)
+    print('mean verb =', np.mean(ratio['verb'], axis=0), 'variance verb =', np.var(ratio['noun'], axis=0))
+    print('mean noun =', np.mean(ratio['noun'], axis=0), 'variance verb =', np.var(ratio['noun'], axis=0))
     print('verb =', np.mean(acc['verb']), 'noun =', np.mean(acc['noun']))
     return np.mean(acc['action']) 
 
@@ -49,17 +67,15 @@ def train_step(model, input_data, optimizer, criteria, label, device):
     optimizer.zero_grad()
     if isinstance(label, dict):
         loss = 0
-        loss += criteria(output['verb'], label['verb'].to(device))
-        # for key in label:
-        #     loss += criteria(output[key], label[key].to(device))
+        for key in label:
+            loss += criteria(output[key], label[key].to(device))
     else:
         loss = criteria(output, label.to(device))
     loss.backward()
     optimizer.step()
     return loss.item()
 def train(model, train_dataset, test_dataset, test=False, test_epoch=test_vggsound):
-    train_loader = torch.utils.data.DataLoader(dataset=train_dataset, num_workers=workers, batch_size=batch_size, shuffle=True,
-                                               drop_last=True, pin_memory=False)
+    train_loader = torch.utils.data.DataLoader(dataset=train_dataset, num_workers=workers, batch_size=batch_size,  shuffle=True, drop_last=True, pin_memory=False)
     test_loader = torch.utils.data.DataLoader(dataset=test_dataset, num_workers=workers, batch_size=batch_size, shuffle=False)
     best_acc = 0
     optimizer = torch.optim.Adam(model.parameters(), lr=.0001, weight_decay=1e-4)
@@ -71,12 +87,13 @@ def train(model, train_dataset, test_dataset, test=False, test_epoch=test_vggsou
     else:
         for epoch in range(10):
             model.train()
+            loss = 0
             for i, batch in enumerate(tqdm(train_loader)):
-                input_data = [batch[0].to(device), batch[1].to(device)]
-                loss = train_step(model, input_data=input_data, optimizer=optimizer,
+                input_data = [batch[0].to(device), batch[1].to(device), batch[2].to(device)]
+                loss += train_step(model, input_data=input_data, optimizer=optimizer,
                             criteria=criteria, label=batch[-1], device=device)
                 if i % 400 == 0 and i > 0:
-                    print('loss =', loss)
+                    print('loss =', loss/(i+1))
             scheduler.step()
             acc = test_epoch(model, test_loader)
             print('epoch', epoch, 'acc =', acc)

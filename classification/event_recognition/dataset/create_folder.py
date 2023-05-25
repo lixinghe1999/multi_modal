@@ -1,6 +1,6 @@
 import os
 dataset_path = '../EPIC-KITCHENS'
-participants = ['P01', 'P02', 'P03']
+participants = ['P04', 'P05', 'P06']
 modalities = ['flow_frames']
 for participant in participants:
     for modal in modalities:
