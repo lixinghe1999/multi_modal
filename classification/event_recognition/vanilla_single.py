@@ -1,36 +1,60 @@
-from classification.vggsound.dataset.vggsound import VGGSound
+import dataset
 import numpy as np
 import torch
-from models import AudioTransformerDiffPruning, VisionTransformerDiffPruning
-
+from models import AudioTransformer, VisionTransformer
+import pandas as pd
 import argparse
 import warnings
 from tqdm import tqdm
 warnings.filterwarnings("ignore")
 # remove annoying librosa warning
-def test_epoch(model, test_loader):
+def test_vggsound(model, test_loader):
     model.eval()
     acc = []
     with torch.no_grad():
         for batch in tqdm(test_loader):
             if args.modal == 'A':
-                input_data = [batch[0].to(device)]
+                predict = model(batch[0].to(device))
+            elif args.modal == 'V':
+                predict = model(batch[1].to(device))
             else:
-                input_data = [batch[1].to(device)]
-            predict = model(*input_data)
+                predict = model(batch[2].to(device))
             acc.append((torch.argmax(predict, dim=-1).cpu() == batch[-1]).sum() / len(batch[-1]))
     return np.mean(acc)
+def test_epickitchen(model, test_loader):
+    model.eval()
+    acc = {'verb':[], 'noun':[], 'action':[]}
+    with torch.no_grad():
+        for batch in tqdm(test_loader):
+            if args.modal == 'A':
+                predict = model(batch[0].to(device))
+            elif args.modal == 'V':
+                predict = model(batch[1].to(device))
+            else:
+                predict = model(batch[2].to(device))
+
+            predict_verb = (torch.argmax(predict['verb'], dim=-1).cpu() == batch[-1]['verb'])
+            predict_noun = (torch.argmax(predict['noun'], dim=-1).cpu() == batch[-1]['noun'])
+            predict_action = torch.logical_and(predict_verb, predict_noun)
+            acc['verb'].append( predict_verb.sum() / len(batch[-1]['verb']))
+            acc['noun'].append( predict_noun.sum() / len(batch[-1]['noun']))
+            acc['action'].append( predict_action.sum() / len(batch[-1]['verb']))   
+    print('verb =', np.mean(acc['verb']), 'noun =', np.mean(acc['noun']))
+    return np.mean(acc['action']) 
 def train_step(model, input_data, optimizer, criteria, label):
     output = model(*input_data)
     # Backward
     optimizer.zero_grad()
-    if isinstance(output, tuple):
-        output = output[0]
-    loss = criteria(output, label)
+    if isinstance(label, dict):
+        loss = 0
+        for key in label:
+            loss += criteria(output[key], label[key].to(device))
+    else:
+        loss = criteria(output, label.to(device))
     loss.backward()
     optimizer.step()
     return loss.item()
-def train(model, train_dataset, test_dataset, test=False):
+def train(model, train_dataset, test_dataset, test=False, test_epoch=test_vggsound):
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset, num_workers=workers, batch_size=batch_size, shuffle=True,
                                                drop_last=True, pin_memory=False)
     test_loader = torch.utils.data.DataLoader(dataset=test_dataset, num_workers=workers, batch_size=batch_size, shuffle=False)
@@ -47,10 +71,12 @@ def train(model, train_dataset, test_dataset, test=False):
             for _, batch in enumerate(tqdm(train_loader)):
                 if args.modal == 'A':
                     input_data = [batch[0].to(device)]
-                else:
+                elif args.modal == 'V':
                     input_data = [batch[1].to(device)]
+                else:
+                    input_data = [batch[2].to(device)]
                 train_step(model, input_data=input_data, optimizer=optimizer,
-                            criteria=criteria, label=batch[-1].to(device))
+                            criteria=criteria, label=batch[-1])
             scheduler.step()
             acc = test_epoch(model, test_loader)
             print('epoch', epoch, 'acc =', acc)
@@ -61,8 +87,9 @@ def train(model, train_dataset, test_dataset, test=False):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-m', '--modal', default='A')
+    parser.add_argument('-d', '--dataset', default='EPICKitchen', type=str) # VGGSound, EPICKitchen
     parser.add_argument('-w', '--worker', default=4, type=int)
-    parser.add_argument('-b', '--batch', default=4, type=int)
+    parser.add_argument('-b', '--batch', default=32, type=int)
     parser.add_argument('-c', '--cuda', default=0, type=int)
     parser.add_argument('-test', action='store_true', default=False)
     args = parser.parse_args()
@@ -71,23 +98,44 @@ if __name__ == "__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     torch.cuda.set_device(args.cuda)
 
-    config = dict(patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True,
-                    pruning_loc=())
-    embed_dim = 768
-    pretrained_weight = torch.load('pretrained/deit_base_patch16_224.pth')['model']
-    if args.modal == 'A':
-        model = AudioTransformerDiffPruning(config, pretrained=pretrained_weight).to(device)
-    else:
-        model = VisionTransformerDiffPruning(**config).to(device)
-        model.load_state_dict(pretrained_weight, strict=False)
-    if args.test: 
+   
+    if args.dataset == 'VGGSound':
+        config = dict(patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True, num_classes=309)
+        embed_dim = 768
+        pretrained_weight = torch.load('pretrained/deit_base_patch16_224.pth')['model']
         if args.modal == 'A':
-            model.load_state_dict(torch.load('checkpoints/vanilla_A_6_0.5303089942924621.pth'))
+            model = AudioTransformer(config, pretrained=pretrained_weight, input_fdim=128, input_tdim=384).to(device)
         else:
-            model.load_state_dict(torch.load('checkpoints/vanilla_V_7_0.5041330446762449.pth'))
-        print('loaded the pretrained model')
-    dataset = VGGSound()
-    len_train = int(len(dataset) * 0.8)
-    len_test = len(dataset) - len_train
-    train_dataset, test_dataset = torch.utils.data.random_split(dataset, [len_train, len_test], generator=torch.Generator().manual_seed(42))
-    train(model, train_dataset, test_dataset, test=args.test)
+            model = VisionTransformer(**config).to(device)
+            model.load_state_dict(pretrained_weight, strict=False)
+
+        if args.test: 
+            if args.modal == 'A':
+                model.load_state_dict(torch.load('checkpoints/vanilla_A_6_0.5303089942924621.pth'))
+            else:
+                model.load_state_dict(torch.load('checkpoints/vanilla_V_7_0.5041330446762449.pth'))
+            print('loaded the pretrained model')
+        full_dataset = getattr(dataset, args.dataset)()
+        len_train = int(len(dataset) * 0.8)
+        len_test = len(dataset) - len_train
+        train_dataset, test_dataset = torch.utils.data.random_split(dataset, [len_train, len_test], generator=torch.Generator().manual_seed(42))
+        train(model, train_dataset, test_dataset, args.test, test_vggsound)
+    else:
+        config = dict(patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True, num_classes=(97, 300))
+        embed_dim = 768
+        pretrained_weight = torch.load('pretrained/deit_base_patch16_224.pth')['model']
+        if args.modal == 'A':
+            model = AudioTransformer(config, pretrained=pretrained_weight, input_fdim=256, input_tdim=256).to(device)
+        else:
+            model = VisionTransformer(**config).to(device)
+            model.load_state_dict(pretrained_weight, strict=False)
+        import h5py
+        print('pre-load audio dict.....')
+        audio_path = h5py.File('../split_EPIC_audio.hdf5', 'r')
+        print('finish loading....')
+        train_transform, val_transform = dataset.get_train_transform()
+        train_dataset = getattr(dataset, args.dataset)(list_file=pd.read_pickle('EPIC_train.pkl'),               
+                                                 transform=train_transform, mode='train', audio_path=audio_path)
+        val_dataset = getattr(dataset, args.dataset)(list_file=pd.read_pickle('EPIC_val.pkl'),               
+                                                 transform=val_transform, mode='val', audio_path=audio_path)
+        train(model, train_dataset, val_dataset, args.test, test_epickitchen)

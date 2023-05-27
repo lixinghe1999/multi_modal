@@ -97,7 +97,7 @@ class DistillDiffPruningLoss_dynamic(torch.nn.Module):
     taking a teacher model prediction and using it as additional supervision.
     """
     def __init__(self, teacher_model, base_criterion: torch.nn.Module, ratio_weight=2.0, distill_weight=0.5,
-                 dynamic=False, pruning_loc=[3,6,9], keep_ratio=[0.75, 0.5, 0.25], clf_weight=0, mse_token=False, print_mode=True):
+                 dynamic=False, pruning_loc=[3,6,9], keep_ratio=[0.75, 0.5, 0.25], clf_weight=0, mse_token=False, print_mode=True, device='cuda'):
         super().__init__()
         self.teacher_model = teacher_model
         self.base_criterion = base_criterion
@@ -112,11 +112,11 @@ class DistillDiffPruningLoss_dynamic(torch.nn.Module):
         self.token_distill_loss = 0
         self.mse_token = mse_token
         self.dynamic = dynamic
-
+        self.device = device
         self.ratio_weight = ratio_weight
         self.distill_weight = distill_weight
 
-        print('ratio_weight=', ratio_weight, 'distill_weight', distill_weight)
+        # print('ratio_weight=', ratio_weight, 'distill_weight', distill_weight)
 
 
         if dynamic:
@@ -134,33 +134,51 @@ class DistillDiffPruningLoss_dynamic(torch.nn.Module):
 
         pred, token_pred, mask, out_pred_score, early_output = outputs
 
-        pred_loss = 0.0
+        ratio_loss = 0.0
 
-        ratio = self.keep_ratio
         for i, score in enumerate(out_pred_score):
             if self.dynamic:
                 pos_ratio = score.mean()
             else:
                 pos_ratio = score.mean(1)
-            # pred_loss += ((pos_ratio - ratio[i]) ** 2).mean()
+            # ratio_loss += ((pos_ratio - self.keep_ratio[i]) ** 2).mean()
             # extra loss: get unbalanced between two modalities
-            pred_loss += (pos_ratio ** 2).mean()
-            pred_loss += (score[:, :192].mean() - score[:, 192:].mean())**2
+            ratio_loss += (pos_ratio ** 2).mean()
+            ratio_loss += (score[:, :256].mean() - score[:, 256:].mean())**2
 
-        cls_loss = self.base_criterion(pred, labels)
+        cls_loss = 0
+
+        if isinstance(labels, dict):
+            for key in labels:
+                cls_loss += self.base_criterion(pred[key], labels[key].to(self.device)) * 0.5
+        else:
+            cls_loss += self.base_criterion(pred, labels.to(self.device))
         early_weight = [0.25, 0.5, 0.75]
         for i in range(len(early_output)):
-            cls_loss += early_weight[0] * self.base_criterion(early_output[i], labels)
+            if isinstance(labels, dict):
+                for key in labels:
+                    cls_loss += self.base_criterion(early_output[i][key], labels[key].to(self.device)) * 0.5 * early_weight[i]
+            else:
+                cls_loss += self.base_criterion(early_output[i], labels.to(self.device)) * early_weight[i]
+                    
         with torch.no_grad():
-
             cls_t, token_t = self.teacher_model(*inputs)
-
-        cls_kl_loss = F.kl_div(
-                F.log_softmax(pred, dim=-1),
-                F.log_softmax(cls_t, dim=-1),
-                reduction='batchmean',
-                log_target=True
-            )
+        cls_kl_loss = 0
+        if isinstance(labels, dict):
+            for key in labels:
+                cls_kl_loss += F.kl_div(
+                        F.log_softmax(pred[key], dim=-1),
+                        F.log_softmax(cls_t[key], dim=-1),
+                        reduction='batchmean',
+                        log_target=True
+                    )
+        else:
+            cls_kl_loss += F.kl_div(
+                        F.log_softmax(pred, dim=-1),
+                        F.log_softmax(cls_t, dim=-1),
+                        reduction='batchmean',
+                        log_target=True
+                    )
 
         B, N, C = token_pred.size()
         assert mask.numel() == B * N
@@ -188,20 +206,21 @@ class DistillDiffPruningLoss_dynamic(torch.nn.Module):
                     )
         
         # print(cls_loss, pred_loss)
-        loss = self.clf_weight * cls_loss + self.ratio_weight * pred_loss / len(self.pruning_loc) + self.distill_weight * cls_kl_loss + self.distill_weight * token_kl_loss
+        loss = self.clf_weight * cls_loss + self.ratio_weight * ratio_loss / len(self.pruning_loc) + self.distill_weight * cls_kl_loss + self.distill_weight * token_kl_loss
 
         if self.print_mode:
             self.cls_loss += cls_loss.item()
-            self.ratio_loss += pred_loss.item()
+            self.ratio_loss += ratio_loss.item()
             self.cls_distill_loss += cls_kl_loss.item()
             self.token_distill_loss += token_kl_loss.item()
             loss_part.append(cls_loss)
-            loss_part.append(pred_loss)
+            loss_part.append(ratio_loss)
             loss_part.append(cls_kl_loss)
             loss_part.append(token_kl_loss)
             self.count += 1
             if self.count == 100:
-                print('loss info: cls_loss=%.4f, ratio_loss=%.4f, cls_kl=%.4f, token_kl=%.4f' % (self.cls_loss / 100, self.ratio_loss / 100, self.cls_distill_loss/ 100, self.token_distill_loss/ 100))
+                print('loss info: cls_loss=%.4f, ratio_loss=%.4f, cls_kl=%.4f, token_kl=%.4f' % (
+                    self.cls_loss / 100, self.ratio_loss / 100, self.cls_distill_loss/ 100, self.token_distill_loss/ 100))
                 self.count = 0
                 self.cls_loss = 0
                 self.ratio_loss = 0

@@ -5,7 +5,7 @@ just late fusion
 import torch.nn as nn
 import torch
 from torch.cuda.amp import autocast
-from .vit_model import AudioTransformerDiffPruning, VisionTransformerDiffPruning, Block
+from .vit_model import AudioTransformer, VisionTransformer, Block
 
 class SFT(nn.Module):
     def __init__(self, scale='base', pretrained=False):

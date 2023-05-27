@@ -41,19 +41,17 @@ def test_epickitchen(model, test_loader):
             acc['verb'].append( predict_verb.sum() / len(batch[-1]['verb']))
             acc['noun'].append( predict_noun.sum() / len(batch[-1]['noun']))
             acc['action'].append( predict_action.sum() / len(batch[-1]['verb']))
-            one_hot = torch.nn.functional.one_hot(batch[-1]['verb'], num_classes=97)
-            ratio1 = (torch.nn.functional.sigmoid(model.modality_weight[0]).cpu() * one_hot).sum(dim=-1).abs().numpy()
-            ratio2 = (torch.nn.functional.sigmoid(model.modality_weight[1]).cpu() * one_hot).sum(dim=-1).abs().numpy()
-            ratio3 = (torch.nn.functional.sigmoid(model.modality_weight[2]).cpu() * one_hot).sum(dim=-1).abs().numpy()
-            ratio_sum = ratio1 + ratio2 + ratio3
-            ratio['verb'].append(np.column_stack([ratio1/ratio_sum, ratio2/ratio_sum, ratio3/ratio_sum]))
+            
 
-            one_hot = torch.nn.functional.one_hot(batch[-1]['noun'], num_classes=300)
-            ratio1 = (torch.nn.functional.sigmoid(model.modality_weight[3]).cpu() * one_hot).sum(dim=-1).abs().numpy()
-            ratio2 = (torch.nn.functional.sigmoid(model.modality_weight[4]).cpu() * one_hot).sum(dim=-1).abs().numpy()
-            ratio3 = (torch.nn.functional.sigmoid(model.modality_weight[5]).cpu() * one_hot).sum(dim=-1).abs().numpy()
-            ratio_sum = ratio1 + ratio2 + ratio3
-            ratio['noun'].append(np.column_stack([ratio1/ratio_sum, ratio2/ratio_sum, ratio3/ratio_sum]))
+            num_modal = len(model.modality_weight)//2
+            one_hot = {'verb': torch.nn.functional.one_hot(batch[-1]['verb'], num_classes=97), 'noun': torch.nn.functional.one_hot(batch[-1]['noun'], num_classes=300)}
+            for i, key in enumerate(['verb', 'noun']):
+                r = []
+                for j in range(num_modal):
+                    r.append((torch.nn.functional.sigmoid(model.modality_weight[i * num_modal + j]).cpu() * one_hot[key]).sum(dim=-1).abs().numpy())
+                r = np.column_stack(r)
+                r = r/np.sum(r, axis=1, keepdims=True)
+                ratio[key].append(r)
     ratio['verb'] = np.concatenate(ratio['verb'], axis=0)
     ratio['noun'] = np.concatenate(ratio['noun'], axis=0)
     print('mean verb =', np.mean(ratio['verb'], axis=0), 'variance verb =', np.var(ratio['noun'], axis=0))
@@ -92,7 +90,7 @@ def train(model, train_dataset, test_dataset, test=False, test_epoch=test_vggsou
                 input_data = [batch[0].to(device), batch[1].to(device), batch[2].to(device)]
                 loss += train_step(model, input_data=input_data, optimizer=optimizer,
                             criteria=criteria, label=batch[-1], device=device)
-                if i % 400 == 0 and i > 0:
+                if i % 600 == 0 and i > 0:
                     print('loss =', loss/(i+1))
             scheduler.step()
             acc = test_epoch(model, test_loader)
@@ -117,10 +115,10 @@ if __name__ == "__main__":
     torch.cuda.set_device(args.cuda)
 
     if args.dataset == 'VGGSound':
-        dataset = getattr(dataset, args.dataset)()
-        len_train = int(len(dataset) * 0.8)
-        len_test = len(dataset) - len_train
-        train_dataset, test_dataset = torch.utils.data.random_split(dataset, [len_train, len_test], generator=torch.Generator().manual_seed(42))
+        full_dataset = getattr(dataset, args.dataset)()
+        len_train = int(len(full_dataset) * 0.8)
+        len_test = len(full_dataset) - len_train
+        train_dataset, test_dataset = torch.utils.data.random_split(full_dataset, [len_train, len_test], generator=torch.Generator().manual_seed(42))
         model = getattr(models, args.model)(args.scale, pretrained=True, num_class=309).to(device)
         if args.test:
             model.load_state_dict(torch.load('MBT_base_0.6702001.pth'))
@@ -136,8 +134,10 @@ if __name__ == "__main__":
         val_dataset = getattr(dataset, args.dataset)(list_file=pd.read_pickle('EPIC_val.pkl'),               
                                                  transform=val_transform, mode='val', audio_path=audio_path)
         model = getattr(models, args.model)(args.scale, pretrained=True, num_class=(97, 300)).to(device)
+        model.audio.load_state_dict(torch.load('A_0.16073199.pth'), strict=False)
+        model.image.load_state_dict(torch.load('V_0.30203858.pth'), strict=False)
         if args.test:
-            model.load_state_dict(torch.load('MBT_base_0.35812235.pth'))
+            model.load_state_dict(torch.load('MBT_small_0.33567417.pth'))
         train(model, train_dataset, val_dataset, args.test, test_epickitchen)
     
 

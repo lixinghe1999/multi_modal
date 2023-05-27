@@ -1,8 +1,7 @@
 '''
 Inference-only model
 '''
-from models.vit_model import AudioTransformerDiffPruning, VisionTransformerDiffPruning, PredictorLG,\
-    batch_index_select
+from models.vit_model import AudioTransformer, VisionTransformer, PredictorLG, batch_index_select
 from torch.cuda.amp import autocast
 import torch
 import torch.nn as nn

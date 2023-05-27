@@ -85,7 +85,7 @@ class GroupScale(object):
     interpolation: Default: PIL.Image.BILINEAR
     """
 
-    def __init__(self, size, interpolation=Image.BILINEAR):
+    def __init__(self, size, interpolation=torchvision.transforms.InterpolationMode.BILINEAR):
         self.worker = torchvision.transforms.Resize(size, interpolation)
 
     def __call__(self, img_group):
@@ -138,7 +138,7 @@ class GroupMultiScaleCrop(object):
         self.more_fix_crop = more_fix_crop
         self.input_size = input_size if not isinstance(input_size, int) else [input_size, input_size]
         self.interpolation = Image.BILINEAR
-
+        # self.interpolation = torchvision.transforms.InterpolationMode.BILINEAR
     def __call__(self, img_group):
 
         im_size = img_group[0].size
@@ -210,7 +210,7 @@ class GroupRandomSizedCrop(object):
     size: size of the smaller edge
     interpolation: Default: PIL.Image.BILINEAR
     """
-    def __init__(self, size, interpolation=Image.BILINEAR):
+    def __init__(self, size, interpolation=torchvision.transforms.InterpolationMode.BILINEAR):
         self.size = size
         self.interpolation = interpolation
 

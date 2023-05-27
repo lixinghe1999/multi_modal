@@ -271,7 +271,7 @@ class PredictorLG(nn.Module):
         return self.out_conv(x)
 
 
-class VisionTransformerDiffPruning(nn.Module):
+class VisionTransformer(nn.Module):
     """ Vision Transformer
 
     A PyTorch impl of : `An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale`  -
@@ -280,7 +280,7 @@ class VisionTransformerDiffPruning(nn.Module):
     def __init__(self, img_size=224, patch_size=16, in_chans=3, num_classes=1000, embed_dim=768, depth=12,
                  num_heads=12, mlp_ratio=4., qkv_bias=True, qk_scale=None, representation_size=None,
                  drop_rate=0., attn_drop_rate=0., drop_path_rate=0., hybrid_backbone=None, norm_layer=None,
-                 pruning_loc=None, token_ratio=None, distill=False):
+                distill=False):
         """
         Args:
             img_size (int, tuple): input image size
@@ -338,16 +338,15 @@ class VisionTransformerDiffPruning(nn.Module):
             self.pre_logits = nn.Identity()
 
         # Classifier head
-        self.head = nn.Linear(self.num_features, num_classes) if num_classes > 0 else nn.Identity()
-
-        predictor_list = [PredictorLG(embed_dim) for _ in range(len(pruning_loc))]
-
-        self.score_predictor = nn.ModuleList(predictor_list)
-
+        # self.head = nn.Linear(self.num_features, num_classes) if num_classes > 0 else nn.Identity()
+        if isinstance(num_classes, int):
+            self.head = nn.Linear(self.embed_dim, num_classes)
+            self.multi_head = False
+        else:
+            self.head_verb = nn.Linear(self.embed_dim, num_classes[0])
+            self.head_noun = nn.Linear(self.embed_dim, num_classes[1])
+            self.multi_head = True
         self.distill = distill
-
-        self.pruning_loc = pruning_loc
-        self.token_ratio = token_ratio
 
 
     @torch.jit.ignore
@@ -372,149 +371,20 @@ class VisionTransformerDiffPruning(nn.Module):
     @autocast()
     def forward(self, x):
         B, x = self.preprocess(x)
-        p_count = 0
-        out_pred_prob = []
-        init_n = 14 * 14
-        prev_decision = torch.ones(B, init_n, 1, dtype=x.dtype, device=x.device)
-        policy = torch.ones(B, init_n + 1, 1, dtype=x.dtype, device=x.device)
-        for i, blk in enumerate(self.blocks):
-            if i in self.pruning_loc:
-                spatial_x = x[:, 1:]
-                pred_score = self.score_predictor[p_count](spatial_x, prev_decision).reshape(B, -1, 2)
-                if self.training:
-                    hard_keep_decision = F.gumbel_softmax(pred_score, hard=True)[:, :, 0:1] * prev_decision
-                    out_pred_prob.append(hard_keep_decision.reshape(B, init_n))
-                    cls_policy = torch.ones(B, 1, 1, dtype=hard_keep_decision.dtype, device=hard_keep_decision.device)
-                    policy = torch.cat([cls_policy, hard_keep_decision], dim=1)
-                    x = blk(x, policy=policy)
-                    prev_decision = hard_keep_decision
-                else:
-                    score = pred_score[:,:,0]
-                    num_keep_node = int(init_n * self.token_ratio[p_count])
-                    keep_policy = torch.argsort(score, dim=1, descending=True)[:, :num_keep_node]
-                    cls_policy = torch.zeros(B, 1, dtype=keep_policy.dtype, device=keep_policy.device)
-                    now_policy = torch.cat([cls_policy, keep_policy + 1], dim=1)
-                    x = batch_index_select(x, now_policy)
-                    prev_decision = batch_index_select(prev_decision, keep_policy)
-                    x = blk(x)
-                p_count += 1
-            else:
-                if self.training:
-                    x = blk(x, policy)
-                else:
-                    x = blk(x)
-
-        x = self.norm(x)
-        features = x[:, 1:]
-        x = x[:, 0]
-        x = self.pre_logits(x)
-        x = self.head(x)
-        if self.training:
-            if self.distill:
-                return x, features, prev_decision.detach(), out_pred_prob
-            else:
-                return x, out_pred_prob
-        else:
-            return x
-class VisionTransformerTeacher(nn.Module):
-    """ Vision Transformer
-
-    A PyTorch impl of : `An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale`  -
-        https://arxiv.org/abs/2010.11929
-    """
-    def __init__(self, img_size=224, patch_size=16, in_chans=3, num_classes=1000, embed_dim=768, depth=12,
-                 num_heads=12, mlp_ratio=4., qkv_bias=True, qk_scale=None, representation_size=None,
-                 drop_rate=0., attn_drop_rate=0., drop_path_rate=0., hybrid_backbone=None, norm_layer=None):
-        """
-        Args:
-            img_size (int, tuple): input image size
-            patch_size (int, tuple): patch size
-            in_chans (int): number of input channels
-            num_classes (int): number of classes for classification head
-            embed_dim (int): embedding dimension
-            depth (int): depth of transformer
-            num_heads (int): number of attention heads
-            mlp_ratio (int): ratio of mlp hidden dim to embedding dim
-            qkv_bias (bool): enable bias for qkv if True
-            qk_scale (float): override default qk scale of head_dim ** -0.5 if set
-            representation_size (Optional[int]): enable and set representation layer (pre-logits) to this value if set
-            drop_rate (float): dropout rate
-            attn_drop_rate (float): attention dropout rate
-            drop_path_rate (float): stochastic depth rate
-            hybrid_backbone (nn.Module): CNN backbone to use in-place of PatchEmbed module
-            norm_layer: (nn.Module): normalization layer
-        """
-        super().__init__()
-
-        # print('## diff vit pruning method')
-        self.num_classes = num_classes
-        self.num_features = self.embed_dim = embed_dim  # num_features for consistency with other models
-        norm_layer = norm_layer or partial(nn.LayerNorm, eps=1e-6)
-
-        if hybrid_backbone is not None:
-            self.patch_embed = HybridEmbed(
-                hybrid_backbone, img_size=img_size, in_chans=in_chans, embed_dim=embed_dim)
-        else:
-            self.patch_embed = PatchEmbed(
-                img_size=img_size, patch_size=patch_size, in_chans=in_chans, embed_dim=embed_dim)
-        num_patches = self.patch_embed.num_patches
-
-        self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
-        self.pos_embed = nn.Parameter(torch.zeros(1, num_patches + 1, embed_dim))
-        self.pos_drop = nn.Dropout(p=drop_rate)
-
-        dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)]  # stochastic depth decay rule
-        self.blocks = nn.ModuleList([
-            Block(
-                dim=embed_dim, num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias, qk_scale=qk_scale,
-                drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[i], norm_layer=norm_layer)
-            for i in range(depth)])
-        self.norm = norm_layer(embed_dim)
-
-        # Representation layer
-        if representation_size:
-            self.num_features = representation_size
-            self.pre_logits = nn.Sequential(OrderedDict([
-                ('fc', nn.Linear(embed_dim, representation_size)),
-                ('act', nn.Tanh())
-            ]))
-        else:
-            self.pre_logits = nn.Identity()
-
-        # Classifier head
-        self.head = nn.Linear(self.num_features, num_classes) if num_classes > 0 else nn.Identity()
-
-    @torch.jit.ignore
-    def no_weight_decay(self):
-        return {'pos_embed', 'cls_token'}
-
-    def get_classifier(self):
-        return self.head
-
-    def reset_classifier(self, num_classes, global_pool=''):
-        self.num_classes = num_classes
-        self.head = nn.Linear(self.embed_dim, num_classes) if num_classes > 0 else nn.Identity()
-
-    @autocast()
-    def forward(self, x):
-        B = x.shape[0]
-        x = self.patch_embed(x)
-
-        cls_tokens = self.cls_token.expand(B, -1, -1)  # stole cls_tokens impl from Phil Wang, thanks
-        x = torch.cat((cls_tokens, x), dim=1)
-        x = x + self.pos_embed
-        x = self.pos_drop(x)
-
         for i, blk in enumerate(self.blocks):
             x = blk(x)
+        x = self.norm(x)
+        x = x[:, 0]
+        x = self.pre_logits(x)
+        if self.multi_head:
+            verb = self.head_verb(x)
+            noun = self.head_noun(x)
+            return {'verb': verb, 'noun': noun}
+        else:
+            x = self.head(x)
+            return x
 
-        feature = self.norm(x)
-        cls = feature[:, 0]
-        tokens = feature[:, 1:]
-        cls = self.pre_logits(cls)
-        cls = self.head(cls)
-        return cls, tokens
-class AudioTransformerDiffPruning(VisionTransformerDiffPruning):
+class AudioTransformer(VisionTransformer):
     """
     The AST model. completely inherit from vision model
     :param label_dim: the label dimension, i.e., the number of total classes, it is 527 for AudioSet, 50 for ESC-50, and 35 for speechcommands v2-35
@@ -529,7 +399,7 @@ class AudioTransformerDiffPruning(VisionTransformerDiffPruning):
     def __init__(self, config, pretrained=None, label_dim=309, fstride=16, tstride=16, input_fdim=256,
                  input_tdim=256, ): # 128, 384 for vggsound
 
-        super(AudioTransformerDiffPruning, self).__init__(**config)
+        super(AudioTransformer, self).__init__(**config)
 
         self.original_num_patches = self.patch_embed.num_patches
         self.oringal_hw = int(self.original_num_patches ** 0.5)
@@ -585,53 +455,22 @@ class AudioTransformerDiffPruning(VisionTransformerDiffPruning):
         t_dim = test_out.shape[3]
         return f_dim, t_dim
 
-    @autocast()
-    def forward(self, x):
-        """
-        :param x: the input spectrogram, expected shape: (batch_size, time_frame_num, frequency_bins), e.g., (12, 1024, 128)
-        :return: prediction
-        """
-        B, x = self.preprocess(x.unsqueeze(1))
-        p_count = 0
-        out_pred_prob = []
-        prev_decision = torch.ones(B, self.num_patches, 1, dtype=x.dtype, device=x.device)
-        policy = torch.ones(B, self.num_patches + 1, 1, dtype=x.dtype, device=x.device)
-        for i, blk in enumerate(self.blocks):
-            if i in self.pruning_loc:
-                spatial_x = x[:, 1:]
-                pred_score = self.score_predictor[p_count](spatial_x, prev_decision).reshape(B, -1, 2)
-                if self.training:
-                    hard_keep_decision = F.gumbel_softmax(pred_score, hard=True)[:, :, 0:1] * prev_decision
-                    out_pred_prob.append(hard_keep_decision.reshape(B, self.num_patches))
-                    cls_policy = torch.ones(B, 1, 1, dtype=hard_keep_decision.dtype, device=hard_keep_decision.device)
-                    policy = torch.cat([cls_policy, hard_keep_decision], dim=1)
-                    x = blk(x, policy=policy)
-                    prev_decision = hard_keep_decision
-                else:
-                    score = pred_score[:, :, 0]
-                    num_keep_node = int(self.num_patches * self.token_ratio[p_count])
-                    keep_policy = torch.argsort(score, dim=1, descending=True)[:, :num_keep_node]
-                    cls_policy = torch.zeros(B, 1, dtype=keep_policy.dtype, device=keep_policy.device)
-                    now_policy = torch.cat([cls_policy, keep_policy + 1], dim=1)
-                    x = batch_index_select(x, now_policy)
-                    prev_decision = batch_index_select(prev_decision, keep_policy)
-                    x = blk(x)
-                p_count += 1
-            else:
-                if self.training:
-                    x = blk(x, policy)
-                else:
-                    x = blk(x)
+    # @autocast()
+    # def forward(self, x):
+    #     """
+    #     :param x: the input spectrogram, expected shape: (batch_size, time_frame_num, frequency_bins), e.g., (12, 1024, 128)
+    #     :return: prediction
+    #     """
+    #     B, x = self.preprocess(x)
+    #     out_pred_prob = []
+    #     for i, blk in enumerate(self.blocks):
+    #         x = blk(x)
 
-        x = self.norm(x)
-        features = x[:, 1:]
-        x = x[:, 0]
-        x = self.pre_logits(x)
-        x = self.head(x)
-        if self.training:
-            if self.distill:
-                return x, features, prev_decision.detach(), out_pred_prob
-            else:
-                return x, out_pred_prob
-        else:
-            return x
+    #     x = self.norm(x)
+    #     x = x[:, 0]
+    #     x = self.pre_logits(x)
+    #     x = self.head(x)
+    #     if self.training:
+    #         return x, out_pred_prob
+    #     else:
+    #         return x

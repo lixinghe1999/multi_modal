@@ -6,18 +6,24 @@ import torch.nn.functional as F
 import time
 
 class DynToken(nn.Module):
-    def __init__(self, distill=False, pruning_loc=(), token_ratio=(), backbone='base', scale='base', pretrained=False):
+    def __init__(self, distill=False, pruning_loc=(), token_ratio=(), backbone='base', scale='base', pretrained=False, num_class=309):
         super(DynToken, self).__init__()
 
-        backbone = backbone(scale, pretrained)
-        module_list = ['audio', 'image', 'embed_dim']
+        backbone = backbone(scale, pretrained, num_class)
+        module_list = ['audio', 'image', 'embed_dim', 'head', 'multi_head', 'head_verb', 'head_noun']
         for m in module_list:
-            setattr(self, m, getattr(backbone, m))
+            try:
+                setattr(self, m, getattr(backbone, m))
+            except:
+                print('Careful, do not have', m)
+                pass
         self.len_blocks = len(self.audio.blocks)
-    
-        self.num_patches = self.audio.num_patches + 14 * 14
+        
+        if isinstance(num_class, int):
+            self.num_patches = self.audio.num_patches + 14 * 14
+        else:
+            self.num_patches = (self.audio.num_patches + 14 * 14)
 
-        self.head = nn.Linear(self.embed_dim * 2, 309)
         if len(pruning_loc) > 0:
             predictor_list = [PredictorLG(self.embed_dim) for _ in range(len(pruning_loc))]
             self.score_predictor = nn.ModuleList(predictor_list)
@@ -26,19 +32,33 @@ class DynToken(nn.Module):
         self.pruning_loc = pruning_loc
         self.token_ratio = token_ratio
 
-    def output(self, audio, image):
+
+    def output(self, audio, image, B):
         audio = self.audio.norm(audio)
         image = self.image.norm(image)
-        features = torch.cat([audio[:, 1:], image[:, 1:]], dim=1)
-        x = torch.cat([audio[:, 0], image[:, 0]], dim=1)
-        x = torch.flatten(x, start_dim=1)
-        x = self.head(x)
+        if self.multi_head:
+            features = torch.cat([audio[:, 1:], image[:, 1:]], dim=1)
+            x = torch.cat([audio[:, 0], image[:, 0]], dim=1)
+            verb = self.head_verb(x)
+            noun = self.head_noun(x)
+            return {'verb': verb, 'noun': noun}, features
+        else:
+            features = torch.cat([audio[:, 1:], image[:, 1:]], dim=1)
+            x = torch.cat([audio[:, 0], image[:, 0]], dim=1)
+            x = torch.flatten(x, start_dim=1)
+            x = self.head(x)
         return x, features
 
     @autocast()
     def forward(self, audio, image):
-        B, audio = self.audio.preprocess(audio.unsqueeze(1))
-        B, image = self.image.preprocess(image)
+        B = audio.shape[0]
+        if self.multi_head:
+            audio = audio.view(-1, 1, 256, 256)
+            image = image.view(-1, 3, 224, 224)
+        _, audio = self.audio.preprocess(audio)
+        _, image = self.image.preprocess(image) 
+        audio = audio.view(B, -1, self.audio.embed_dim)
+        image = image.view(B, -1, self.image.embed_dim)
         p_count = 0
         out_pred_prob = []
         early_output = []
@@ -64,10 +84,10 @@ class DynToken(nn.Module):
                     image = blk_i(image, policy=policy_i)
                     prev_decision = hard_keep_decision
                     policy = torch.cat([policy_a, policy_i], dim=1)
-                    early_output.append(self.output(audio, image)[0])
+                    early_output.append(self.output(audio, image, B)[0])
                 else:
                     score = pred_score[:, :, 0]
-                    values, indices = torch.sort(score, dim=1, descending=False)
+                    _, indices = torch.sort(score, dim=1, descending=False)
                     # TopK selection
                     num_keep_node = int(self.num_patches * self.token_ratio[p_count])
                     keep_policy = indices[:, -num_keep_node:]
@@ -100,15 +120,16 @@ class DynToken(nn.Module):
                 else:
                     audio = blk_a(audio)
                     image = blk_i(image)
-        r = (audio.shape[1] / (audio.shape[1] + image.shape[1]))
-        self.ratio = [ r, 1 - r, abs(2 * r - 1)]
-        x, features = self.output(audio, image)
+        
+        x, features = self.output(audio, image, B)
         if self.training:
             if self.distill:
                 return x, features, prev_decision.detach(), out_pred_prob, early_output
             else:
                 return x, out_pred_prob
         else:
+            r = (audio.shape[1] / (audio.shape[1] + image.shape[1]))
+            self.ratio = [r, 1 - r, abs(2 * r - 1)]
             if self.distill:
                 return x, features
             else:

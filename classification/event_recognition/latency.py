@@ -1,5 +1,7 @@
 import torch
-from models.dynamicvit_legacy import AVnet_Dynamic
+from models.dynamicvit_legacy import DynToken
+from models.apply_merge import apply_patch
+import models
 import time
 import argparse
 import numpy as np
@@ -28,7 +30,8 @@ def calc_flops(model, input, show_details=False, ratios=None):
         flops1 = fca1.total()
         if show_details:
             print(fca1.by_module())
-        print("#### GFLOPs: {} for ratio {}".format(flops1 / 1e9, ratios))
+        print("#### GFLOPs: {}".format(flops1 / 1e9))
+        # print(parameter_count_table(model))
     return flops1 / 1e9
 
 @torch.no_grad()
@@ -36,12 +39,12 @@ def throughput(model, images):
     model.eval()
     batch_size = images[0].shape[0]
     print('start warm-up')
-    for i in tqdm(range(30)):
+    for i in range(30):
         model(*images)
     print('finish warm-up')
     torch.cuda.synchronize()
     tic1 = time.time()
-    for i in tqdm(range(30)):
+    for i in range(100):
         model(*images)
     torch.cuda.synchronize()
     tic2 = time.time()
@@ -50,27 +53,31 @@ def throughput(model, images):
     print('memory:', torch.cuda.max_memory_allocated() / MB)
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-t', '--task', default='dynamic')
+    parser.add_argument('-m', '--model', default='MBT')
+    parser.add_argument('-s', '--scale', default='small')
     parser.add_argument('-d', '--device', default='cuda')
     parser.add_argument('-b', '--batch', default=1, type=int)
-    parser.add_argument('-e', '--exits', nargs='+', default='11 11')
     parser.add_argument('-l', '--locations', nargs='+', default='3 6 9')
-    parser.add_argument('-r', '--rate', default=0.7, type=float)
+    parser.add_argument('-r', '--rate', default=1, type=float)
     args = parser.parse_args()
-    task = args.task
     device = torch.device(args.device)
-    exits = torch.tensor([int(i) for i in args.exits.split()])
     pruning_loc = [int(i) for i in args.locations.split()]
     base_rate = args.rate
     token_ratio = [base_rate, base_rate ** 2, base_rate ** 3]
     print(args)
-    audio = torch.randn(args.batch, 384, 128).to(device, non_blocking=True)
+    audio = torch.randn(args.batch, 1, 256, 256).to(device, non_blocking=True)
     image = torch.randn(args.batch, 3, 224, 224).to(device, non_blocking=True)
 
-    model = AVnet_Dynamic(pruning_loc=pruning_loc, token_ratio=token_ratio, pretrained=False).to(device)
+    
+    model = DynToken(pruning_loc=pruning_loc, token_ratio=token_ratio, distill=True, backbone=getattr(models, args.model), scale=args.scale, pretrained=True, num_class=(97, 300)).to(device)
+    # apply_patch(model.audio)
+    # apply_patch(model.image)
+    # model.audio.r = 8
+    # model.image.r = 8
     model.eval()
     throughput(model, (audio, image))
     # calc_flops(model, (audio, image), show_details=False)
+
     # torch.save(model.state_dict(), 'dynamic_token.pth')
     # torch.onnx.export(model, (audio, image), 'dynamic.onnx', input_names=['input_1', 'input_2'],
     #                  output_names=['output'], export_params=True)

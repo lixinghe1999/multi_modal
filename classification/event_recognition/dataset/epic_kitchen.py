@@ -103,7 +103,7 @@ def get_train_transform(modality=['RGB', 'Spec', 'Flow'], test_crops=10, scale_s
 class EPICKitchen(data.Dataset):
     def __init__(self, dataset='epic-kitchens-100', list_file=pd.read_pickle('EPIC_val.pkl'),
                  new_length={'RGB': 1, 'Flow': 1, 'Spec': 1}, modality= ['RGB', 'Spec', 'Flow'], image_tmpl={'RGB': 'frame_{:010d}.jpg', 'Flow': 'frame_{:010d}.jpg'},  visual_path='../EPIC-KITCHENS', audio_path='./audio_dict.pkl',
-                 resampling_rate=24000, num_segments=3, transform=get_test_transform(),
+                 resampling_rate=24000, num_segments=1, transform=get_test_transform(),
                  mode='test', use_audio_dict=True):
         self.dataset = dataset
         if audio_path is not None:
