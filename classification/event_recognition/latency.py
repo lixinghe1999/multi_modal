@@ -70,7 +70,7 @@ if __name__ == "__main__":
   
     if args.exits is not None:
         print('measure the early-exits latency')
-        model = Early_Exit(getattr(models, args.model), args.scale, pretrained=True, num_class=(97, 300)).to(device)
+        model = Early_Exit(getattr(models, args.model), args.scale, pretrained=False, num_class=(97, 300)).to(device)
         model.eval()
         throughput(model, (audio, image, args.exits))
         calc_flops(model, (audio, image, args.exits), show_details=False)
@@ -80,7 +80,7 @@ if __name__ == "__main__":
         # pruning_loc = ()
         token_ratio = args.rate
     
-        model = DynToken(pruning_loc=pruning_loc, token_ratio=token_ratio, distill=True, backbone=getattr(models, args.model), scale=args.scale, pretrained=True, num_class=(97, 300)).to(device)
+        model = DynToken(pruning_loc=pruning_loc, token_ratio=token_ratio, distill=True, backbone=getattr(models, args.model), scale=args.scale, pretrained=False, num_class=(97, 300)).to(device)
         model.apply_merge(r=12)
         model.eval()
         throughput(model, (audio, image))

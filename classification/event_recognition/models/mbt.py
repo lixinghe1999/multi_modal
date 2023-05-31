@@ -11,18 +11,19 @@ class MBT(nn.Module):
     def __init__(self, scale='base', pretrained=True, num_class=309, modality=['audio', 'image']):
         super(MBT, self).__init__()
         if scale == 'base':
-            pretrained_weight = torch.load('pretrained/deit_base_patch16_224.pth')['model']
+            pretrained_weight = 'pretrained/deit_base_patch16_224.pth'
             config = dict(patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True)
             self.embed_dim = 768
         elif scale == 'small':
-            pretrained_weight = torch.load('pretrained/deit_small_patch16_224.pth')['model']
+            pretrained_weight = 'pretrained/deit_small_patch16_224.pth'
             config = dict(patch_size=16, embed_dim=384, depth=12, num_heads=6, mlp_ratio=4, qkv_bias=True)
             self.embed_dim = 384
         else:
-            pretrained_weight = torch.load('pretrained/deit_tiny_patch16_224.pth')['model']
+            pretrained_weight = 'pretrained/deit_tiny_patch16_224.pth'
             config = dict(patch_size=16, embed_dim=192, depth=12, num_heads=3, mlp_ratio=4, qkv_bias=True)
             self.embed_dim = 192
         if pretrained:
+            pretrained_weight = torch.load(pretrained_weight)['model']
             config['pretrained'] = pretrained_weight
         if 'audio' in modality:
             self.audio = AudioTransformer(config)
