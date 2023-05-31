@@ -57,7 +57,7 @@ if __name__ == "__main__":
     parser.add_argument('-m', '--model', default='MBT')
     parser.add_argument('-s', '--scale', default='base')
     parser.add_argument('-c', '--cuda', default=1, type=int)
-    parser.add_argument('-b', '--batch', default=1, type=int)
+    parser.add_argument('-f', '--flops', default=True, type=bool)
     parser.add_argument('-l', '--locations', nargs='+', default=[], type=int)
     parser.add_argument('-r', '--rate', default=0.6, type=float)
 
@@ -86,4 +86,5 @@ if __name__ == "__main__":
         model.apply_merge(r=args.merge)
         model.eval()
         throughput(model, (audio, image))
-        calc_flops(model, (audio, image), show_details=False)
+        if args.flops:
+            calc_flops(model, (audio, image), show_details=False)
