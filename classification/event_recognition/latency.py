@@ -57,7 +57,7 @@ if __name__ == "__main__":
     parser.add_argument('-m', '--model', default='MBT')
     parser.add_argument('-s', '--scale', default='base')
     parser.add_argument('-c', '--cuda', default=1, type=int)
-    parser.add_argument('-f', '--flops', default=True, type=bool)
+    parser.add_argument('-f', '--flops', action='store_true', default=False)
     parser.add_argument('-l', '--locations', nargs='+', default=[], type=int)
     parser.add_argument('-r', '--rate', default=0.6, type=float)
 
