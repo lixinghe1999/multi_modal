@@ -37,6 +37,7 @@ def calc_flops(model, input, show_details=False, ratios=None):
 @torch.no_grad()
 def throughput(model, images):
     model.eval()
+    num_iterations = 100
     batch_size = images[0].shape[0]
     print('start warm-up')
     for i in range(30):
@@ -44,11 +45,11 @@ def throughput(model, images):
     print('finish warm-up')
     torch.cuda.synchronize()
     tic1 = time.time()
-    for i in range(100):
+    for i in range(num_iterations):
         model(*images)
     torch.cuda.synchronize()
     tic2 = time.time()
-    print(f"batch_size {batch_size} throughput {30 * batch_size / (tic2 - tic1)}")
+    print(f"batch_size {batch_size} throughput {num_iterations * batch_size / (tic2 - tic1)}")
     MB = 1024.0 * 1024.0
     print('memory:', torch.cuda.max_memory_allocated() / MB)
 if __name__ == "__main__":
