@@ -57,7 +57,7 @@ if __name__ == "__main__":
     parser.add_argument('-s', '--scale', default='base')
     parser.add_argument('-c', '--cuda', default=1, type=int)
     parser.add_argument('-b', '--batch', default=1, type=int)
-    parser.add_argument('-l', '--locations', nargs='+', default='3 6 9')
+    parser.add_argument('-l', '--locations', nargs='+', default=[], type=int)
     parser.add_argument('-r', '--rate', default=0.6, type=float)
 
     parser.add_argument('-merge', '--merge', default=12, type=int)
@@ -77,7 +77,7 @@ if __name__ == "__main__":
         calc_flops(model, (audio, image, args.exits), show_details=False)
     else:
         print('measure the dynamic token latency')
-        pruning_loc = [int(i) for i in args.locations.split()]
+        pruning_loc = args.locations
         # pruning_loc = ()
         token_ratio = args.rate
     
