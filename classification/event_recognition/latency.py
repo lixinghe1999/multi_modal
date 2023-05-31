@@ -64,7 +64,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     print(args)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    torch.cuda.set_device(args.cuda)
+    #torch.cuda.set_device(args.cuda)
     audio = torch.randn(args.batch, 1, 256, 256).to(device, non_blocking=True)
     image = torch.randn(args.batch, 3, 224, 224).to(device, non_blocking=True)
   
