@@ -97,23 +97,26 @@ if __name__ == "__main__":
     batch_size = args.batch
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     torch.cuda.set_device(args.cuda)
-
+    if args.dataset == 'EPICKitchen':
+        checkpoint_loc = 'checkpoints_epic_kitchen/'
+    else:
+        checkpoint_loc = 'checkpoints_vggsound/'
    
     if args.dataset == 'VGGSound':
-        config = dict(patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True, num_classes=309)
-        embed_dim = 768
         pretrained_weight = torch.load('pretrained/deit_base_patch16_224.pth')['model']
+        config = dict(patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True, num_classes=309, pretrained=pretrained_weight)
+        embed_dim = 768
+        
         if args.modal == 'A':
-            model = AudioTransformer(config, pretrained=pretrained_weight, input_fdim=128, input_tdim=384).to(device)
+            model = AudioTransformer(config, input_fdim=128, input_tdim=384).to(device)
         else:
             model = VisionTransformer(**config).to(device)
-            model.load_state_dict(pretrained_weight, strict=False)
 
         if args.test: 
             if args.modal == 'A':
-                model.load_state_dict(torch.load('checkpoints/vanilla_A_6_0.5303089942924621.pth'))
+                model.load_state_dict(torch.load(checkpoint_loc + 'A_0.5118207.pth'))
             else:
-                model.load_state_dict(torch.load('checkpoints/vanilla_V_7_0.5041330446762449.pth'))
+                model.load_state_dict(torch.load(checkpoint_loc + 'V_0.49591964.pth'))
             print('loaded the pretrained model')
         full_dataset = getattr(dataset, args.dataset)()
         len_train = int(len(dataset) * 0.8)
@@ -121,14 +124,15 @@ if __name__ == "__main__":
         train_dataset, test_dataset = torch.utils.data.random_split(dataset, [len_train, len_test], generator=torch.Generator().manual_seed(42))
         train(model, train_dataset, test_dataset, args.test, test_vggsound)
     else:
-        config = dict(patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True, num_classes=(97, 300))
-        embed_dim = 768
         pretrained_weight = torch.load('pretrained/deit_base_patch16_224.pth')['model']
+        config = dict(patch_size=16, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True, num_classes=(97, 300), pretrained=pretrained_weight)
+        embed_dim = 768
         if args.modal == 'A':
-            model = AudioTransformer(config, pretrained=pretrained_weight, input_fdim=256, input_tdim=256).to(device)
-        else:
+            model = AudioTransformer(config, input_fdim=256, input_tdim=256).to(device)
+        elif args.modal == 'V':
             model = VisionTransformer(**config).to(device)
-            model.load_state_dict(pretrained_weight, strict=False)
+        else:
+            model = VisionTransformer(**config, in_chans=2).to(device)
         import h5py
         print('pre-load audio dict.....')
         audio_path = h5py.File('../split_EPIC_audio.hdf5', 'r')
@@ -138,4 +142,10 @@ if __name__ == "__main__":
                                                  transform=train_transform, mode='train', audio_path=audio_path)
         val_dataset = getattr(dataset, args.dataset)(list_file=pd.read_pickle('EPIC_val.pkl'),               
                                                  transform=val_transform, mode='val', audio_path=audio_path)
+        if args.test:
+            if args.modal == 'A':
+                model.load_state_dict(torch.load(checkpoint_loc + 'A_0.16073199.pth'))
+            else:
+                model.load_state_dict(torch.load(checkpoint_loc + 'V_0.30203858.pth'))
+            print('loaded the pretrained model')
         train(model, train_dataset, val_dataset, args.test, test_epickitchen)

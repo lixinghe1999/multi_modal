@@ -14,7 +14,7 @@ from typing import Tuple
 import torch
 from .vit_model import Attention, Block, VisionTransformer
 
-from .merge import bipartite_soft_matching, merge_source, merge_wavg, parse_r
+from .merge import bipartite_soft_matching, merge_source, merge_wavg, parse_r, fast_matching
 
 
 class ToMeBlock(Block):
@@ -39,6 +39,12 @@ class ToMeBlock(Block):
         r = self._tome_info["r"]
         if r > 0:
             # Apply ToMe here
+            # merge, _ = fast_matching(
+            #     metric,
+            #     r,
+            #     self._tome_info["class_token"],
+            #     self._tome_info["distill_token"],
+            # )
             merge, _ = bipartite_soft_matching(
                 metric,
                 r,
@@ -69,7 +75,7 @@ class ToMeAttention(Attention):
         B, N, C = x.shape
         qkv = (
             self.qkv(x)
-            .reshape(B, N, 3, self.num_heads, C // self.num_heads)
+            .reshape(B, N, 3, self.num_heads, torch.div(C, self.num_heads, rounding_mode='floor'))
             .permute(2, 0, 3, 1, 4)
         )
         q, k, v = (
@@ -92,8 +98,8 @@ class ToMeAttention(Attention):
         x = self.proj_drop(x)
 
         # Return k as well here
-        return x, k.mean(1)
-
+        # return x, k.mean(1)
+        return x, attn.mean(1)
 
 def make_tome_class(transformer_class):
     class ToMeVisionTransformer(transformer_class):

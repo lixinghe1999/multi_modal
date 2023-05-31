@@ -1,6 +1,6 @@
 import torch
 from models.dynamicvit_legacy import DynToken
-from models.apply_merge import apply_patch
+from models.early_exit import Early_Exit
 import models
 import time
 import argparse
@@ -54,29 +54,37 @@ def throughput(model, images):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-m', '--model', default='MBT')
-    parser.add_argument('-s', '--scale', default='small')
-    parser.add_argument('-d', '--device', default='cuda')
+    parser.add_argument('-s', '--scale', default='base')
+    parser.add_argument('-c', '--cuda', default=1, type=int)
     parser.add_argument('-b', '--batch', default=1, type=int)
     parser.add_argument('-l', '--locations', nargs='+', default='3 6 9')
-    parser.add_argument('-r', '--rate', default=1, type=float)
+    parser.add_argument('-r', '--rate', default=0.6, type=float)
+
+    parser.add_argument('-e', '--exits', default=None, type=int)
     args = parser.parse_args()
-    device = torch.device(args.device)
-    pruning_loc = [int(i) for i in args.locations.split()]
-    base_rate = args.rate
-    token_ratio = [base_rate, base_rate ** 2, base_rate ** 3]
     print(args)
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    torch.cuda.set_device(args.cuda)
     audio = torch.randn(args.batch, 1, 256, 256).to(device, non_blocking=True)
     image = torch.randn(args.batch, 3, 224, 224).to(device, non_blocking=True)
-
+  
+    if args.exits is not None:
+        print('measure the early-exits latency')
+        model = Early_Exit(getattr(models, args.model), args.scale, pretrained=True, num_class=(97, 300)).to(device)
+        model.eval()
+        throughput(model, (audio, image, args.exits))
+        calc_flops(model, (audio, image, args.exits), show_details=False)
+    else:
+        print('measure the dynamic token latency')
+        pruning_loc = [int(i) for i in args.locations.split()]
+        # pruning_loc = ()
+        token_ratio = args.rate
     
-    model = DynToken(pruning_loc=pruning_loc, token_ratio=token_ratio, distill=True, backbone=getattr(models, args.model), scale=args.scale, pretrained=True, num_class=(97, 300)).to(device)
-    # apply_patch(model.audio)
-    # apply_patch(model.image)
-    # model.audio.r = 8
-    # model.image.r = 8
-    model.eval()
-    throughput(model, (audio, image))
-    # calc_flops(model, (audio, image), show_details=False)
+        model = DynToken(pruning_loc=pruning_loc, token_ratio=token_ratio, distill=True, backbone=getattr(models, args.model), scale=args.scale, pretrained=True, num_class=(97, 300)).to(device)
+        model.apply_merge(r=12)
+        model.eval()
+        throughput(model, (audio, image))
+        calc_flops(model, (audio, image), show_details=False)
 
     # torch.save(model.state_dict(), 'dynamic_token.pth')
     # torch.onnx.export(model, (audio, image), 'dynamic.onnx', input_names=['input_1', 'input_2'],

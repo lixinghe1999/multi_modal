@@ -257,16 +257,19 @@ class PredictorLG(nn.Module):
             nn.Linear(embed_dim // 2, embed_dim // 4),
             nn.GELU(),
             nn.Linear(embed_dim // 4, 2),
-            nn.LogSoftmax(dim=-1)
+            nn.Softmax(dim=-1)
         )
 
-    def forward(self, x, policy):
+    def forward(self, x, policy=None):
 
         x = self.in_conv(x)
         B, N, C = x.size()
         half_C = torch.div(C, 2, rounding_mode='trunc')
         local_x = x[:,:, :half_C]
-        global_x = (x[:,:, half_C:] * policy).sum(dim=1, keepdim=True) / torch.sum(policy, dim=1, keepdim=True)
+        if policy is None:
+            global_x = x[:,:, half_C:].mean(dim=1, keepdim=True)   
+        else:
+            global_x = (x[:,:, half_C:] * policy).sum(dim=1, keepdim=True) / torch.sum(policy, dim=1, keepdim=True)        
         x = torch.cat([local_x, global_x.expand(B, N, half_C)], dim=-1)
         return self.out_conv(x)
 
@@ -280,7 +283,7 @@ class VisionTransformer(nn.Module):
     def __init__(self, img_size=224, patch_size=16, in_chans=3, num_classes=1000, embed_dim=768, depth=12,
                  num_heads=12, mlp_ratio=4., qkv_bias=True, qk_scale=None, representation_size=None,
                  drop_rate=0., attn_drop_rate=0., drop_path_rate=0., hybrid_backbone=None, norm_layer=None,
-                distill=False):
+                distill=False, pretrained=None):
         """
         Args:
             img_size (int, tuple): input image size
@@ -299,6 +302,8 @@ class VisionTransformer(nn.Module):
             drop_path_rate (float): stochastic depth rate
             hybrid_backbone (nn.Module): CNN backbone to use in-place of PatchEmbed module
             norm_layer: (nn.Module): normalization layer
+            distill (bool): if use distillation token
+            pretrained (str): pretrained model path
         """
         super().__init__()
 
@@ -306,17 +311,18 @@ class VisionTransformer(nn.Module):
         self.num_classes = num_classes
         self.num_features = self.embed_dim = embed_dim  # num_features for consistency with other models
         norm_layer = norm_layer or partial(nn.LayerNorm, eps=1e-6)
-
+      
+        self.pretrained = pretrained
+       
         if hybrid_backbone is not None:
             self.patch_embed = HybridEmbed(
-                hybrid_backbone, img_size=img_size, in_chans=in_chans, embed_dim=embed_dim)
+                hybrid_backbone, img_size=img_size, in_chans=3, embed_dim=embed_dim)
         else:
             self.patch_embed = PatchEmbed(
-                img_size=img_size, patch_size=patch_size, in_chans=in_chans, embed_dim=embed_dim)
-        num_patches = self.patch_embed.num_patches
-
+                img_size=img_size, patch_size=patch_size, in_chans=3, embed_dim=embed_dim)
+        self.num_patches = self.patch_embed.num_patches
         self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
-        self.pos_embed = nn.Parameter(torch.zeros(1, num_patches + 1, embed_dim))
+        self.pos_embed = nn.Parameter(torch.zeros(1, self.num_patches + 1, embed_dim))
         self.pos_drop = nn.Dropout(p=drop_rate)
 
         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)]  # stochastic depth decay rule
@@ -326,7 +332,7 @@ class VisionTransformer(nn.Module):
                 drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[i], norm_layer=norm_layer)
             for i in range(depth)])
         self.norm = norm_layer(embed_dim)
-
+        
         # Representation layer
         if representation_size:
             self.num_features = representation_size
@@ -347,6 +353,17 @@ class VisionTransformer(nn.Module):
             self.head_noun = nn.Linear(self.embed_dim, num_classes[1])
             self.multi_head = True
         self.distill = distill
+        if self.pretrained is not None:
+            if self.multi_head:
+                self.load_state_dict(self.pretrained, strict=False)
+            else:   
+                new_state_dict = OrderedDict()
+                for k, v in self.pretrained.items():
+                    if k not in ['head.weight', 'head.bias']:
+                        new_state_dict[k] = v
+                self.load_state_dict(new_state_dict, strict=False)
+            if in_chans != 3:
+                self.patch_embed.proj = nn.Conv2d(in_chans, embed_dim, kernel_size=patch_size, stride=patch_size)
 
 
     @torch.jit.ignore
@@ -396,7 +413,7 @@ class AudioTransformer(VisionTransformer):
     :param audioset_pretrain: if use full AudioSet and ImageNet pretrained model
     :param model_size: the model size of AST, should be in [tiny224, small224, base224, base384], base224 and base 384 are same model, but are trained differently during ImageNet pretraining.
     """
-    def __init__(self, config, pretrained=None, label_dim=309, fstride=16, tstride=16, input_fdim=256,
+    def __init__(self, config, label_dim=309, fstride=16, tstride=16, input_fdim=256,
                  input_tdim=256, ): # 128, 384 for vggsound
 
         super(AudioTransformer, self).__init__(**config)
@@ -412,17 +429,17 @@ class AudioTransformer(VisionTransformer):
         self.patch_embed.num_patches = self.num_patches
         # print('frequncey stride={:d}, time stride={:d}'.format(fstride, tstride))
         # print('number of patches={:d}'.format(self.num_patches))
-        if pretrained is not None:
-            self.load_state_dict(pretrained, strict=False)
+        # if self.pretrained is not None:
+        #     self.load_state_dict(self.pretrained, strict=False)
         # the linear projection layer
         new_proj = torch.nn.Conv2d(1, self.original_embedding_dim, kernel_size=(16, 16), stride=(fstride, tstride))
-        if pretrained is not None:
+        if self.pretrained is not None:
             new_proj.weight = torch.nn.Parameter(torch.sum(self.patch_embed.proj.weight, dim=1).unsqueeze(1))
             new_proj.bias = self.patch_embed.proj.bias
         self.patch_embed.proj = new_proj
 
         # the positional embedding
-        if pretrained is not None:
+        if self.pretrained is not None:
             # get the positional embedding from deit model, skip the first two tokens (cls token and distillation token), reshape it to original 2D shape (24*24).
             new_pos_embed = self.pos_embed[:, 1:, :].detach().reshape(1, self.original_num_patches, self.original_embedding_dim)\
                 .transpose(1, 2).reshape(1, self.original_embedding_dim, self.oringal_hw, self.oringal_hw)
@@ -455,22 +472,3 @@ class AudioTransformer(VisionTransformer):
         t_dim = test_out.shape[3]
         return f_dim, t_dim
 
-    # @autocast()
-    # def forward(self, x):
-    #     """
-    #     :param x: the input spectrogram, expected shape: (batch_size, time_frame_num, frequency_bins), e.g., (12, 1024, 128)
-    #     :return: prediction
-    #     """
-    #     B, x = self.preprocess(x)
-    #     out_pred_prob = []
-    #     for i, blk in enumerate(self.blocks):
-    #         x = blk(x)
-
-    #     x = self.norm(x)
-    #     x = x[:, 0]
-    #     x = self.pre_logits(x)
-    #     x = self.head(x)
-    #     if self.training:
-    #         return x, out_pred_prob
-    #     else:
-    #         return x

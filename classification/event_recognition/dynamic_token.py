@@ -56,11 +56,11 @@ def train_step(model, input_data, optimizer, loss, label):
 
 def profile(model, test_loader, test_epoch):
     model.eval()
-    token_ratio = [0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.05]
+    token_ratio = [0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2]
     acc = []
     with torch.no_grad():
         for ratio in token_ratio:
-            model.token_ratio = [ratio, ratio ** 2, ratio ** 3]
+            model.token_ratio = ratio
             torch.cuda.synchronize()
             tic1 = time.time()
             acc = test_epoch(model, test_loader)
@@ -110,8 +110,7 @@ if __name__ == "__main__":
     torch.cuda.set_device(args.cuda)
 
     pruning_loc = (3, 6, 9)
-    base_rate = 0.7
-    token_ratio = [base_rate, base_rate ** 2, base_rate ** 3]
+    token_ratio = 0.7
     if args.dataset == 'EPICKitchen':
         checkpoint_loc = 'checkpoints_epic_kitchen/'
     else:
@@ -154,6 +153,7 @@ if __name__ == "__main__":
         loss = DistillDiffPruningLoss_dynamic(teacher_model, torch.nn.CrossEntropyLoss(), clf_weight=1.0,
                 keep_ratio=token_ratio, mse_token=True, ratio_weight=2, distill_weight=0.5)
         if args.test:
-            model.load_state_dict(torch.load(checkpoint_loc + 'DynToken_MBT_base_0.37599015.pth'))
+            model.load_state_dict(torch.load(checkpoint_loc + 'DynToken_MBT_base_0.37599015.pth'), strict=False)
+            model.apply_merge(r=0)
         train(model, train_dataset, val_dataset, loss, args.test, test_epickitchen)
 
