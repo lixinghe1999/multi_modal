@@ -60,6 +60,7 @@ if __name__ == "__main__":
     parser.add_argument('-l', '--locations', nargs='+', default='3 6 9')
     parser.add_argument('-r', '--rate', default=0.6, type=float)
 
+    parser.add_argument('-merge', '--merge', default=12, type=int)
     parser.add_argument('-e', '--exits', default=None, type=int)
     args = parser.parse_args()
     print(args)
@@ -81,27 +82,7 @@ if __name__ == "__main__":
         token_ratio = args.rate
     
         model = DynToken(pruning_loc=pruning_loc, token_ratio=token_ratio, distill=True, backbone=getattr(models, args.model), scale=args.scale, pretrained=False, num_class=(97, 300)).to(device)
-        model.apply_merge(r=12)
+        model.apply_merge(r=args.merge)
         model.eval()
         throughput(model, (audio, image))
         calc_flops(model, (audio, image), show_details=False)
-
-    # torch.save(model.state_dict(), 'dynamic_token.pth')
-    # torch.onnx.export(model, (audio, image), 'dynamic.onnx', input_names=['input_1', 'input_2'],
-    #                  output_names=['output'], export_params=True)
-
-    # import onnx
-    # onnx_model = onnx.load("dynamic.onnx")
-    # onnx.checker.check_model(onnx_model)
-
-
-    # import onnxruntime
-    # torch_out = model(audio, image)
-    # ort_session = onnxruntime.InferenceSession("dynamic.onnx")
-    # ort_outs = ort_session.run(None,  {
-    # "input_1": audio.detach().cpu().numpy().astype(np.float32),
-    # "input_2": image.detach().cpu().numpy().astype(np.float32)
-    # })
-    # # compare ONNX Runtime and PyTorch results
-    # np.testing.assert_allclose(torch_out.detach().cpu().numpy(), ort_outs[0], rtol=1e-02, atol=1e-05)
-    # print("Exported model has been tested with ONNXRuntime, and the result looks good!")
