@@ -101,6 +101,7 @@ class DynToken(nn.Module):
         early_output = []
         prev_decision = torch.ones(B, self.num_patches, 1, dtype=audio.dtype, device=audio.device)
         policy = torch.ones(B, self.num_patches + 2, 1, dtype=audio.dtype, device=audio.device)
+        self.distribution = []
         for i, (blk_a, blk_i) in enumerate(zip(self.audio.blocks, self.image.blocks)):
             if i in self.pruning_loc:
                 spatial_x = torch.cat([audio[:, 1:], image[:, 1:]], dim=1)
@@ -124,11 +125,12 @@ class DynToken(nn.Module):
                     early_output.append(self.output(audio, image)[0])
                 else:
                     # L2 activation magnitude
-                    score = torch.norm(spatial_x, dim=-1, keepdim=False)
-                    # score = self.score_predictor[p_count](spatial_x, None).reshape(B, -1, 2)[:, :, 0]
-                    values, indices = torch.sort(score, dim=1, descending=True)
+                    # score_norm = torch.norm(spatial_x, dim=-1, keepdim=False)
+                    score_predict = self.score_predictor[p_count](spatial_x, None).reshape(B, -1, 2)[:, :, 0]
+                    # self.distribution.append(torch.cat([score_norm, score_predict], dim=0))
+                    values, indices = torch.sort(score_predict, dim=1, descending=True)
                     # TopK selection
-                    num_keep_node = int(score.shape[1] * self.token_ratio)
+                    num_keep_node = int(score_predict.shape[1] * self.token_ratio)
                     keep_policy = indices[:, :num_keep_node]
                     # repeated prunning
                     # values = values[:, :num_keep_node]

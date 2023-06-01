@@ -28,6 +28,7 @@ def test_epickitchen(model, test_loader):
     model.eval()
     acc = {'verb':[], 'noun':[], 'action':[]}
     ratio = []
+    distribution = [[], [], []] 
     with torch.no_grad():
         for batch in tqdm(test_loader):
             input_data = [batch[0].to(device), batch[1].to(device)]
@@ -39,8 +40,13 @@ def test_epickitchen(model, test_loader):
             acc['verb'].append( predict_verb.sum() / len(batch[-1]['verb']))
             acc['noun'].append( predict_noun.sum() / len(batch[-1]['noun']))
             acc['action'].append( predict_action.sum() / len(batch[-1]['verb']))
-
             ratio.append(model.ratio)
+            for i in range(3):
+                distribution[i].append(model.distribution[i])
+    for i in range(3):
+        saved_dist = torch.stack(distribution[i], dim=0).cpu().numpy()
+        print(saved_dist.shape)
+        np.save('distribution_' + str(i) + '.npy', saved_dist)
     print('verb =', np.mean(acc['verb']), 'noun =', np.mean(acc['noun']))
     mean_ratio = np.mean(ratio, axis=0)
     print('modality-1 balance:', mean_ratio[0], 'modality-2 ratio:', mean_ratio[1], 'difference:', mean_ratio[2])

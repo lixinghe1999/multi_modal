@@ -49,7 +49,7 @@ def throughput(model, images):
         model(*images)
     torch.cuda.synchronize()
     tic2 = time.time()
-    print(f"batch_size {batch_size} throughput {num_iterations * batch_size / (tic2 - tic1)}")
+    print(f"batch_size {batch_size} latency {(tic2 - tic1) / (num_iterations * batch_size)}")
     MB = 1024.0 * 1024.0
     print('memory:', torch.cuda.max_memory_allocated() / MB)
 if __name__ == "__main__":
