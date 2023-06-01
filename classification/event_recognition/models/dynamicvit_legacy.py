@@ -128,9 +128,9 @@ class DynToken(nn.Module):
                     score_norm = torch.norm(spatial_x, dim=-1, keepdim=False)
                     # score_predict = self.score_predictor[p_count](spatial_x, None).reshape(B, -1, 2)[:, :, 0]
                     # self.distribution.append(torch.cat([score_norm, score_predict], dim=0))
-                    values, indices = torch.sort(score_predict, dim=1, descending=True)
+                    values, indices = torch.sort(score_norm, dim=1, descending=True)
                     # TopK selection
-                    num_keep_node = int(score_predict.shape[1] * self.token_ratio)
+                    num_keep_node = int(score_norm.shape[1] * self.token_ratio)
                     keep_policy = indices[:, :num_keep_node]
                     # repeated prunning
                     # values = values[:, :num_keep_node]
