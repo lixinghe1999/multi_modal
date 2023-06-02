@@ -125,10 +125,10 @@ class DynToken(nn.Module):
                     early_output.append(self.output(audio, image)[0])
                 else:
                     # L2 activation magnitude
-                    # score_norm = torch.norm(spatial_x, dim=-1, keepdim=False)
-                    score_predict = self.score_predictor[p_count](spatial_x, None).reshape(B, -1, 2)[:, :, 0]
-                    score = score_predict
-                    self.distribution.append(score)
+                    score_norm = torch.norm(spatial_x, dim=-1, keepdim=False)
+                    # score_predict = self.score_predictor[p_count](spatial_x, None).reshape(B, -1, 2)[:, :, 0]
+                    score = score_norm
+                    # self.distribution.append(score)
                     
                     values, indices = torch.sort(score, dim=1, descending=True)
                     # TopK selection

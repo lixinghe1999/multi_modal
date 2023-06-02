@@ -51,8 +51,8 @@ def throughput(model, images):
     torch.cuda.synchronize()
     tic2 = time.time()
     print(f"batch_size {batch_size} latency {(tic2 - tic1) / (num_iterations * batch_size)}")
-    MB = 1024.0 * 1024.0
-    print('memory:', torch.cuda.max_memory_allocated() / MB)
+    # MB = 1024.0 * 1024.0
+    # print('memory:', torch.cuda.max_memory_allocated() / MB)
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-m', '--model', default='MBT')
