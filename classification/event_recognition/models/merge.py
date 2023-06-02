@@ -318,14 +318,15 @@ def merge_wavg(
     Returns the merged tensor and the new token sizes.
     """
     
-    if size is None:
-        size = torch.ones_like(x[..., 0, None])
-    x = merge(x * size, mode="sum")
-    size = merge(size, mode="sum")
+    # if size is None:
+    #     size = torch.ones_like(x[..., 0, None])
+    # x = merge(x * size, mode="sum")
+    # size = merge(size, mode="sum")
 
-    x = x / size
+    # x = x / size
+    # return x, size
+    x = merge(x, mode="sum")
     return x, size
-
 
 def merge_source(
     merge: Callable, x: torch.Tensor, source: torch.Tensor = None

@@ -88,11 +88,9 @@ class DynToken(nn.Module):
 
     @autocast()
     def forward(self, audio, image):
-        timer = []
-        t_start = time.time()
-        if self.merge:
-            self.audio._tome_info["size"] = None
-            self.image._tome_info["size"] = None
+        # if self.merge:
+        #     self.audio._tome_info["size"] = None
+        #     self.image._tome_info["size"] = None
         B = audio.shape[0]
         audio = audio.view(-1, 1, 256, 256)
         image = image.view(-1, 3, 224, 224)
@@ -104,7 +102,6 @@ class DynToken(nn.Module):
         prev_decision = torch.ones(B, self.num_patches, 1, dtype=audio.dtype, device=audio.device)
         policy = torch.ones(B, self.num_patches + 2, 1, dtype=audio.dtype, device=audio.device)
         self.distribution = []
-        timer.append(time.time() - t_start)
         for i, (blk_a, blk_i) in enumerate(zip(self.audio.blocks, self.image.blocks)):
             if i in self.pruning_loc:
                 spatial_x = torch.cat([audio[:, 1:], image[:, 1:]], dim=1)
@@ -128,11 +125,10 @@ class DynToken(nn.Module):
                     early_output.append(self.output(audio, image)[0])
                 else:
                     # L2 activation magnitude
-                    score_norm = torch.norm(spatial_x, dim=-1, keepdim=False)
-                    # score_predict = self.score_predictor[p_count](spatial_x, None).reshape(B, -1, 2)[:, :, 0]
-                    score = score_norm
+                    # score_norm = torch.norm(spatial_x, dim=-1, keepdim=False)
+                    score_predict = self.score_predictor[p_count](spatial_x, None).reshape(B, -1, 2)[:, :, 0]
+                    score = score_predict
                     # self.distribution.append(score)
-                    
                     values, indices = torch.sort(score, dim=1, descending=True)
                     # TopK selection
                     num_keep_node = int(score.shape[1] * self.token_ratio)
@@ -148,7 +144,6 @@ class DynToken(nn.Module):
                     prev_decision = torch.ones(B, keep_policy.shape[1], 1, dtype=audio.dtype, device=audio.device)
                     keep_audio = keep_policy < token_len_audio
                     keep_image = keep_policy >= token_len_audio
-
                     keep_audio = torch.masked_select(keep_policy, mask=keep_audio).unsqueeze(0)
                     keep_image = torch.masked_select(keep_policy, mask=keep_image).unsqueeze(0) - token_len_audio
 
@@ -156,15 +151,15 @@ class DynToken(nn.Module):
                     now_policy = torch.cat([cls_policy, keep_audio + 1], dim=1)
                     audio = batch_index_select(audio, now_policy)
                     audio = blk_a(audio)
-                    if self.merge:
-                        self.audio._tome_info["size"] = batch_index_select(self.audio._tome_info["size"], now_policy)
+                    # if self.merge:
+                    #     self.audio._tome_info["size"] = batch_index_select(self.audio._tome_info["size"], now_policy)
 
                     cls_policy = torch.zeros(B, 1, dtype=keep_policy.dtype, device=keep_policy.device)
                     now_policy = torch.cat([cls_policy, keep_image + 1], dim=1)
                     image = batch_index_select(image, now_policy)
                     image = blk_i(image)
-                    if self.merge:
-                        self.image._tome_info["size"] = batch_index_select(self.image._tome_info["size"], now_policy)
+                    # if self.merge:
+                    #     self.image._tome_info["size"] = batch_index_select(self.image._tome_info["size"], now_policy)
 
                 p_count += 1
             else:
@@ -176,9 +171,7 @@ class DynToken(nn.Module):
                 else:
                     audio = blk_a(audio)
                     image = blk_i(image)
-            timer.append(time.time() - t_start)
         x, features = self.output(audio, image)
-        print(timer[0], timer[3]-timer[0], timer[6]-timer[3], timer[9]-timer[6], timer[12]-timer[9])
         if self.training:
             if self.distill:
                 return x, features, prev_decision.detach(), out_pred_prob, early_output
