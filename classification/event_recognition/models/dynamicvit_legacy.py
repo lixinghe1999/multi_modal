@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from .merge import bipartite_soft_matching, merge_wavg 
 from .apply_merge import ToMeBlock, ToMeAttention, make_tome_class
-
+import time
 
 class DynToken(nn.Module):
     def __init__(self, distill=False, pruning_loc=(), token_ratio=(), backbone='base', scale='base', pretrained=False, num_class=309):
@@ -88,6 +88,8 @@ class DynToken(nn.Module):
 
     @autocast()
     def forward(self, audio, image):
+        timer = []
+        t_start = time.time()
         if self.merge:
             self.audio._tome_info["size"] = None
             self.image._tome_info["size"] = None
@@ -102,6 +104,7 @@ class DynToken(nn.Module):
         prev_decision = torch.ones(B, self.num_patches, 1, dtype=audio.dtype, device=audio.device)
         policy = torch.ones(B, self.num_patches + 2, 1, dtype=audio.dtype, device=audio.device)
         self.distribution = []
+        timer.append(time.time() - t_start)
         for i, (blk_a, blk_i) in enumerate(zip(self.audio.blocks, self.image.blocks)):
             if i in self.pruning_loc:
                 spatial_x = torch.cat([audio[:, 1:], image[:, 1:]], dim=1)
@@ -173,8 +176,9 @@ class DynToken(nn.Module):
                 else:
                     audio = blk_a(audio)
                     image = blk_i(image)
-        
+            timer.append(time.time() - t_start)
         x, features = self.output(audio, image)
+        print(timer[0], timer[3]-timer[0], timer[6]-timer[3], timer[9]-timer[6], timer[12]-timer[9])
         if self.training:
             if self.distill:
                 return x, features, prev_decision.detach(), out_pred_prob, early_output
