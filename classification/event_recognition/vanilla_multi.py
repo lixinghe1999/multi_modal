@@ -32,7 +32,7 @@ def test_epickitchen(model, test_loader):
     ratio =  {'verb':[], 'noun':[]}
     with torch.no_grad():
         for batch in tqdm(test_loader):
-            input_data = [batch[0].to(device), batch[1].to(device), batch[2].to(device)]
+            input_data = [batch[0].to(device), batch[1].to(device)]
             predict = model(*input_data)
 
             predict_verb = (torch.argmax(predict['verb'], dim=-1).cpu() == batch[-1]['verb'])
@@ -87,11 +87,9 @@ def train(model, train_dataset, test_dataset, test=False, test_epoch=test_vggsou
             model.train()
             loss = 0
             for i, batch in enumerate(tqdm(train_loader)):
-                input_data = [batch[0].to(device), batch[1].to(device), batch[2].to(device)]
+                input_data = [batch[0].to(device), batch[1].to(device)]
                 loss += train_step(model, input_data=input_data, optimizer=optimizer,
                             criteria=criteria, label=batch[-1], device=device)
-                if i % 600 == 0 and i > 0:
-                    print('loss =', loss/(i+1))
             scheduler.step()
             acc = test_epoch(model, test_loader)
             print('epoch', epoch, 'acc =', acc)
@@ -104,7 +102,7 @@ if __name__ == "__main__":
     parser.add_argument('-m', '--model', default='MBT', type=str)
     parser.add_argument('-d', '--dataset', default='EPICKitchen', type=str) # VGGSound, EPICKitchen
     parser.add_argument('-w', '--worker', default=4, type=int)
-    parser.add_argument('-b', '--batch', default=16, type=int)
+    parser.add_argument('-b', '--batch', default=64, type=int)
     parser.add_argument('-s', '--scale', default='base', type=str)
     parser.add_argument('-c', '--cuda', default=0, type=int)
     parser.add_argument('-test', action='store_true', default=False)
@@ -134,8 +132,8 @@ if __name__ == "__main__":
         val_dataset = getattr(dataset, args.dataset)(list_file=pd.read_pickle('EPIC_val.pkl'),               
                                                  transform=val_transform, mode='val', audio_path=audio_path)
         model = getattr(models, args.model)(args.scale, pretrained=True, num_class=(97, 300)).to(device)
-        model.audio.load_state_dict(torch.load('A_0.16073199.pth'), strict=False)
-        model.image.load_state_dict(torch.load('V_0.30203858.pth'), strict=False)
+        # model.audio.load_state_dict(torch.load('A_0.16073199.pth'), strict=False)
+        # model.image.load_state_dict(torch.load('V_0.30203858.pth'), strict=False)
         if args.test:
             model.load_state_dict(torch.load('MBT_small_0.33567417.pth'))
         train(model, train_dataset, val_dataset, args.test, test_epickitchen)

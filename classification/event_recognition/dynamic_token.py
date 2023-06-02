@@ -41,12 +41,15 @@ def test_epickitchen(model, test_loader):
             acc['noun'].append( predict_noun.sum() / len(batch[-1]['noun']))
             acc['action'].append( predict_action.sum() / len(batch[-1]['verb']))
             ratio.append(model.ratio)
-            for i in range(3):
-                distribution[i].append(model.distribution[i])
-    for i in range(3):
-        saved_dist = torch.stack(distribution[i], dim=0).cpu().numpy()
-        print(saved_dist.shape)
-        np.save('distribution_' + str(i) + '.npy', saved_dist)
+    #         for i in range(3):
+    #             distribution[i].append(model.distribution[i])
+    # saved_dist = []
+    # for i in range(3):
+    #     saved_dist.append(torch.stack(distribution[i], dim=0).cpu().numpy())
+    # saved_dist = np.concatenate(saved_dist, axis=1)
+    # print(saved_dist.shape)
+    # np.save('distribution.npy', saved_dist)
+
     print('verb =', np.mean(acc['verb']), 'noun =', np.mean(acc['noun']))
     mean_ratio = np.mean(ratio, axis=0)
     print('modality-1 balance:', mean_ratio[0], 'modality-2 ratio:', mean_ratio[1], 'difference:', mean_ratio[2])
@@ -67,14 +70,9 @@ def profile(model, test_loader, test_epoch):
     with torch.no_grad():
         for ratio in token_ratio:
             model.token_ratio = ratio
-            torch.cuda.synchronize()
-            tic1 = time.time()
             acc = test_epoch(model, test_loader)
-            torch.cuda.synchronize()
-            tic2 = time.time()
             mean_acc = np.mean(acc)
             print('preserved ratio:', ratio, 'accuracy:', mean_acc)
-            # print('throughput:', len(test_loader) * batch_size / (tic2 - tic1))
 def train(model, train_dataset, test_dataset, loss, test, test_epoch=test_vggsound):
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset, num_workers=workers, batch_size=batch_size, shuffle=True,
                                                drop_last=True, pin_memory=False)
@@ -160,6 +158,6 @@ if __name__ == "__main__":
                 keep_ratio=token_ratio, mse_token=True, ratio_weight=2, distill_weight=0.5)
         if args.test:
             model.load_state_dict(torch.load(checkpoint_loc + 'DynToken_MBT_base_0.37599015.pth'), strict=False)
-            model.apply_merge(r=0)
+            model.apply_merge(r=12)
         train(model, train_dataset, val_dataset, loss, args.test, test_epickitchen)
 

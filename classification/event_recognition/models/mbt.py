@@ -52,7 +52,7 @@ class MBT(nn.Module):
         B = audio.shape[0]
         audio = audio.view(-1, 1, 256, 256)
         image = image.view(-1, 3, 224, 224)
-        self.modality_weight = []
+        
         _, audio = self.audio.preprocess(audio)
         _, image = self.image.preprocess(image)
         for i, (blk_a, blk_i) in enumerate(zip(self.audio.blocks, self.image.blocks)):
@@ -60,6 +60,7 @@ class MBT(nn.Module):
             image = blk_i(image)
         audio = self.audio.norm(audio)
         image = self.image.norm(image)
+        self.modality_weight = []
         if self.multi_head:
             x = torch.cat([audio[:, 0], image[:, 0]], dim=1)
             verb = self.head_verb(x)

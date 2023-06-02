@@ -1,6 +1,7 @@
 import torch
 from models.dynamicvit_legacy import DynToken
 from models.early_exit import Early_Exit
+from models.cnn_baseline import CNN
 import models
 import time
 import argparse
@@ -63,6 +64,7 @@ if __name__ == "__main__":
 
     parser.add_argument('-merge', '--merge', default=12, type=int)
     parser.add_argument('-e', '--exits', default=None, type=int)
+    parser.add_argument('-cnn', action='store_true', default=False)
     args = parser.parse_args()
     print(args)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -75,7 +77,14 @@ if __name__ == "__main__":
         model = Early_Exit(getattr(models, args.model), args.scale, pretrained=False, num_class=(97, 300)).to(device)
         model.eval()
         throughput(model, (audio, image, args.exits))
-        calc_flops(model, (audio, image, args.exits), show_details=False)
+        calc_flops(model, (audio, image, args.exits))
+    elif args.cnn:
+        print('measure the CNN latency')
+        model = CNN(pretrained=False, num_class=(97, 300)).to(device)
+        model.eval()
+        throughput(model, (audio, image))
+        if args.flops:
+            calc_flops(model, (audio, image))
     else:
         print('measure the dynamic token latency')
         pruning_loc = args.locations
@@ -87,4 +96,4 @@ if __name__ == "__main__":
         model.eval()
         throughput(model, (audio, image))
         if args.flops:
-            calc_flops(model, (audio, image), show_details=False)
+            calc_flops(model, (audio, image))

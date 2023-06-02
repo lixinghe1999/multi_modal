@@ -5,17 +5,22 @@ just late fusion
 import torch.nn as nn
 import torch
 from torch.cuda.amp import autocast
-from .mobilenetv3 import MobileNetV3_Large, MobileNetV3_Small
+import torchvision
 
-class MBC(nn.Module):
-    def __init__(self, scale='base', pretrained=True, num_class=309, modality=['audio', 'image']):
-        super(MBC, self).__init__()
+class CNN(nn.Module):
+    def __init__(self, scale='resnet', pretrained=True, num_class=309, modality=['audio', 'image']):
+        super(CNN, self).__init__()
+        import copy
+        if scale == 'mobilenet':
+            backbone = torchvision.models.mobilenet_v3_large(pretrained=pretrained)
+        else:
+            backbone = torchvision.models.resnet152(pretrained=pretrained)
         if 'audio' in modality:
-            self.audio = MobileNetV3_Large()
-            self.audio.head = None
+            self.audio = copy.deepcopy(backbone)
+            self.audio.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
         if 'image' in modality:
-            self.image = MobileNetV3_Large()
-            self.image.head = None
+            self.image = backbone
+        self.embed_dim = 1000
 
         self.num_class = num_class
         if isinstance(num_class, int):
@@ -28,11 +33,11 @@ class MBC(nn.Module):
         self.modality_weight = []
         self.modality = modality
 
-
     @autocast()
     def forward(self, audio, image):
         audio = self.audio(audio)
         image = self.image(image)
+        self.modality_weight = []
         if self.multi_head:
             x = torch.cat([audio, image], dim=1)
             verb = self.head_verb(x)

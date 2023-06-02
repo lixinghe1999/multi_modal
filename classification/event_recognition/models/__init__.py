@@ -1,4 +1,4 @@
 from .mbt import MBT
 from .sft import SFT
-from .mobilenetv3 import MobileNetV3_Small
+from .cnn_baseline import CNN
 from .vit_model import AudioTransformer, VisionTransformer
