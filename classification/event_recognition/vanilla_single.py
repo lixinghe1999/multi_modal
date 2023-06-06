@@ -89,7 +89,7 @@ if __name__ == "__main__":
     parser.add_argument('-m', '--modal', default='A')
     parser.add_argument('-d', '--dataset', default='EPICKitchen', type=str) # VGGSound, EPICKitchen
     parser.add_argument('-w', '--worker', default=4, type=int)
-    parser.add_argument('-b', '--batch', default=32, type=int)
+    parser.add_argument('-b', '--batch', default=64, type=int)
     parser.add_argument('-c', '--cuda', default=0, type=int)
     parser.add_argument('-test', action='store_true', default=False)
     args = parser.parse_args()

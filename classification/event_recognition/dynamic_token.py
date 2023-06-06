@@ -103,7 +103,7 @@ if __name__ == "__main__":
     parser.add_argument('-m', '--model', default='MBT', type=str)
     parser.add_argument('-d', '--dataset', default='EPICKitchen', type=str) # VGGSound, EPICKitchen
     parser.add_argument('-w', '--worker', default=4, type=int)
-    parser.add_argument('-b', '--batch', default=16, type=int)
+    parser.add_argument('-b', '--batch', default=32, type=int)
     parser.add_argument('-s', '--scale', default='base', type=str)
     parser.add_argument('-c', '--cuda', default=0, type=int)
     parser.add_argument('-test', action='store_true', default=False)
@@ -113,7 +113,7 @@ if __name__ == "__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     torch.cuda.set_device(args.cuda)
 
-    pruning_loc = (3, 6, 9)
+    pruning_loc = (1, 4, 7, 10)
     token_ratio = 0.7
     if args.dataset == 'EPICKitchen':
         checkpoint_loc = 'checkpoints_epic_kitchen/'
@@ -148,11 +148,11 @@ if __name__ == "__main__":
         val_dataset = getattr(dataset, args.dataset)(list_file=pd.read_pickle('EPIC_val.pkl'),               
                                                  transform=val_transform, mode='val', audio_path=audio_path)
         model = DynToken(pruning_loc=pruning_loc, token_ratio=token_ratio, distill=True, backbone=getattr(models, args.model), scale=args.scale, pretrained=True, num_class=(97, 300)).to(device)
-        model.load_state_dict(torch.load(checkpoint_loc + 'MBT_base_0.3744411.pth'), strict=False)
+        model.load_state_dict(torch.load(checkpoint_loc + 'MBT_base_0.37182197.pth'), strict=False)
 
         teacher_model = DynToken(distill=True, backbone=getattr(models, args.model), scale=args.scale, pretrained=False,    num_class=(97, 300)).to(device)
 
-        teacher_model.load_state_dict(torch.load(checkpoint_loc + 'MBT_base_0.3744411.pth'))
+        teacher_model.load_state_dict(torch.load(checkpoint_loc + 'MBT_base_0.37182197.pth'))
         teacher_model.eval()
         loss = DistillDiffPruningLoss_dynamic(teacher_model, torch.nn.CrossEntropyLoss(), clf_weight=1.0,
                 keep_ratio=token_ratio, mse_token=True, ratio_weight=2, distill_weight=0.5)

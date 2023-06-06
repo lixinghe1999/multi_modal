@@ -153,7 +153,7 @@ class DistillDiffPruningLoss_dynamic(torch.nn.Module):
                 cls_loss += self.base_criterion(pred[key], labels[key].to(self.device)) * 0.5
         else:
             cls_loss += self.base_criterion(pred, labels.to(self.device))
-        early_weight = [0.25, 0.5, 0.75]
+        early_weight = [i/len(early_output) for i in range(len(early_output))]
         for i in range(len(early_output)):
             if isinstance(labels, dict):
                 for key in labels:

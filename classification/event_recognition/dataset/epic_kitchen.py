@@ -28,10 +28,9 @@ def get_augmentation(modality, input_size):
 def get_normalization(modality, input_mean, input_std):
     normalize = {}
     for m in modality:
-        if (m != 'Spec'):
-            normalize[m] = GroupNormalize(input_mean[m], input_std[m])
+        normalize[m] = GroupNormalize(input_mean[m], input_std[m])
     return normalize
-def get_test_transform(modality=['RGB', 'Spec'], test_crops=1, scale_size={'RGB': 256, 'Spec': 256}, input_size={'RGB': 224, 'Spec': 224}, input_mean={'RGB': (0.43818652, 0.4067926,  0.38199832)}, input_std={'RGB': (0.28311136, 0.2763161,  0.2787475)}):
+
     test_transform = {}
     for m in modality:
         if m != 'Spec':
@@ -58,13 +57,11 @@ def get_test_transform(modality=['RGB', 'Spec'], test_crops=1, scale_size={'RGB'
                 Stack(),
                 ToTorchFormatTensor(div=False), ])
     return test_transform
-# (0.43818652, 0.4067926,  0.38199832), (0.28311136, 0.2763161,  0.2787475)
-# [104, 117, 128], 'Flow': [128]
 # mean: spec, rgb, flow
 # std: spec, rgb, flow
 # tensor([-0.0322]) tensor([0.4290, 0.3740, 0.3360]) tensor([0.5006, 0.5108])
 # tensor([0.0137]) tensor([0.2387, 0.2269, 0.2275]) tensor([0.1581, 0.1154])
-def get_train_transform(modality=['RGB', 'Spec', 'Flow'], test_crops=10, scale_size={'RGB': 256, 'Spec': 256, 'Flow': 256}, input_size={'RGB': 224, 'Spec': 256, 'Flow': 224}, input_mean={'RGB': [0.4290, 0.3740, 0.3360], 'Flow': [0.5006, 0.5108]}, input_std={'RGB': [0.2387, 0.2269, 0.2275], 'Flow': [0.1581, 0.1154]}):
+def get_train_transform(modality=['RGB', 'Spec', 'Flow'], test_crops=10, scale_size={'RGB': 256, 'Spec': 256, 'Flow': 256}, input_size={'RGB': 224, 'Spec': 256, 'Flow': 224}, input_mean={'RGB': [0.4290, 0.3740, 0.3360], 'Flow': [0.5006, 0.5108], 'Spec':[0]}, input_std={'RGB': [0.2387, 0.2269, 0.2275], 'Flow': [0.1581, 0.1154], 'Spec': [1]}):
     train_transform = {}
     val_transform = {}
     train_augmentation = get_augmentation(modality, input_size)
@@ -92,18 +89,20 @@ def get_train_transform(modality=['RGB', 'Spec', 'Flow'], test_crops=10, scale_s
             train_transform[m] = torchvision.transforms.Compose([
                 Stack(),
                 ToTorchFormatTensor(),
+                normalize[m],
             ])
 
             val_transform[m] = torchvision.transforms.Compose([
                 Stack(),
                 ToTorchFormatTensor(),
+                normalize[m],
             ])
     return train_transform, val_transform
             
 class EPICKitchen(data.Dataset):
     def __init__(self, dataset='epic-kitchens-100', list_file=pd.read_pickle('EPIC_val.pkl'),
                  new_length={'RGB': 1, 'Flow': 1, 'Spec': 1}, modality= ['RGB', 'Spec', 'Flow'], image_tmpl={'RGB': 'frame_{:010d}.jpg', 'Flow': 'frame_{:010d}.jpg'},  visual_path='../EPIC-KITCHENS', audio_path='./audio_dict.pkl',
-                 resampling_rate=24000, num_segments=1, transform=get_test_transform(),
+                 resampling_rate=24000, num_segments=1, transform=None,
                  mode='test', use_audio_dict=True):
         self.dataset = dataset
         if audio_path is not None:
@@ -260,7 +259,6 @@ class EPICKitchen(data.Dataset):
             p = int(seg_ind)
             for i in range(self.new_length[modality]):
                 seg_imgs = self._load_data(modality, record, p)
-                # print(np.array(seg_imgs[0]).mean(axis=(0,1)))
                 images.extend(seg_imgs)
                 if p < record.num_frames[modality]:
                     p += 1

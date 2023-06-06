@@ -88,7 +88,6 @@ if __name__ == "__main__":
     else:
         print('measure the dynamic token latency')
         pruning_loc = args.locations
-        # pruning_loc = ()
         token_ratio = args.rate
     
         model = DynToken(pruning_loc=pruning_loc, token_ratio=token_ratio, distill=True, backbone=getattr(models, args.model), scale=args.scale, pretrained=False, num_class=(97, 300)).to(device)

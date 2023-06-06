@@ -71,6 +71,7 @@ class DynToken(nn.Module):
                     else:
                         module.__class__ = ToMeAttention
 
+
     def output(self, audio, image):
         audio = self.audio.norm(audio)
         image = self.image.norm(image)

@@ -111,7 +111,10 @@ if __name__ == "__main__":
     batch_size = args.batch
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     torch.cuda.set_device(args.cuda)
-
+    if args.dataset == 'EPICKitchen':
+        checkpoint_loc = 'checkpoints_epic_kitchen/'
+    else:
+        checkpoint_loc = 'checkpoints_vggsound/'
     if args.dataset == 'VGGSound':
         full_dataset = getattr(dataset, args.dataset)()
         len_train = int(len(full_dataset) * 0.8)
@@ -119,7 +122,7 @@ if __name__ == "__main__":
         train_dataset, test_dataset = torch.utils.data.random_split(full_dataset, [len_train, len_test], generator=torch.Generator().manual_seed(42))
         model = getattr(models, args.model)(args.scale, pretrained=True, num_class=309).to(device)
         if args.test:
-            model.load_state_dict(torch.load('MBT_base_0.6702001.pth'))
+            model.load_state_dict(torch.load(checkpoint_loc+'MBT_base_0.6702001.pth'))
         train(model, train_dataset, test_dataset, args.test, test_vggsound)
     else:
         import h5py
@@ -132,10 +135,10 @@ if __name__ == "__main__":
         val_dataset = getattr(dataset, args.dataset)(list_file=pd.read_pickle('EPIC_val.pkl'),               
                                                  transform=val_transform, mode='val', audio_path=audio_path)
         model = getattr(models, args.model)(args.scale, pretrained=True, num_class=(97, 300)).to(device)
-        # model.audio.load_state_dict(torch.load('A_0.16073199.pth'), strict=False)
-        # model.image.load_state_dict(torch.load('V_0.30203858.pth'), strict=False)
+        model.audio.load_state_dict(torch.load(checkpoint_loc+'A_0.23034784.pth'), strict=False)
+        model.image.load_state_dict(torch.load(checkpoint_loc+'V_0.30203858.pth'), strict=False)
         if args.test:
-            model.load_state_dict(torch.load('MBT_small_0.33567417.pth'))
+            model.load_state_dict(torch.load(checkpoint_loc+'MBT_small_0.33567417.pth'))
         train(model, train_dataset, val_dataset, args.test, test_epickitchen)
     
 
