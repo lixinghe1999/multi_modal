@@ -8,7 +8,13 @@ __pycache__
 *.png
 *.jpg
 *.flac
+*.log
+*.hdf5
+*.npy
+*.ipynb
 OpenPCDet/yolov3/checkpoints/*
 OpenPCDet/yolov3/weights/*
-classification/epic-kitchen
+classification/EPIC-KITCHENS
+classification/VggSound_small
 .gitignore
+classification/epic-kitchens-download-scripts
