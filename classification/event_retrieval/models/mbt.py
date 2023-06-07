@@ -8,7 +8,7 @@ from torch.cuda.amp import autocast
 from .vit_model import AudioTransformer, VisionTransformer
 
 class MBT(nn.Module):
-    def __init__(self, scale='base', pretrained=True, num_class=309, modality=['flow', 'image']):
+    def __init__(self, scale='base', pretrained=True, num_class=309, modality=['audio', 'image']):
         super(MBT, self).__init__()
         if scale == 'base':
             pretrained_weight = 'pretrained/deit_base_patch16_224.pth'
@@ -41,10 +41,8 @@ class MBT(nn.Module):
             self.head = nn.Linear(self.embed_dim * len(modality), num_class)
             self.multi_head = False
         else:
-            self.head_verb = nn.Sequential(nn.Linear(self.embed_dim * len(modality), 1024), nn.ReLU(), nn.Linear(1024, num_class[0]))
-            self.head_verb = nn.Sequential(nn.Linear(self.embed_dim * len(modality), 1024), nn.ReLU(), nn.Linear(1024, num_class[1]))
-            # self.head_verb = nn.Linear(self.embed  _dim * len(modality), num_class[0])
-            # self.head_noun = nn.Linear(self.embed_dim * len(modality), num_class[1])
+            self.head_verb = nn.Linear(self.embed_dim * len(modality), num_class[0])
+            self.head_noun = nn.Linear(self.embed_dim * len(modality), num_class[1])
             self.multi_head = True
         self.modality_weight = []
         self.modality = modality
@@ -52,8 +50,8 @@ class MBT(nn.Module):
 
     @autocast()
     def forward(self, x1, x2):
-        # x = self.forward_audio_image(x1, x2)
-        x = self.forward_flow_image(x1, x2)
+        x = self.forward_audio_image(x1, x2)
+        # x = self.forward_flow_image(x1, x2)
         self.modality_weight = []
         if self.multi_head:
             verb = self.head_verb(x)

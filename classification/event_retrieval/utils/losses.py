@@ -3,7 +3,69 @@ Implements the knowledge distillation loss
 """
 import torch
 from torch.nn import functional as F
+def loss_infoNCE(outputs, text_features):
+    """
+    Compute the knowledge-distillation (KD) loss given outputs, labels.
+    "Hyperparameters": temperature and alpha
 
+    NOTE: the KL Divergence for PyTorch comparing the softmaxs of teacher
+    and student expects the input tensor to be log probabilities! See Issue #2
+    """
+    # alpha = params.alpha
+    # T = params.temperature
+    # KD_loss = nn.KLDivLoss()(F.log_softmax(outputs/T, dim=1),
+    #                          F.softmax(teacher_outputs/T, dim=1)) * (alpha * T * T)
+    # KD_loss = nn.KLDivLoss()(outputs,teacher_outputs)
+    # text_features = text_features / text_features.norm(dim=-1, keepdim=True)
+    # outputs = outputs / outputs.norm(dim=-1, keepdim=True)
+    text_features = text_features.to(dtype=outputs.dtype)
+    logits_image_text = outputs @ text_features.t()
+    logits_text_image = text_features @ outputs.t()
+    
+    batch_size = outputs.shape[0]
+    ground_truth = torch.arange(batch_size, dtype=torch.long, device='cuda')
+    
+    loss_image_text = F.cross_entropy(logits_image_text, ground_truth)
+    loss_text_image = F.cross_entropy(logits_text_image, ground_truth)
+    
+    return (loss_image_text+loss_text_image)/2
+class MaxMarginRankingLoss(torch.nn.Module):
+  """Implementation of the Max-margin ranking loss."""
+
+  def __init__(self, margin=0.05, fix_norm=False):
+    super().__init__()
+    self.fix_norm = fix_norm
+    self.loss = torch.nn.MarginRankingLoss(margin)
+    self.margin = margin
+
+  def forward(self, x):
+    n = x.size()[0]
+    x1 = torch.diag(x)
+    x1 = x1.unsqueeze(1)
+    x1 = x1.expand(n, n)
+    x1 = x1.contiguous().view(-1, 1)
+    x1 = torch.cat((x1, x1), 0)
+
+    x2 = x.view(-1, 1)
+    x3 = x.transpose(0, 1).contiguous().view(-1, 1)
+
+    x2 = torch.cat((x2, x3), 0)
+    max_margin = F.relu(self.margin - (x1 - x2))
+    # print(x1, x2)
+    if self.fix_norm:
+      # remove the elements from the diagonal
+      keep = torch.ones(x.shape) - torch.eye(x.shape[0])
+      keep1 = keep.view(-1, 1)
+      keep2 = keep.transpose(0, 1).contiguous().view(-1, 1)
+      keep_idx = torch.nonzero(torch.cat((keep1, keep2), 0).flatten()).flatten()
+      if x1.is_cuda:
+        keep_idx = keep_idx.cuda()
+      x1_ = torch.index_select(x1, dim=0, index=keep_idx)
+      x2_ = torch.index_select(x2, dim=0, index=keep_idx)
+      max_margin = F.relu(self.margin - (x1_ - x2_))
+
+    return max_margin.mean()
+  
 class ConvNextDistillDiffPruningLoss(torch.nn.Module):
     """
     This module wraps a standard criterion and adds an extra knowledge distillation loss by

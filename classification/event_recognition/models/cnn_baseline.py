@@ -11,8 +11,8 @@ class CNN(nn.Module):
     def __init__(self, scale='resnet', pretrained=True, num_class=309, modality=['audio', 'image']):
         super(CNN, self).__init__()
         import copy
-        if scale == 'mobilenet':
-            backbone = torchvision.models.mobilenet_v3_large(pretrained=pretrained)
+        if scale == 'resnet50':
+            backbone = torchvision.models.resnet50(pretrained=pretrained)
         else:
             backbone = torchvision.models.resnet152(pretrained=pretrained)
         if 'audio' in modality:

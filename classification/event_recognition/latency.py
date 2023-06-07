@@ -80,7 +80,7 @@ if __name__ == "__main__":
         calc_flops(model, (audio, image, args.exits))
     elif args.cnn:
         print('measure the CNN latency')
-        model = CNN(pretrained=False, num_class=(97, 300)).to(device)
+        model = CNN(args.scale, pretrained=False, num_class=(97, 300)).to(device)
         model.eval()
         throughput(model, (audio, image))
         if args.flops:

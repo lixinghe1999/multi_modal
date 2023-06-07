@@ -76,7 +76,7 @@ class EPICKitchen(data.Dataset):
     def __init__(self, dataset='epic-kitchens-100', list_file=pd.read_pickle('EPIC_val.pkl'),
                  new_length={'RGB': 1, 'Flow': 1, 'Spec': 1}, modality= ['RGB', 'Spec', 'Flow'], image_tmpl={'RGB': 'frame_{:010d}.jpg', 'Flow': 'frame_{:010d}.jpg'},  visual_path='../EPIC-KITCHENS', audio_path='./audio_dict.pkl',
                  resampling_rate=24000, num_segments=1, transform=None,
-                 mode='test', use_audio_dict=True):
+                 mode='test', use_audio_dict=True, narration_embedding='train_vector.npy'):
         self.dataset = dataset
         if audio_path is not None:
             if not use_audio_dict:
@@ -93,6 +93,7 @@ class EPICKitchen(data.Dataset):
         self.mode = mode
         self.resampling_rate = resampling_rate
         self.use_audio_dict = use_audio_dict
+        self.narration_embedding = np.load(narration_embedding)
 
         if 'RGBDiff' in self.modality:
             self.new_length['RGBDiff'] += 1  # Diff needs one more image to calculate diff
@@ -197,6 +198,7 @@ class EPICKitchen(data.Dataset):
 
         input = {}
         record = self.video_list[index]
+        narration = self.narration_embedding[index]
 
         for m in self.modality:
             if self.mode == 'train':
@@ -223,8 +225,8 @@ class EPICKitchen(data.Dataset):
                 np.random.shuffle(segment_indices)
             img, label, metadata = self.get(m, record, segment_indices)
             input[m] = img
-        return input['Spec'], input['RGB'], input['Flow'], label
-
+        # return input['Spec'], input['RGB'], input['Flow'], label
+        return input['Spec'], input['RGB'], input['Flow'], narration
     def get(self, modality, record, indices):
 
         images = list()
@@ -236,8 +238,8 @@ class EPICKitchen(data.Dataset):
                 if p < record.num_frames[modality]:
                     p += 1
         process_data = self.transform[modality](images)
+        # classification
         return process_data, record.label, record.metadata
-
     def __len__(self):
         return len(self.video_list)
 
