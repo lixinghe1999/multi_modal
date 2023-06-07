@@ -11,7 +11,6 @@ __pycache__
 *.log
 *.hdf5
 *.npy
-*.ipynb
 OpenPCDet/yolov3/checkpoints/*
 OpenPCDet/yolov3/weights/*
 classification/EPIC-KITCHENS
