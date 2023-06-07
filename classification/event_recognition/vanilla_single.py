@@ -48,6 +48,8 @@ def train_step(model, input_data, optimizer, criteria, label):
     if isinstance(label, dict):
         loss = 0
         for key in label:
+            if key == 'noun' and args.modal == 'F':
+                continue
             loss += criteria(output[key], label[key].to(device))
     else:
         loss = criteria(output, label.to(device))

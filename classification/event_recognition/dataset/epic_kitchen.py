@@ -30,33 +30,6 @@ def get_normalization(modality, input_mean, input_std):
     for m in modality:
         normalize[m] = GroupNormalize(input_mean[m], input_std[m])
     return normalize
-
-    test_transform = {}
-    for m in modality:
-        if m != 'Spec':
-            if test_crops == 1:
-                cropping = torchvision.transforms.Compose([
-                    GroupScale(scale_size[m]),
-                    GroupCenterCrop(input_size[m]),
-                ])
-            elif test_crops == 10:
-                cropping = torchvision.transforms.Compose([
-                    GroupOverSample(input_size[m], scale_size[m])
-                ])
-            else:
-                raise ValueError("Only 1 and 10 crops are supported" +
-                                 " while we got {}".format(test_crops))
-
-            test_transform[m] = torchvision.transforms.Compose([
-                cropping, Stack(),
-                ToTorchFormatTensor(),
-                GroupNormalize(input_mean[m], input_std[m]), ])
-
-        else:
-            test_transform[m] = torchvision.transforms.Compose([
-                Stack(),
-                ToTorchFormatTensor(div=False), ])
-    return test_transform
 # mean: spec, rgb, flow
 # std: spec, rgb, flow
 # tensor([-0.0322]) tensor([0.4290, 0.3740, 0.3360]) tensor([0.5006, 0.5108])
