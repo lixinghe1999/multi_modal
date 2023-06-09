@@ -370,8 +370,6 @@ class VisionTransformer(nn.Module):
     def no_weight_decay(self):
         return {'pos_embed', 'cls_token'}
 
-    def get_classifier(self):
-        return self.head
 
     def reset_classifier(self, num_classes, global_pool=''):
         self.num_classes = num_classes

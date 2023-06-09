@@ -34,28 +34,13 @@ def get_normalization(modality, input_mean, input_std):
 # std: spec, rgb, flow
 # tensor([-0.0322]) tensor([0.4290, 0.3740, 0.3360]) tensor([0.5006, 0.5108])
 # tensor([0.0137]) tensor([0.2387, 0.2269, 0.2275]) tensor([0.1581, 0.1154])
-def get_train_transform(modality=['RGB', 'Spec', 'Flow'], test_crops=10, scale_size={'RGB': 256, 'Spec': 256, 'Flow': 256}, input_size={'RGB': 224, 'Spec': 256, 'Flow': 224}, input_mean={'RGB': [0.4290, 0.3740, 0.3360], 'Flow': [0.5006, 0.5108], 'Spec':[0]}, input_std={'RGB': [0.2387, 0.2269, 0.2275], 'Flow': [0.1581, 0.1154], 'Spec': [1]}):
+def get_train_transform(modality=['RGB', 'Spec', 'Flow', 'IMU'], test_crops=10, scale_size={'RGB': 256, 'Spec': 256, 'Flow': 256}, input_size={'RGB': 224, 'Spec': 256, 'Flow': 224}, input_mean={'RGB': [0.4290, 0.3740, 0.3360], 'Flow': [0.5006, 0.5108], 'Spec':[0], 'IMU':[0]}, input_std={'RGB': [0.2387, 0.2269, 0.2275], 'Flow': [0.1581, 0.1154], 'Spec': [1], 'IMU': [0]}):
     train_transform = {}
     val_transform = {}
     train_augmentation = get_augmentation(modality, input_size)
     normalize = get_normalization(modality, input_mean, input_std)
     for m in modality:
-        if (m != 'Spec'):
-            train_transform[m] = torchvision.transforms.Compose([
-                train_augmentation[m],
-                Stack(),
-                ToTorchFormatTensor(),
-                normalize[m],
-            ])
-
-            val_transform[m] = torchvision.transforms.Compose([
-                GroupScale(int(scale_size[m])),
-                GroupCenterCrop(input_size[m]),
-                Stack(),
-                ToTorchFormatTensor(),
-                normalize[m],
-            ])
-        else:
+        if m == 'Spec':
             # Prepare train/val dictionaries containing the transformations
             # (augmentation+normalization)
             # for each modality
@@ -70,12 +55,32 @@ def get_train_transform(modality=['RGB', 'Spec', 'Flow'], test_crops=10, scale_s
                 ToTorchFormatTensor(),
                 normalize[m],
             ])
+        elif m == 'IMU':
+            train_transform[m] = torchvision.transforms.Compose([
+            ])
+            val_transform[m] = torchvision.transforms.Compose([
+            ])
+        else:
+            train_transform[m] = torchvision.transforms.Compose([
+                train_augmentation[m],
+                Stack(),
+                ToTorchFormatTensor(),
+                normalize[m],
+            ])
+
+            val_transform[m] = torchvision.transforms.Compose([
+                GroupScale(int(scale_size[m])),
+                GroupCenterCrop(input_size[m]),
+                Stack(),
+                ToTorchFormatTensor(),
+                normalize[m],
+            ])
     return train_transform, val_transform
             
 class EPICKitchen(data.Dataset):
     def __init__(self, dataset='epic-kitchens-100', list_file=pd.read_pickle('EPIC_val.pkl'),
-                 new_length={'RGB': 1, 'Flow': 1, 'Spec': 1}, modality= ['RGB', 'Spec', 'Flow'], image_tmpl={'RGB': 'frame_{:010d}.jpg', 'Flow': 'frame_{:010d}.jpg'},  visual_path='../EPIC-KITCHENS', audio_path='./audio_dict.pkl',
-                 resampling_rate=24000, num_segments=1, transform=None,
+                 new_length={'RGB': 1, 'Flow': 1, 'Spec': 1, 'IMU': 1}, modality= ['RGB', 'Spec', 'Flow', 'IMU'], image_tmpl={'RGB': 'frame_{:010d}.jpg', 'Flow': 'frame_{:010d}.jpg'},  visual_path='../EPIC-KITCHENS', audio_path='./audio_dict.pkl',
+                 imu_path='../EPIC-KITCHENS', resampling_rate=24000, num_segments=1, transform=None,
                  mode='test', use_audio_dict=True, narration_embedding='train_vector.npy'):
         self.dataset = dataset
         if audio_path is not None:
@@ -94,7 +99,21 @@ class EPICKitchen(data.Dataset):
         self.resampling_rate = resampling_rate
         self.use_audio_dict = use_audio_dict
         self.narration_embedding = np.load(narration_embedding)
+        self.imu_path = imu_path
 
+        self.acc_dict = {}
+        self.gyro_dict = {}
+        print('loading imu data...')
+        for p in os.listdir(self.imu_path):
+            path = os.path.join(self.imu_path, p, 'meta_data')
+            for f in os.listdir(path):
+                data = np.loadtxt(os.path.join(path, f), skiprows=1, delimiter=',')[:, 1:]
+                video_id = f.split('-')[0]
+                if f.split('-')[1] == 'accl.csv':
+                    self.acc_dict[video_id] = data
+                else:# gyro
+                    self.gyro_dict[video_id] = data
+        print('finish loading imu data...')
         if 'RGBDiff' in self.modality:
             self.new_length['RGBDiff'] += 1  # Diff needs one more image to calculate diff
 
@@ -119,11 +138,10 @@ class EPICKitchen(data.Dataset):
         centre_sec = (record.start_frame + idx) / record.fps['Spec']
         left_sec = centre_sec - 0.639
         right_sec = centre_sec + 0.639
-        audio_fname = record.untrimmed_video_name + '.wav'
         if not self.use_audio_dict:
+            audio_fname = record.untrimmed_video_name + '.wav'
             samples, sr = librosa.core.load(self.audio_path / audio_fname,
                                             sr=None, mono=True)
-
         else:
             audio_fname = record.untrimmed_video_name
             samples = self.audio_path[audio_fname]
@@ -143,6 +161,15 @@ class EPICKitchen(data.Dataset):
 
         return self._log_specgram(samples)
 
+    def _get_imu_data(self, record, idx):
+        rgb2imu_fps_ratio = record.fps['IMU'] / float(record.fps['RGB'])
+        center_frame = int(np.floor((record.start_frame * rgb2imu_fps_ratio))) + idx
+        left_frame = center_frame - 100
+        right_frame = center_frame + 100
+        acc_data = self.acc_dict[record.untrimmed_video_name][left_frame: right_frame]
+        gyro_data = self.gyro_dict[record.untrimmed_video_name][left_frame: right_frame]
+        imu_data = np.concatenate((acc_data, gyro_data), axis=1)
+        return imu_data
     def _load_data(self, modality, record, idx):
         if modality == 'RGB' or modality == 'RGBDiff':
             idx_untrimmed = record.start_frame + idx
@@ -156,6 +183,9 @@ class EPICKitchen(data.Dataset):
         elif modality == 'Spec':
             spec = self._extract_sound_feature(record, idx)
             return [Image.fromarray(spec)]
+        else:
+            imu = self._get_imu_data(record, idx)
+            return [Image.fromarray(imu)]
 
     def _parse_list(self):
         if self.dataset == 'epic-kitchens-55':
@@ -225,8 +255,8 @@ class EPICKitchen(data.Dataset):
                 np.random.shuffle(segment_indices)
             img, label, metadata = self.get(m, record, segment_indices)
             input[m] = img
-        # return input['Spec'], input['RGB'], input['Flow'], label
-        return input['Spec'], input['RGB'], input['Flow'], narration
+        label['feature'] = narration
+        return input['Spec'], input['RGB'], input['Flow'], label
     def get(self, modality, record, indices):
 
         images = list()

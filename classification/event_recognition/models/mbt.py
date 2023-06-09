@@ -41,10 +41,8 @@ class MBT(nn.Module):
             self.head = nn.Linear(self.embed_dim * len(modality), num_class)
             self.multi_head = False
         else:
-            self.head_verb = nn.Sequential(nn.Linear(self.embed_dim * len(modality), 1024), nn.ReLU(), nn.Linear(1024, num_class[0]))
-            self.head_verb = nn.Sequential(nn.Linear(self.embed_dim * len(modality), 1024), nn.ReLU(), nn.Linear(1024, num_class[1]))
-            # self.head_verb = nn.Linear(self.embed  _dim * len(modality), num_class[0])
-            # self.head_noun = nn.Linear(self.embed_dim * len(modality), num_class[1])
+            self.head_verb = nn.Linear(self.embed_dim * len(modality), num_class[0])
+            self.head_noun = nn.Linear(self.embed_dim * len(modality), num_class[1])
             self.multi_head = True
         self.modality_weight = []
         self.modality = modality

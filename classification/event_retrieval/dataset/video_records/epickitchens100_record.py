@@ -26,14 +26,17 @@ class EpicKitchens100_VideoRecord(VideoRecord):
         is_2020 = len(self.untrimmed_video_name.split('_')[1]) == 3
         return {'RGB': 50 if is_2020 else 60,
                 'Flow': 50 if is_2020 else 30,
-                'Spec': 50 if is_2020 else 60}
+                'Spec': 50 if is_2020 else 60,
+                'IMU': 195,}
 
     @property
     def num_frames(self):
         rgb2flow_fps_ratio = self.fps['Flow'] / float(self.fps['RGB'])
+        rgb2imu_fps_ratio = self.fps['IMU'] / float(self.fps['RGB'])
         return {'RGB': self.end_frame - self.start_frame,
                 'Flow': (self.end_frame - self.start_frame) * rgb2flow_fps_ratio,
-                'Spec': self.end_frame - self.start_frame}
+                'Spec': self.end_frame - self.start_frame,
+                'IMU': (self.end_frame - self.start_frame) * rgb2imu_fps_ratio,}
 
     @property
     def label(self):

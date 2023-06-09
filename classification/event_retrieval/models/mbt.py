@@ -43,6 +43,7 @@ class MBT(nn.Module):
         else:
             self.head_verb = nn.Linear(self.embed_dim * len(modality), num_class[0])
             self.head_noun = nn.Linear(self.embed_dim * len(modality), num_class[1])
+            self.head_feature = nn.Linear(self.embed_dim * len(modality), 384)
             self.multi_head = True
         self.modality_weight = []
         self.modality = modality
@@ -60,7 +61,7 @@ class MBT(nn.Module):
                 for i in range(len(self.modality)):
                     self.modality_weight.append(nn.functional.linear(x[:, i * self.embed_dim: (i+1) * self.embed_dim], fc.weight[:, i * self.embed_dim: (i+1) * self.embed_dim], fc.bias/2))
     
-            return {'verb': verb, 'noun': noun}
+            return {'verb': verb, 'noun': noun, 'feature': self.head_feature(x)}
         else:
             self.modality_weight = [nn.functional.linear(x[:, :self.embed_dim], self.head.weight[:, :self.embed_dim],
                                                         self.head.bias/2),

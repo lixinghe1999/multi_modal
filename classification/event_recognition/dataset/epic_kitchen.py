@@ -74,9 +74,8 @@ def get_train_transform(modality=['RGB', 'Spec', 'Flow'], test_crops=10, scale_s
             
 class EPICKitchen(data.Dataset):
     def __init__(self, dataset='epic-kitchens-100', list_file=pd.read_pickle('EPIC_val.pkl'),
-                 new_length={'RGB': 1, 'Flow': 1, 'Spec': 1}, modality= ['RGB', 'Spec', 'Flow'], image_tmpl={'RGB': 'frame_{:010d}.jpg', 'Flow': 'frame_{:010d}.jpg'},  visual_path='../EPIC-KITCHENS', audio_path='./audio_dict.pkl',
-                 resampling_rate=24000, num_segments=1, transform=None,
-                 mode='test', use_audio_dict=True):
+                 new_length={'RGB': 1, 'Flow': 1, 'Spec': 1, 'IMU': 1}, modality= ['RGB', 'Spec', 'Flow', 'IMU'], image_tmpl={'RGB': 'frame_{:010d}.jpg', 'Flow': 'frame_{:010d}.jpg'},  visual_path='../EPIC-KITCHENS', audio_path='./audio_dict.pkl', imu_path='../EPIC-KITCHENS', resampling_rate=24000, num_segments=1, transform=None,
+                 mode='test', use_audio_dict=True, narration_embedding='train_vector.npy'):
         self.dataset = dataset
         if audio_path is not None:
             if not use_audio_dict:
@@ -93,7 +92,20 @@ class EPICKitchen(data.Dataset):
         self.mode = mode
         self.resampling_rate = resampling_rate
         self.use_audio_dict = use_audio_dict
+        # self.narration_embedding = np.load(narration_embedding)
+        self.imu_path = imu_path
 
+        self.acc_dict = {}
+        self.gyro_dict = {}
+        for p in os.listdir(self.imu_path):
+            path = os.path.join(self.imu_path, p, 'meta_data')
+            for f in os.listdir(path):
+                data = np.loadtxt(os.path.join(path, f))[:, 1:]
+                video_id = f.split('-')[0]
+                if f.split('-')[1] == 'accl.csv':
+                    self.acc_dict[video_id] = data
+                else:# gyro
+                    self.gyro_dict[video_id] = data
         if 'RGBDiff' in self.modality:
             self.new_length['RGBDiff'] += 1  # Diff needs one more image to calculate diff
 
@@ -118,11 +130,10 @@ class EPICKitchen(data.Dataset):
         centre_sec = (record.start_frame + idx) / record.fps['Spec']
         left_sec = centre_sec - 0.639
         right_sec = centre_sec + 0.639
-        audio_fname = record.untrimmed_video_name + '.wav'
         if not self.use_audio_dict:
+            audio_fname = record.untrimmed_video_name + '.wav'
             samples, sr = librosa.core.load(self.audio_path / audio_fname,
                                             sr=None, mono=True)
-
         else:
             audio_fname = record.untrimmed_video_name
             samples = self.audio_path[audio_fname]
@@ -142,6 +153,14 @@ class EPICKitchen(data.Dataset):
 
         return self._log_specgram(samples)
 
+    def _get_imu_data(self, record, idx):
+        center_frame = (record.start_frame + idx) / record.fps['RGB'] * record.fps['IMU']
+        left_frame = center_frame - 100
+        right_frame = center_frame + 100
+        acc_data = record.acc_dict[record.untrimmed_video_name][left_frame: right_frame]
+        gyro_data = record.gyro_dict[record.untrimmed_video_name][left_frame: right_frame]
+        imu_data = np.concatenate((acc_data, gyro_data), axis=1)
+        return imu_data
     def _load_data(self, modality, record, idx):
         if modality == 'RGB' or modality == 'RGBDiff':
             idx_untrimmed = record.start_frame + idx
@@ -155,6 +174,9 @@ class EPICKitchen(data.Dataset):
         elif modality == 'Spec':
             spec = self._extract_sound_feature(record, idx)
             return [Image.fromarray(spec)]
+        else:
+            imu = self._get_imu_data(record, idx)
+            return [Image.fromarray(imu)]
 
     def _parse_list(self):
         if self.dataset == 'epic-kitchens-55':
@@ -197,6 +219,7 @@ class EPICKitchen(data.Dataset):
 
         input = {}
         record = self.video_list[index]
+        # narration = self.narration_embedding[index]
 
         for m in self.modality:
             if self.mode == 'train':
@@ -223,8 +246,8 @@ class EPICKitchen(data.Dataset):
                 np.random.shuffle(segment_indices)
             img, label, metadata = self.get(m, record, segment_indices)
             input[m] = img
+        # label['feature'] = narration
         return input['Spec'], input['RGB'], input['Flow'], label
-
     def get(self, modality, record, indices):
 
         images = list()
@@ -236,8 +259,8 @@ class EPICKitchen(data.Dataset):
                 if p < record.num_frames[modality]:
                     p += 1
         process_data = self.transform[modality](images)
+        # classification
         return process_data, record.label, record.metadata
-
     def __len__(self):
         return len(self.video_list)
 

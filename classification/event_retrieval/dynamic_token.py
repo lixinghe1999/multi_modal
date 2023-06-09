@@ -2,11 +2,8 @@ import dataset
 import numpy as np
 import torch
 import models
-from models.dynamicvit_runtime import AVnet_Runtime
 from models.dynamicvit_legacy import DynToken
 from utils.losses import DistillDiffPruningLoss_dynamic
-from models.apply_merge import apply_patch
-import time
 import warnings
 from tqdm import tqdm
 import argparse
@@ -41,14 +38,6 @@ def test_epickitchen(model, test_loader):
             acc['noun'].append( predict_noun.sum() / len(batch[-1]['noun']))
             acc['action'].append( predict_action.sum() / len(batch[-1]['verb']))
             ratio.append(model.ratio)
-    #         for i in range(3):
-    #             distribution[i].append(model.distribution[i])
-    # saved_dist = []
-    # for i in range(3):
-    #     saved_dist.append(torch.stack(distribution[i], dim=0).cpu().numpy())
-    # saved_dist = np.concatenate(saved_dist, axis=1)
-    # print(saved_dist.shape)
-    # np.save('distribution.npy', saved_dist)
 
     print('verb =', np.mean(acc['verb']), 'noun =', np.mean(acc['noun']))
     mean_ratio = np.mean(ratio, axis=0)
@@ -119,45 +108,29 @@ if __name__ == "__main__":
         checkpoint_loc = 'checkpoints_epic_kitchen/'
     else:
         checkpoint_loc = 'checkpoints_vggsound/'
-    
-    if args.dataset == 'VGGSound':
-        full_dataset = getattr(dataset, args.dataset)()
-        len_train = int(len(full_dataset) * 0.8)
-        len_test = len(full_dataset) - len_train
-        train_dataset, test_dataset = torch.utils.data.random_split(full_dataset, [len_train, len_test], generator=torch.Generator().manual_seed(42))
-        model = DynToken(pruning_loc=pruning_loc, token_ratio=token_ratio, distill=True, backbone=getattr(models, args.model), scale=args.scale, pretrained=False).to(device)
-        model.load_state_dict(torch.load(checkpoint_loc + 'checkpoints_vggsound/MBT_base_0.6702001.pth'), strict=False)
-        
 
-        teacher_model = DynToken(distill=True, backbone=getattr(models, args.model), scale=args.scale, pretrained=False).to(device)
-        teacher_model.load_state_dict(torch.load(checkpoint_loc + 'checkpoints_vggsound/MBT_base_0.6702001.pth'))
-        teacher_model.eval()
-        loss = DistillDiffPruningLoss_dynamic(teacher_model, torch.nn.CrossEntropyLoss(), clf_weight=1.0,
-                keep_ratio=token_ratio, mse_token=True, ratio_weight=2, distill_weight=0.5)
-        if args.test:
-            model.load_state_dict(torch.load(checkpoint_loc + 'checkpoints_vggsound/DynToken_MBT_base_0.6778.pth'))    
-        train(model, train_dataset, test_dataset, loss, args.test, test_vggsound)
-    else:
-        import h5py
-        print('pre-load audio dict.....')
-        audio_path = h5py.File('../split_EPIC_audio.hdf5', 'r')
-        print('finish loading....')
-        train_transform, val_transform = dataset.get_train_transform()
-        train_dataset = getattr(dataset, args.dataset)(list_file=pd.read_pickle('EPIC_train.pkl'),               
-                                                 transform=train_transform, mode='train', audio_path=audio_path)
-        val_dataset = getattr(dataset, args.dataset)(list_file=pd.read_pickle('EPIC_val.pkl'),               
-                                                 transform=val_transform, mode='val', audio_path=audio_path)
-        model = DynToken(pruning_loc=pruning_loc, token_ratio=token_ratio, distill=True, backbone=getattr(models, args.model), scale=args.scale, pretrained=True, num_class=(97, 300)).to(device)
-        model.load_state_dict(torch.load(checkpoint_loc + 'MBT_base_0.37182197.pth'), strict=False)
+    import h5py
+    print('pre-load audio dict.....')
+    audio_path = h5py.File('../split_EPIC_audio.hdf5', 'r')
+    print('finish loading....')
+    train_transform, val_transform = dataset.get_train_transform()
+    train_dataset = getattr(dataset, args.dataset)(list_file=pd.read_pickle('EPIC_train.pkl'),               
+                                                transform=train_transform, mode='train', audio_path=audio_path)
+    val_dataset = getattr(dataset, args.dataset)(list_file=pd.read_pickle('EPIC_val.pkl'),               
+                                                transform=val_transform, mode='val', audio_path=audio_path)
+    model = DynToken(pruning_loc=pruning_loc, token_ratio=token_ratio, distill=True, backbone=getattr(models, args.model), scale=args.scale, pretrained=True, num_class=(97, 300)).to(device)
+    model.load_state_dict(torch.load(checkpoint_loc + 'MBT_base_0.37182197.pth'), strict=False)
 
-        teacher_model = DynToken(distill=True, backbone=getattr(models, args.model), scale=args.scale, pretrained=False,    num_class=(97, 300)).to(device)
+    teacher_model = DynToken(distill=True, backbone=getattr(models, args.model), scale=args.scale, pretrained=False,    num_class=(97, 300)).to(device)
 
-        teacher_model.load_state_dict(torch.load(checkpoint_loc + 'MBT_base_0.37182197.pth'))
-        teacher_model.eval()
-        loss = DistillDiffPruningLoss_dynamic(teacher_model, torch.nn.CrossEntropyLoss(), clf_weight=1.0,
-                keep_ratio=token_ratio, mse_token=True, ratio_weight=2, distill_weight=0.5)
-        if args.test:
-            model.load_state_dict(torch.load(checkpoint_loc + 'DynToken_MBT_base_0.37599015.pth'), strict=False)
-            model.apply_merge(r=12)
-        train(model, train_dataset, val_dataset, loss, args.test, test_epickitchen)
+    teacher_model.load_state_dict(torch.load(checkpoint_loc + 'MBT_base_0.37182197.pth'))
+    teacher_model.eval()
+    loss = DistillDiffPruningLoss_dynamic(teacher_model, torch.nn.CrossEntropyLoss(), clf_weight=1.0,
+            keep_ratio=token_ratio, mse_token=True, ratio_weight=2, distill_weight=0.5)
+    if args.test:
+        model.load_state_dict(torch.load(checkpoint_loc + 'DynToken_MBT_base_0.37599015.pth'), strict=False)
+        model.apply_merge(r=12)
+
+    decoder = models.
+    train(model, train_dataset, val_dataset, loss, args.test, test_epickitchen)
 
